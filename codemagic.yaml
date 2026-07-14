@@ -1,0 +1,20 @@
+# Not a React Native project — Vite/React (TanStack Start).
+# This file exists so Codemagic can leave the RN quick-start wizard.
+# Full iOS/App Store builds need Capacitor + Apple signing first.
+#
+# Docs: https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/
+
+workflows:
+  web-smoke:
+    name: Web smoke (unlocks YAML)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 22
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web app
+        script: npm run build
+    artifacts:
+      - dist/**

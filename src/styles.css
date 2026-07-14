@@ -1,0 +1,121 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
+@custom-variant ltr (&:where([dir="ltr"], [dir="ltr"] *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-left: var(--surface-left);
+  --color-surface-mid: var(--surface-mid);
+  --color-surface-right: var(--surface-right);
+  --color-border-subtle: var(--border-subtle);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-online: var(--online);
+  --color-danger: var(--danger);
+  --color-border: var(--border-subtle);
+  --color-input: var(--border-subtle);
+  --color-ring: var(--accent);
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-glow-accent: 0 0 12px color-mix(in oklab, var(--accent) 45%, transparent);
+  --shadow-glow-online: 0 0 8px color-mix(in oklab, var(--online) 55%, transparent);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.145 0.005 260);
+  --foreground: oklch(0.92 0.005 260);
+
+  --surface-left: oklch(0.175 0.005 260);
+  --surface-mid: oklch(0.205 0.005 260);
+  --surface-right: oklch(0.175 0.005 260);
+  --border-subtle: oklch(0.28 0.006 260);
+
+  --accent: oklch(0.86 0.15 200);
+  --accent-foreground: oklch(0.15 0.01 260);
+
+  --muted: oklch(0.24 0.005 260);
+  --muted-foreground: oklch(0.62 0.01 260);
+
+  --online: oklch(0.72 0.17 155);
+  --danger: oklch(0.65 0.22 25);
+}
+
+/* High-contrast token variant — toggled via .high-contrast on <html> */
+:root.high-contrast {
+  --background: oklch(0.1 0.005 260);
+  --foreground: oklch(0.98 0.005 260);
+  --surface-left: oklch(0.14 0.005 260);
+  --surface-mid: oklch(0.16 0.005 260);
+  --surface-right: oklch(0.14 0.005 260);
+  --border-subtle: oklch(0.45 0.01 260);
+  --accent: oklch(0.9 0.16 200);
+  --muted-foreground: oklch(0.78 0.01 260);
+  --shadow-glow-accent: 0 0 0 2px color-mix(in oklab, var(--accent) 70%, transparent);
+  --shadow-glow-online: 0 0 0 2px color-mix(in oklab, var(--online) 70%, transparent);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border-subtle);
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Respect OS + in-app reduce-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-scale: 0;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root.reduce-motion *,
+:root.reduce-motion *::before,
+:root.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+}

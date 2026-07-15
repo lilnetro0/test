@@ -20,9 +20,10 @@ workflows:
     name: Capacitor iOS IPA
     max_build_duration: 120
     instance_type: mac_mini_m2
-    # Uncomment after adding App Store Connect API key in Codemagic → Team integrations:
-    # integrations:
-    #   app_store_connect: codemagic
+    # Must match the API key name in Codemagic → Integrations / Developer Portal
+    # (yours was named "test" when fetching profiles). Change if you rename it.
+    integrations:
+      app_store_connect: test
     environment:
       ios_signing:
         distribution_type: app_store
@@ -30,7 +31,7 @@ workflows:
       vars:
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        # Set CAPACITOR_SERVER_URL in Codemagic → Environment variables (or a group)
+        # Set CAPACITOR_SERVER_URL in Codemagic → Environment variables
         # to your deployed HTTPS site before a usable iOS shell.
       node: 22
       xcode: latest
@@ -59,8 +60,7 @@ workflows:
       - ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    # Uncomment after App Store Connect integration + signing work:
-    # publishing:
-    #   app_store_connect:
-    #     auth: integration
-    #     submit_to_testflight: true
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

@@ -28,6 +28,18 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: "automatic",
     preferredContentMode: "mobile",
+    scheme: "Nexus",
+  },
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: true,
+      backgroundColor: "#0c0a09",
+      showSpinner: false,
+    },
+    StatusBar: {
+      style: "DARK",
+      backgroundColor: "#0c0a09",
+    },
   },
 };
 

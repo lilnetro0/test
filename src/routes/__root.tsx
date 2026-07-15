@@ -20,6 +20,7 @@ import { AuthProvider } from "@/lib/auth-provider";
 import { NotificationsProvider } from "@/lib/notifications-provider";
 import { WhatsNew } from "@/components/whats-new";
 import { applyAppearanceClasses } from "@/lib/prefs";
+import { bootstrapNativeShell } from "@/lib/capacitor";
 import { registerServiceWorker } from "@/lib/pwa";
 import { Home, Search, MessageSquare } from "lucide-react";
 
@@ -164,6 +165,7 @@ function LocalizedShell() {
   useEffect(() => {
     applyAppearanceClasses();
     registerServiceWorker();
+    void bootstrapNativeShell();
   }, []);
   return (
     <>

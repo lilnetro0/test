@@ -10,6 +10,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isNativeApp } from "@/lib/capacitor";
 import {
   signInWithPassword,
   signOut as authSignOut,
@@ -17,6 +18,7 @@ import {
   resetPasswordForEmail,
   updatePassword,
   signInWithOAuth,
+  completeAuthFromUrl,
   type AuthResult,
   type OAuthProvider,
 } from "@/lib/supabase/auth";
@@ -126,9 +128,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(next);
     });
 
+    let removeUrlListener: (() => void) | undefined;
+    if (isNativeApp()) {
+      void import("@capacitor/app").then(({ App }) => {
+        const handle = (incoming: string | undefined) => {
+          if (!incoming || !mounted) return;
+          void completeAuthFromUrl(incoming).then(async (result) => {
+            if (!result.ok) {
+              toast.error(result.error);
+              return;
+            }
+            toast.success("Signed in");
+            try {
+              const { Browser } = await import("@capacitor/browser");
+              await Browser.close();
+            } catch {
+              // ignore
+            }
+          });
+        };
+        void App.getLaunchUrl().then((launch) => handle(launch?.url));
+        const subUrl = App.addListener("appUrlOpen", (event) => handle(event.url));
+        void subUrl.then((h) => {
+          removeUrlListener = () => {
+            void h.remove();
+          };
+        });
+      });
+    }
+
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
+      removeUrlListener?.();
     };
   }, [configured]);
 

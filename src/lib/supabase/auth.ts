@@ -1,4 +1,5 @@
 import type { Session, User } from "@supabase/supabase-js";
+import { authRedirectTo, isNativeApp } from "@/lib/capacitor";
 import { getSupabaseBrowserClient } from "./client";
 import { isSupabaseConfigured } from "./env";
 import { allocateTag, isUsernameAvailable, normalizeTag, normalizeUsername } from "./profile";
@@ -84,8 +85,11 @@ export async function resetPasswordForEmail(email: string): Promise<AuthResult> 
     return { ok: false, error: "Supabase is not configured", mock: true };
   }
   const client = getSupabaseBrowserClient()!;
-  const redirectTo =
-    typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+  const redirectTo = isNativeApp()
+    ? authRedirectTo()
+    : typeof window !== "undefined"
+      ? `${window.location.origin}/reset-password`
+      : undefined;
   const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) return { ok: false, error: error.message };
   return { ok: true, session: null, user: null };
@@ -119,12 +123,65 @@ export async function signInWithOAuth(provider: OAuthProvider): Promise<AuthResu
     return { ok: false, error: "Supabase is not configured", mock: true };
   }
   const client = getSupabaseBrowserClient()!;
-  const redirectTo =
-    typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
-  const { error } = await client.auth.signInWithOAuth({
+  const redirectTo = authRedirectTo("/");
+  const native = isNativeApp();
+
+  const { data, error } = await client.auth.signInWithOAuth({
     provider,
-    options: { redirectTo },
+    options: {
+      redirectTo,
+      skipBrowserRedirect: native,
+    },
   });
   if (error) return { ok: false, error: error.message };
+
+  if (native && data.url) {
+    const { Browser } = await import("@capacitor/browser");
+    await Browser.open({ url: data.url, presentationStyle: "popover" });
+  }
+
   return { ok: true, session: null, user: null };
+}
+
+/** Finish OAuth / email link when returning via deep link. */
+export async function completeAuthFromUrl(url: string): Promise<AuthResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase is not configured", mock: true };
+  }
+  const client = getSupabaseBrowserClient()!;
+
+  try {
+    let code: string | null = null;
+    try {
+      code = new URL(url).searchParams.get("code");
+    } catch {
+      const q = url.includes("?") ? url.slice(url.indexOf("?") + 1).split("#")[0] : "";
+      code = new URLSearchParams(q).get("code");
+    }
+
+    if (code) {
+      const { data, error } = await client.auth.exchangeCodeForSession(code);
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, session: data.session, user: data.user };
+    }
+
+    const hash = url.includes("#") ? url.slice(url.indexOf("#") + 1) : "";
+    if (hash) {
+      const params = new URLSearchParams(hash);
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      if (access_token && refresh_token) {
+        const { data, error } = await client.auth.setSession({ access_token, refresh_token });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, session: data.session, user: data.user };
+      }
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Could not complete sign-in",
+    };
+  }
+
+  return { ok: false, error: "No auth credentials in callback URL" };
 }

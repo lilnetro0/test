@@ -22,10 +22,27 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.lilnetro0.nexus</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.lilnetro0.nexus</string>
+			</array>
+		</dict>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Nexus may use the camera for profile photos and future video chat features.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Nexus needs the microphone so you can join hub and DM voice channels.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nexus needs photo library access so you can set an avatar or attach images in chat.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

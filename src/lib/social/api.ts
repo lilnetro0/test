@@ -1,6 +1,7 @@
 import type { ChatMessage, Friend, DMConversation } from "@/lib/mock-data";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ensureProfile } from "@/lib/supabase/profile";
+import { withMappedDbError } from "@/lib/rate-limit";
 
 function formatTime(iso: string): string {
   try {
@@ -214,7 +215,7 @@ export async function sendFriendRequestByTag(
 
   if (error) {
     if (error.code === "23505") return { ok: false, error: "Request already sent" };
-    return { ok: false, error: error.message };
+    return { ok: false, error: withMappedDbError(error.message, "Could not send request") };
   }
   return { ok: true };
 }
@@ -278,6 +279,7 @@ export async function submitReport(input: {
   reporterId: string;
   targetUserId?: string;
   messageId?: string;
+  dmMessageId?: string;
   reason: string;
   details?: string;
 }): Promise<{ ok: boolean; error?: string }> {
@@ -286,20 +288,25 @@ export async function submitReport(input: {
 
   await ensureProfile(input.reporterId);
 
-  if (!input.targetUserId && !input.messageId) {
+  if (!input.targetUserId && !input.messageId && !input.dmMessageId) {
     return { ok: false, error: "Nothing to report" };
+  }
+
+  if (input.targetUserId && input.targetUserId === input.reporterId) {
+    return { ok: false, error: "You cannot report yourself" };
   }
 
   const { error } = await client.from("reports").insert({
     reporter_id: input.reporterId,
     target_user_id: input.targetUserId ?? null,
     message_id: input.messageId ?? null,
+    dm_message_id: input.dmMessageId ?? null,
     reason: input.reason.slice(0, 64),
     details: (input.details ?? "").slice(0, 2000),
     status: "open",
   });
 
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: withMappedDbError(error.message, "Could not submit report") };
   return { ok: true };
 }
 
@@ -312,7 +319,7 @@ export async function openDmWith(
     p_other_user_id: otherUserId,
   });
   if (error) return { error: error.message };
-  return { threadId: data as string };
+  return { threadId: String(data) };
 }
 
 type DmMessageRow = {
@@ -334,6 +341,7 @@ function dmRowToMessage(m: DmMessageRow): ChatMessage {
     author: author?.username ?? "Unknown",
     authorId: m.author_id,
     time: formatTime(m.created_at),
+    createdAt: m.created_at,
     body: m.body,
     attachment: m.attachment_url
       ? {
@@ -393,9 +401,14 @@ export async function fetchDmThreads(userId: string): Promise<{
       .from("dm_messages")
       .select("body, created_at")
       .eq("thread_id", t.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    const { data: unreadCount } = await client.rpc("dm_thread_unread", {
+      p_thread_id: t.id,
+    });
 
     threads.push({
       id: t.id,
@@ -404,7 +417,7 @@ export async function fetchDmThreads(userId: string): Promise<{
         : { id: "", name: "Unknown", tag: "#0000", status: "offline" },
       lastMessage: last?.body ?? "",
       lastTime: last ? formatTime(last.created_at) : "",
-      unread: 0,
+      unread: Math.min(Number(unreadCount) || 0, 99),
       messages: [],
     });
   }
@@ -414,27 +427,66 @@ export async function fetchDmThreads(userId: string): Promise<{
 
 export async function fetchDmMessages(
   threadId: string,
-): Promise<{ messages: ChatMessage[]; error?: string }> {
+  opts?: { limit?: number; before?: string },
+): Promise<{ messages: ChatMessage[]; hasMore?: boolean; error?: string }> {
   const client = getSupabaseBrowserClient();
   if (!client) return { messages: [], error: "Supabase not configured" };
 
-  const { data, error } = await client
+  const limit = Math.min(opts?.limit ?? 80, 150);
+  let q = client
     .from("dm_messages")
     .select(DM_SELECT)
     .eq("thread_id", threadId)
-    .order("created_at", { ascending: true })
-    .limit(150);
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
+  if (opts?.before) {
+    q = q.lt("created_at", opts.before);
+  }
+
+  const { data, error } = await q;
   if (error) return { messages: [], error: error.message };
-  return { messages: (data ?? []).map((m) => dmRowToMessage(m as DmMessageRow)) };
+  const rows = ((data ?? []) as unknown as DmMessageRow[]).slice().reverse();
+  return {
+    messages: rows.map((m) => dmRowToMessage(m)),
+    hasMore: rows.length >= limit,
+  };
 }
 
 export async function fetchDmMessage(id: string): Promise<ChatMessage | null> {
   const client = getSupabaseBrowserClient();
   if (!client) return null;
-  const { data, error } = await client.from("dm_messages").select(DM_SELECT).eq("id", id).maybeSingle();
+  const { data, error } = await client
+    .from("dm_messages")
+    .select(DM_SELECT)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error || !data) return null;
-  return dmRowToMessage(data as DmMessageRow);
+  return dmRowToMessage(data as unknown as DmMessageRow);
+}
+
+export async function deleteDmMessage(
+  messageId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: false, error: "Supabase not configured" };
+  const { error } = await client.rpc("soft_delete_dm_message", {
+    p_message_id: messageId,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function markDmRead(
+  threadId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: false, error: "Supabase not configured" };
+  const { error } = await client.rpc("mark_dm_read", { p_thread_id: threadId });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 export async function sendDmMessage(input: {
@@ -464,12 +516,12 @@ export async function sendDmMessage(input: {
     .select(DM_SELECT)
     .single();
 
-  if (error || !data) return { message: null, error: error?.message ?? "Send failed" };
+  if (error || !data) return { message: null, error: withMappedDbError(error?.message, "Send failed") };
 
   await client
     .from("dm_threads")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", input.threadId);
 
-  return { message: dmRowToMessage(data as DmMessageRow) };
+  return { message: dmRowToMessage(data as unknown as DmMessageRow) };
 }

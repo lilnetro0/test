@@ -36,7 +36,7 @@ export function AuthShell({
       </div>
 
       <div className="relative w-full max-w-md">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-3">
+        <Link to="/" search={{}} className="mb-8 flex items-center justify-center gap-3">
           <img src={logo} alt="Nexus" width={40} height={40} className="size-10 object-contain" />
           <span className="font-display text-xl font-bold uppercase tracking-tight text-white">
             Nexus

@@ -9,6 +9,7 @@ Phases 0–7 are in place. With Supabase keys set, the app uses **live** hubs/ch
 - **Realtime** — channel `messages` (Phase 2); DMs/notifications in later phases
 - **Storage** — avatars/attachments (post-launch)
 - **LiveKit** — voice (Phase 5; `src/lib/voice/` + `src/server/voice.ts`)
+- **Ops** — health + runbooks: [`docs/OPS.md`](docs/OPS.md) (`GET /api/health`)
 
 ```
 React UI  →  browser Supabase client (auth + realtime)
@@ -36,23 +37,26 @@ Lovable: add the same keys in project environment settings. Do **not** put the s
 
 ### Cloud (SQL editor)
 
-If tables are missing (`relation "hub_members" does not exist`, `Could not find the table 'public.hubs'`), the core schema was never applied — or you only ran the small Phase 2 policy file. Run these **in order**, each as a **new** SQL Editor query (paste full file contents):
+**Ops source of truth:** [`docs/DATABASE-OPERATIONS.md`](docs/DATABASE-OPERATIONS.md) (classification, environments, guarded reset).
 
-1. [`supabase/00_reset_nexus.sql`](supabase/00_reset_nexus.sql) — safe wipe of Nexus tables only (skip if project is empty)  
+If tables are missing (`relation "hub_members" does not exist`, `Could not find the table 'public.hubs'`), the core schema was never applied — or you only ran the small Phase 2 policy file. Prefer timestamped files under `supabase/migrations/` **in order**, each as a **new** SQL Editor query:
+
+1. Destructive wipe is **not** the default. Empty/local repair only: [`supabase/dangerous/00_reset_nexus.sql`](supabase/dangerous/00_reset_nexus.sql) (session gate required). [`supabase/00_reset_nexus.sql`](supabase/00_reset_nexus.sql) is a stub that blocks accidental runs.  
 2. [`supabase/migrations/20260715000000_nexus_core.sql`](supabase/migrations/20260715000000_nexus_core.sql) — **creates** `hubs`, `hub_members`, `messages`, …  
-3. [`supabase/seed.sql`](supabase/seed.sql) — games/hubs/channels  
+3. Remaining migrations in timestamp order (see `supabase/migrations/README.md`)  
+4. [`supabase/seed.sql`](supabase/seed.sql) — games/hubs/channels (empty catalog only)
 
 Then check **Table Editor → hubs** and **games**. You should see Fortnite, Valorant, etc.
 
 Do **not** run `20260715010000_phase2_*.sql` first — that policy needs `hub_members` already. It is already included inside the core migration; only run the Phase 2 file if you applied an older core without that policy.
 
-Do **not** run seed before the migration succeeds. To redo from scratch: reset → core → seed.
+Do **not** run seed before the migration succeeds. To redo from scratch (local/empty only): guarded reset → migrations → seed.
 
 ### `hub_members_user_id_fkey` / 409 on join
 
-`00_reset_nexus.sql` drops `profiles` but **keeps** `auth.users`. Joining a hub then fails because `user_id` has no profile row.
+A destructive reset drops `profiles` but **keeps** `auth.users`. Joining a hub then fails because `user_id` has no profile row.
 
-**Fix now:** run [`supabase/01_backfill_profiles.sql`](supabase/01_backfill_profiles.sql) in the SQL Editor (creates missing profiles + insert policy). Soft-refresh the app and try again.
+**Fix now:** run [`supabase/manual/01_backfill_profiles.sql`](supabase/manual/01_backfill_profiles.sql) in the SQL Editor (creates missing profiles + insert policy). Soft-refresh the app and try again.
 
 The app also auto-creates a profile on login when the insert policy exists (`20260715020000_ensure_profile.sql`).
 
@@ -70,15 +74,16 @@ npx supabase db reset   # applies migrations + seed
 3. Confirm a row appears in `public.profiles` and `public.user_prefs` (trigger `handle_new_user`)
 4. `/login` with the same credentials
 
-Without env keys, login/register still work in **demo/mock mode** and show a banner.
+Without env keys in **dev/preview**, login/register still work in **demo/mock mode** and show a banner. **Production builds** require `VITE_SUPABASE_*` and forbid `VITE_USE_MOCK` (see `assertProductionClientEnv`).
 
 ## 5. Mock vs live data
 
 | Env | Behavior |
 |---|---|
-| No Supabase keys | Full mock UI |
+| Dev/preview, no Supabase keys | Full mock UI |
 | Keys set (default) | Live hubs, chat, friends, DMs, Realtime |
-| Keys set + `VITE_USE_MOCK=1` | Real auth possible; social/chat still mock |
+| Dev/preview + `VITE_USE_MOCK=1` | Real auth possible; social/chat still mock |
+| Production build | Live only — missing keys or `VITE_USE_MOCK` throws |
 
 **Live chat:** apply schema + seed, set keys, sign in, open `/`. Selecting a hub auto-joins; composer inserts into `messages`.
 
@@ -145,7 +150,7 @@ VITE_USE_MOCK=0
 
 After core schema + seed (+ profile backfill if needed), run in the SQL Editor:
 
-[`supabase/02_phase3_friends_dms.sql`](supabase/02_phase3_friends_dms.sql)
+[`supabase/manual/02_phase3_friends_dms.sql`](supabase/manual/02_phase3_friends_dms.sql) (prefer `migrations/20260715030000_phase3_friends_dms.sql`)
 
 (or `migrations/20260715030000_phase3_friends_dms.sql` — same contents)
 
@@ -153,26 +158,26 @@ Creates RPCs: `accept_friend_request`, `decline_friend_request`, `remove_friend`
 
 ### Phase 4 SQL (cloud)
 
-Run [`supabase/03_phase4_notifications.sql`](supabase/03_phase4_notifications.sql) after Phase 3.
+Run [`supabase/manual/03_phase4_notifications.sql`](supabase/manual/03_phase4_notifications.sql) after Phase 3 (or the matching migration).
 
 Creates `notify_user` + triggers for friend requests/accepts, DM messages, and channel `@mentions`. Inbox lives at `/notifications` with Realtime + dock badge.
 
 ### Phase 6 SQL (cloud)
 
-Run [`supabase/04_phase6_launch.sql`](supabase/04_phase6_launch.sql):
+Run [`supabase/manual/04_phase6_launch.sql`](supabase/manual/04_phase6_launch.sql) (or matching migration):
 
 - `reports` table (message/user reports)
 - `profiles.banned_at` / `ban_reason` (banned users are signed out on load)
 
-Legal pages: `/terms`, `/privacy`, `/cookies`. PWA: `public/sw.js` + `/icons/*`. Checklist: [LAUNCH.md](LAUNCH.md).
+Legal pages: `/terms`, `/privacy`, `/cookies`, `/guidelines`. PWA: `public/sw.js` + `/icons/*`. Checklists: [LAUNCH.md](LAUNCH.md), [docs/APP-STORE.md](docs/APP-STORE.md).
 
 ### Mentions (`@user#tag`)
 
-Run [`supabase/06_mention_tag.sql`](supabase/06_mention_tag.sql) so channel @mentions only notify on exact `Username#1234` (composer inserts that format from the roster picker).
+Run [`supabase/manual/06_mention_tag.sql`](supabase/manual/06_mention_tag.sql) so channel @mentions only notify on exact `Username#1234` (composer inserts that format from the roster picker).
 
 ### Storage (avatars + attachments)
 
-Run [`supabase/07_storage.sql`](supabase/07_storage.sql):
+Run [`supabase/manual/07_storage.sql`](supabase/manual/07_storage.sql) (or matching migration):
 
 - Public buckets `avatars` and `attachments` (user folder = auth uid)
 - `messages` / `dm_messages` attachment columns
@@ -187,13 +192,16 @@ Upload from `/me` (avatar) and the hub composer (files/images).
 
 ### Admin console (god-mode)
 
-1. Set server env `ADMIN_USER_IDS=<your-auth-user-uuid>` (comma-separated, never `VITE_`)  
-2. Run [`supabase/08_admin_ops.sql`](supabase/08_admin_ops.sql) (`games`/`hubs.image_url`, `hub-media` bucket, service_role hub role bypass)  
-3. Open `/admin` while signed in as that user  
-4. Tabs: **Hubs / Games / Channels / Users / Reports** — create/edit/delete catalog + text/voice channels, upload images, ban users, triage reports  
-5. In hub chat, admins can delete/pin any message and kick/set roles from the roster  
+1. Apply [`supabase/migrations/20260715130000_phase3_platform_roles.sql`](supabase/migrations/20260715130000_phase3_platform_roles.sql)  
+2. Set server env `ADMIN_USER_IDS=<your-auth-user-uuid>` (comma-separated, never `VITE_`) — bootstraps `platform_roles` on first admin use  
+3. Run [`supabase/manual/08_admin_ops.sql`](supabase/manual/08_admin_ops.sql) if catalog image columns / `hub-media` missing  
+4. Open `/admin` while signed in as that user  
+5. Tabs: **Hubs / Games / Channels / Users / Reports** — create/edit/delete catalog + text/voice channels, upload images, ban users, triage reports  
+6. In hub chat, platform admins can delete/pin any message and kick/set roles from the roster  
 
-**Hub creation is admin-only.** Authenticated clients have select-only RLS on `hubs` (no insert). Discover’s “Create a hub” opens `/admin` for allowlisted admins and denies everyone else.
+See [`docs/ADMIN-SECURITY.md`](docs/ADMIN-SECURITY.md).
+
+**Hub creation is admin-only.** Authenticated clients have select-only RLS on `hubs` (no insert). Discover’s “Create a hub” opens `/admin` for platform admins and denies everyone else.
 
 ### DM voice
 
@@ -201,7 +209,7 @@ With LiveKit configured, the Phone button on a DM joins room `nexus-dm-{threadId
 
 ### Phase 7 — Security hardening (required before public launch)
 
-Run [`supabase/05_security_hardening.sql`](supabase/05_security_hardening.sql) after phases 3–6:
+Run [`supabase/manual/05_security_hardening.sql`](supabase/manual/05_security_hardening.sql) after phases 3–6:
 
 - Revoke client `execute` on `notify_user`
 - Drop DM participant self-insert; DM create requires friendship + no blocks

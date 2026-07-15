@@ -4,6 +4,7 @@ import { AuthShell, AuthField } from "@/components/auth-shell";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { checkAuthCooldown, markAuthCooldown } from "@/lib/rate-limit";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/register")({
@@ -42,7 +43,13 @@ function RegisterPage() {
       toast.success(t("auth.register.mockSuccess"), {
         description: t("auth.register.mockHint"),
       });
-      navigate({ to: "/" });
+      navigate({ to: "/", search: {} });
+      return;
+    }
+
+    const cool = checkAuthCooldown("register", 30);
+    if (!cool.ok) {
+      toast.error(t("auth.cooldown", { n: String(cool.retryInSec) }));
       return;
     }
 
@@ -59,9 +66,11 @@ function RegisterPage() {
       toast.error(result.error);
       return;
     }
+    markAuthCooldown("register");
 
     toast.success(result.session ? t("auth.register.success") : t("auth.register.confirmEmail"));
-    navigate({ to: result.session ? "/" : "/login" });
+    if (result.session) navigate({ to: "/", search: {} });
+    else navigate({ to: "/login" });
   };
 
   return (
@@ -140,10 +149,14 @@ function RegisterPage() {
             {t("auth.register.agreeBefore")}{" "}
             <Link to="/terms" className="text-accent hover:underline">
               {t("auth.register.terms")}
-            </Link>{" "}
-            {t("auth.register.and")}{" "}
+            </Link>
+            {t("auth.register.comma")}{" "}
             <Link to="/privacy" className="text-accent hover:underline">
               {t("auth.register.privacy")}
+            </Link>{" "}
+            {t("auth.register.and")}{" "}
+            <Link to="/guidelines" className="text-accent hover:underline">
+              {t("auth.register.guidelines")}
             </Link>
             .
           </span>

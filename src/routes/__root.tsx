@@ -22,6 +22,8 @@ import { WhatsNew } from "@/components/whats-new";
 import { applyAppearanceClasses } from "@/lib/prefs";
 import { bootstrapNativeShell } from "@/lib/capacitor";
 import { registerServiceWorker } from "@/lib/pwa";
+import { assertProductionClientEnv } from "@/lib/supabase/env";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { Home, Search, MessageSquare } from "lucide-react";
 
 function NotFoundComponent() {
@@ -65,30 +67,42 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  // errorComponent renders outside RootComponent's LanguageProvider.
+  return (
+    <LanguageProvider>
+      <ErrorBody
+        onRetry={() => {
+          router.invalidate();
+          reset();
+        }}
+      />
+    </LanguageProvider>
+  );
+}
+
+function ErrorBody({ onRetry }: { onRetry: () => void }) {
+  const { t } = useT();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          {t("error.loadTitle")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {t("error.loadBody")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            onClick={onRetry}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            {t("error.tryAgain")}
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            {t("error.goHome")}
           </a>
         </div>
       </div>
@@ -124,7 +138,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -134,10 +148,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const LANG_BOOTSTRAP = `(function(){try{var k='nexus.lang';var l=localStorage.getItem(k);if(!l){var m=document.cookie.match(/(?:^|; )nexus\\.lang=([^;]*)/);l=m?decodeURIComponent(m[1]):null;}if(!l){var n=(navigator.language||'').toLowerCase();if(n.indexOf('ar')===0)l='ar';}if(l==='ar'){document.documentElement.lang='ar';document.documentElement.dir='rtl';}}catch(e){}})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: LANG_BOOTSTRAP }} />
         <HeadContent />
       </head>
       <body>
@@ -165,12 +182,19 @@ function RootComponent() {
 }
 
 function LocalizedShell() {
-  const { t } = useT();
+  const { t, lang } = useT();
+  useKeyboardInset();
   useEffect(() => {
+    assertProductionClientEnv();
     applyAppearanceClasses();
     registerServiceWorker();
     void bootstrapNativeShell();
   }, []);
+  useEffect(() => {
+    document.title = t("meta.title");
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute("content", t("meta.description"));
+  }, [lang, t]);
   return (
     <>
       <a

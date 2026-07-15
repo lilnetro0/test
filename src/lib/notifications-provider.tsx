@@ -30,9 +30,31 @@ type NotificationsContextValue = {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
+function playNotifSound() {
+  if (typeof window === "undefined") return;
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.value = 0.04;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.stop(ctx.currentTime + 0.2);
+    void ctx.close();
+  } catch {
+    /* autoplay / unsupported */
+  }
+}
+
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const live = !shouldUseMockData();
-  const { user } = useAuth();
+  const { user, accessToken, prefs } = useAuth();
   const [items, setItems] = useState<NotificationItem[]>(() => (live ? [] : NOTIFICATIONS));
   const [loading, setLoading] = useState(live);
 
@@ -79,6 +101,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           void fetchNotification(id).then((item) => {
             if (!item) return;
             setItems((prev) => (prev.some((n) => n.id === item.id) ? prev : [item, ...prev]));
+
+            const mentionsOnly = Boolean(prefs?.notif_mentions_only);
+            if (mentionsOnly && item.kind !== "mention") {
+              return;
+            }
+
+            const silencedByDnd =
+              Boolean(prefs?.notif_match_dnd) &&
+              typeof document !== "undefined" &&
+              Boolean(document.fullscreenElement);
+
             // Skip toast when already on that surface (active DM / friends / inbox).
             const path = typeof window !== "undefined" ? window.location.pathname : "";
             const href = item.href ?? "";
@@ -86,8 +119,25 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             const onFriends =
               path.startsWith("/friends") && (item.kind === "friend" || href.startsWith("/friends"));
             const onInbox = path.startsWith("/notifications");
-            if (!onDm && !onFriends && !onInbox) {
+            if (!silencedByDnd && !onDm && !onFriends && !onInbox) {
               toast(item.title, { description: item.body.slice(0, 80) });
+              if (prefs?.notif_sound !== false) {
+                playNotifSound();
+              }
+            }
+
+            // Background tab → ask server to fan out Web Push to registered devices.
+            if (
+              prefs?.push_enabled &&
+              accessToken &&
+              typeof document !== "undefined" &&
+              document.visibilityState === "hidden"
+            ) {
+              void import("@/lib/push/api").then(({ dispatchPushForNotification }) =>
+                dispatchPushForNotification({
+                  data: { accessToken, notificationId: item.id },
+                }),
+              );
             }
           });
         },
@@ -113,7 +163,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => {
       void client.removeChannel(topic);
     };
-  }, [live, user?.id]);
+  }, [
+    live,
+    user?.id,
+    accessToken,
+    prefs?.push_enabled,
+    prefs?.notif_sound,
+    prefs?.notif_mentions_only,
+    prefs?.notif_match_dnd,
+  ]);
 
   const markAllRead = useCallback(async () => {
     if (!live) {

@@ -49,9 +49,14 @@ export const listDmThreads = createServerFn({ method: "GET" })
         .from("dm_messages")
         .select("body, created_at")
         .eq("thread_id", threadId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      const { data: unreadCount } = await client.rpc("dm_thread_unread", {
+        p_thread_id: threadId,
+      });
 
       threads.push({
         id: threadId,
@@ -64,7 +69,7 @@ export const listDmThreads = createServerFn({ method: "GET" })
         },
         lastMessage: last?.body ?? "",
         lastTime: last ? formatTime(last.created_at) : "",
-        unread: 0,
+        unread: Math.min(Number(unreadCount) || 0, 99),
         messages: [],
       });
     }

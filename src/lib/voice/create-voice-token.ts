@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/types";
 
 function getLiveKitEnv(): { url: string; apiKey: string; apiSecret: string } | null {
   const url = (process.env.LIVEKIT_URL as string | undefined)?.trim();
@@ -11,6 +13,42 @@ function getLiveKitEnv(): { url: string; apiKey: string; apiSecret: string } | n
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Fallback when claim_voice_token_mint RPC is not yet applied (single process only). */
+const MINT_WINDOW_MS = 60_000;
+const MINT_MAX_PER_WINDOW = 12;
+const mintHitsByUser = new Map<string, number[]>();
+
+function allowVoiceMintLocal(uid: string): boolean {
+  const now = Date.now();
+  const hits = (mintHitsByUser.get(uid) ?? []).filter((t) => now - t < MINT_WINDOW_MS);
+  if (hits.length >= MINT_MAX_PER_WINDOW) {
+    mintHitsByUser.set(uid, hits);
+    return false;
+  }
+  hits.push(now);
+  mintHitsByUser.set(uid, hits);
+  return true;
+}
+
+async function claimVoiceMint(
+  client: SupabaseClient<Database>,
+  uid: string,
+): Promise<{ ok: true } | { ok: false; code: "RATE_LIMITED" }> {
+  const { error } = await client.rpc("claim_voice_token_mint");
+  if (!error) return { ok: true };
+
+  const msg = `${error.message} ${error.code ?? ""} ${error.details ?? ""}`.toLowerCase();
+  if (msg.includes("rate_limited")) {
+    return { ok: false, code: "RATE_LIMITED" };
+  }
+
+  // Migration lag / missing RPC — degrade to in-process map.
+  if (!allowVoiceMintLocal(uid)) {
+    return { ok: false, code: "RATE_LIMITED" };
+  }
+  return { ok: true };
+}
 
 /**
  * Mint a LiveKit room token for a hub voice channel or DM thread.
@@ -30,7 +68,11 @@ export const createVoiceToken = createServerFn({ method: "POST" })
       data,
     }): Promise<
       | { ok: true; token: string; url: string; roomName: string }
-      | { ok: false; error: string; code?: "NOT_CONFIGURED" | "AUTH" | "FORBIDDEN" }
+      | {
+          ok: false;
+          error: string;
+          code?: "NOT_CONFIGURED" | "AUTH" | "FORBIDDEN" | "RATE_LIMITED";
+        }
     > => {
       const lk = getLiveKitEnv();
       if (!lk) {
@@ -54,6 +96,15 @@ export const createVoiceToken = createServerFn({ method: "POST" })
         .maybeSingle();
       if (profile?.banned_at) {
         return { ok: false, error: "Account banned", code: "FORBIDDEN" };
+      }
+
+      const mint = await claimVoiceMint(client, uid);
+      if (!mint.ok) {
+        return {
+          ok: false,
+          error: "Too many voice joins — try again shortly",
+          code: "RATE_LIMITED",
+        };
       }
 
       let roomName = "";
@@ -108,7 +159,8 @@ export const createVoiceToken = createServerFn({ method: "POST" })
       const at = new AccessToken(lk.apiKey, lk.apiSecret, {
         identity: uid,
         name: displayName,
-        ttl: "2h",
+        // Shorter TTL; reconnect minting refreshes (Phase 12).
+        ttl: "1h",
       });
       at.addGrant({
         roomJoin: true,

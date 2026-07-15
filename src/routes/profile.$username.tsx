@@ -1,19 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { FRIENDS, GAMES, type Game } from "@/lib/mock-data";
-import { ArrowLeft, MessageSquare, UserPlus, Gamepad2 } from "lucide-react";
+import { FRIENDS, GAMES, type HubCard } from "@/lib/mock-data";
+import { ArrowLeft, MessageSquare, UserPlus, Gamepad2, Flag, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import {
+  blockUser,
   fetchProfileByUsername,
   openDmWith,
   sendFriendRequestByTag,
+  submitReport,
   type PublicProfile,
 } from "@/lib/social/api";
 import { fetchUserHubs } from "@/lib/chat/api";
+import { ReportDialog, type ReportDialogTarget } from "@/components/report-dialog";
 
 export const Route = createFileRoute("/profile/$username")({
   head: ({ params }) => ({
@@ -39,9 +42,10 @@ function ProfilePage() {
 
   const mockFriend = FRIENDS.find((f) => f.name.toLowerCase() === name.toLowerCase());
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [hubs, setHubs] = useState<Game[]>(() => (live ? [] : GAMES.slice(0, 4)));
+  const [hubs, setHubs] = useState<HubCard[]>(() => (live ? [] : GAMES.slice(0, 4)));
   const [loading, setLoading] = useState(live);
-  const [busy, setBusy] = useState<"dm" | "friend" | null>(null);
+  const [busy, setBusy] = useState<"dm" | "friend" | "block" | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportDialogTarget | null>(null);
 
   useEffect(() => {
     if (!live) {
@@ -121,6 +125,26 @@ function ProfilePage() {
     toast.success(t("profile.requestSent"));
   };
 
+  const onBlock = async () => {
+    if (!live) {
+      toast.success(t("profile.blocked"));
+      return;
+    }
+    if (!user) {
+      toast.error(t("auth.register.login"));
+      return;
+    }
+    if (!profile) return;
+    setBusy("block");
+    const result = await blockUser(user.id, profile.id);
+    setBusy(null);
+    if (!result.ok) {
+      toast.error(result.error ?? "Could not block");
+      return;
+    }
+    toast.success(t("profile.blocked"));
+  };
+
   return (
     <AppShell>
       <main className="min-h-0 flex-1 overflow-y-auto">
@@ -176,7 +200,7 @@ function ProfilePage() {
                 </div>
 
                 {(!live || (profile && profile.id !== user?.id)) && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       disabled={busy === "dm"}
                       onClick={() => void onMessage()}
@@ -190,6 +214,27 @@ function ProfilePage() {
                       className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wide text-stone-200 hover:bg-white/10 disabled:opacity-50"
                     >
                       <UserPlus className="size-3.5" /> {t("profile.add")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (live && profile) {
+                          setReportTarget({ targetUserId: profile.id });
+                        } else {
+                          setReportTarget({ targetUserId: "mock" });
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wide text-stone-200 hover:bg-white/10"
+                    >
+                      <Flag className="size-3.5" /> {t("profile.report")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy === "block"}
+                      onClick={() => void onBlock()}
+                      className="flex items-center gap-2 rounded-lg border border-border-subtle bg-danger/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-danger hover:bg-danger/15 disabled:opacity-50"
+                    >
+                      <Ban className="size-3.5" /> {t("friends.block")}
                     </button>
                   </div>
                 )}
@@ -225,6 +270,32 @@ function ProfilePage() {
           )}
         </div>
       </main>
+
+      <ReportDialog
+        open={!!reportTarget}
+        onOpenChange={(open) => {
+          if (!open) setReportTarget(null);
+        }}
+        target={reportTarget}
+        onSubmit={async ({ reason, details }) => {
+          if (!live || !user?.id || !profile) {
+            toast.success(t("report.thanks"));
+            return { ok: true };
+          }
+          const result = await submitReport({
+            reporterId: user.id,
+            targetUserId: profile.id,
+            reason,
+            details,
+          });
+          if (!result.ok) {
+            toast.error(result.error ?? "Could not submit report");
+            return result;
+          }
+          toast.success(t("report.thanks"));
+          return { ok: true };
+        }}
+      />
     </AppShell>
   );
 }

@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as GuidelinesRouteImport } from './routes/guidelines'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
@@ -27,10 +28,22 @@ import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiPushDispatchRouteImport } from './routes/api/push-dispatch'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushDispatchRoute = ApiPushDispatchRouteImport.update({
+  id: '/api/push-dispatch',
+  path: '/api/push-dispatch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -56,6 +69,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidelinesRoute = GuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -122,11 +140,14 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/cookies': typeof CookiesRoute
   '/discover': typeof DiscoverRoute
   '/dm': typeof DmRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -142,11 +163,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/cookies': typeof CookiesRoute
   '/discover': typeof DiscoverRoute
   '/dm': typeof DmRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -163,11 +187,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/api/health': typeof ApiHealthRoute
+  '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/cookies': typeof CookiesRoute
   '/discover': typeof DiscoverRoute
   '/dm': typeof DmRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -185,11 +212,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/api/health'
+    | '/api/push-dispatch'
     | '/cookies'
     | '/discover'
     | '/dm'
     | '/forgot-password'
     | '/friends'
+    | '/guidelines'
     | '/help'
     | '/login'
     | '/me'
@@ -205,11 +235,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/api/health'
+    | '/api/push-dispatch'
     | '/cookies'
     | '/discover'
     | '/dm'
     | '/forgot-password'
     | '/friends'
+    | '/guidelines'
     | '/help'
     | '/login'
     | '/me'
@@ -225,11 +258,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/api/health'
+    | '/api/push-dispatch'
     | '/cookies'
     | '/discover'
     | '/dm'
     | '/forgot-password'
     | '/friends'
+    | '/guidelines'
     | '/help'
     | '/login'
     | '/me'
@@ -246,11 +282,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ApiHealthRoute: typeof ApiHealthRoute
+  ApiPushDispatchRoute: typeof ApiPushDispatchRoute
   CookiesRoute: typeof CookiesRoute
   DiscoverRoute: typeof DiscoverRoute
   DmRoute: typeof DmRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
+  GuidelinesRoute: typeof GuidelinesRoute
   HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
   MeRoute: typeof MeRoute
@@ -306,6 +345,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guidelines': {
+      id: '/guidelines'
+      path: '/guidelines'
+      fullPath: '/guidelines'
+      preLoaderRoute: typeof GuidelinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -378,6 +424,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push-dispatch': {
+      id: '/api/push-dispatch'
+      path: '/api/push-dispatch'
+      fullPath: '/api/push-dispatch'
+      preLoaderRoute: typeof ApiPushDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -398,11 +458,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ApiHealthRoute: ApiHealthRoute,
+  ApiPushDispatchRoute: ApiPushDispatchRoute,
   CookiesRoute: CookiesRoute,
   DiscoverRoute: DiscoverRoute,
   DmRoute: DmRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
+  GuidelinesRoute: GuidelinesRoute,
   HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
   MeRoute: MeRoute,

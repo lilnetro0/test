@@ -23,6 +23,7 @@ export type Database = {
           status: string;
           status_text: string;
           avatar_url: string | null;
+          last_seen_at: string | null;
           banned_at: string | null;
           ban_reason: string | null;
           created_at: string;
@@ -37,10 +38,12 @@ export type Database = {
           status?: string;
           status_text?: string;
           avatar_url?: string | null;
+          last_seen_at?: string | null;
           banned_at?: string | null;
           ban_reason?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
       };
       reports: {
         Row: {
@@ -48,22 +51,46 @@ export type Database = {
           reporter_id: string;
           target_user_id: string | null;
           message_id: string | null;
+          dm_message_id: string | null;
           reason: string;
           details: string;
           status: string;
+          resolution_note: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
           created_at: string;
         };
         Insert: {
           reporter_id: string;
           target_user_id?: string | null;
           message_id?: string | null;
+          dm_message_id?: string | null;
           reason: string;
           details?: string;
           status?: string;
+          resolution_note?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]> & {
           status?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_target_user_id_fkey";
+            columns: ["target_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       games: {
         Row: {
@@ -86,6 +113,7 @@ export type Database = {
           image_url?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
+        Relationships: [];
       };
       hubs: {
         Row: {
@@ -108,6 +136,15 @@ export type Database = {
           image_url?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["hubs"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "hubs_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       hub_members: {
         Row: {
@@ -122,6 +159,22 @@ export type Database = {
           role?: HubRole;
         };
         Update: Partial<Database["public"]["Tables"]["hub_members"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "hub_members_hub_id_fkey";
+            columns: ["hub_id"];
+            isOneToOne: false;
+            referencedRelation: "hubs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hub_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       text_channels: {
         Row: {
@@ -142,6 +195,21 @@ export type Database = {
           position?: number;
         };
         Update: Partial<Database["public"]["Tables"]["text_channels"]["Insert"]>;
+        Relationships: [];
+      };
+      channel_member_states: {
+        Row: {
+          channel_id: string;
+          user_id: string;
+          last_read_at: string;
+        };
+        Insert: {
+          channel_id: string;
+          user_id: string;
+          last_read_at?: string;
+        };
+        Update: { last_read_at?: string };
+        Relationships: [];
       };
       voice_channels: {
         Row: {
@@ -162,6 +230,7 @@ export type Database = {
           livekit_room_name?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["voice_channels"]["Insert"]>;
+        Relationships: [];
       };
       messages: {
         Row: {
@@ -173,6 +242,7 @@ export type Database = {
           pinned: boolean;
           edited_at: string | null;
           created_at: string;
+          deleted_at: string | null;
           attachment_url: string | null;
           attachment_name: string | null;
           attachment_mime: string | null;
@@ -185,11 +255,46 @@ export type Database = {
           reply_to?: string | null;
           pinned?: boolean;
           edited_at?: string | null;
+          deleted_at?: string | null;
           attachment_url?: string | null;
           attachment_name?: string | null;
           attachment_mime?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "messages_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_reply_to_fkey";
+            columns: ["reply_to"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      message_edits: {
+        Row: {
+          id: string;
+          message_id: string;
+          editor_id: string;
+          previous_body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          message_id: string;
+          editor_id: string;
+          previous_body: string;
+          created_at?: string;
+        };
+        Update: { [_ in never]: never };
+        Relationships: [];
       };
       message_reactions: {
         Row: {
@@ -203,7 +308,8 @@ export type Database = {
           user_id: string;
           emoji: string;
         };
-        Update: never;
+        Update: { [_ in never]: never };
+        Relationships: [];
       };
       friend_requests: {
         Row: {
@@ -220,6 +326,7 @@ export type Database = {
           status?: FriendRequestStatus;
         };
         Update: Partial<Pick<Database["public"]["Tables"]["friend_requests"]["Row"], "status">>;
+        Relationships: [];
       };
       friendships: {
         Row: {
@@ -231,7 +338,8 @@ export type Database = {
           user_id: string;
           friend_id: string;
         };
-        Update: never;
+        Update: { [_ in never]: never };
+        Relationships: [];
       };
       blocks: {
         Row: {
@@ -243,7 +351,16 @@ export type Database = {
           blocker_id: string;
           blocked_id: string;
         };
-        Update: never;
+        Update: { [_ in never]: never };
+        Relationships: [
+          {
+            foreignKeyName: "blocks_blocked_id_fkey";
+            columns: ["blocked_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       dm_threads: {
         Row: {
@@ -255,6 +372,7 @@ export type Database = {
           id?: string;
         };
         Update: { updated_at?: string };
+        Relationships: [];
       };
       dm_participants: {
         Row: {
@@ -268,6 +386,15 @@ export type Database = {
           last_read_at?: string | null;
         };
         Update: { last_read_at?: string | null };
+        Relationships: [
+          {
+            foreignKeyName: "dm_participants_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       dm_messages: {
         Row: {
@@ -276,6 +403,7 @@ export type Database = {
           author_id: string;
           body: string;
           created_at: string;
+          deleted_at: string | null;
           attachment_url: string | null;
           attachment_name: string | null;
           attachment_mime: string | null;
@@ -285,11 +413,21 @@ export type Database = {
           thread_id: string;
           author_id: string;
           body: string;
+          deleted_at?: string | null;
           attachment_url?: string | null;
           attachment_name?: string | null;
           attachment_mime?: string | null;
         };
-        Update: never;
+        Update: Partial<Database["public"]["Tables"]["dm_messages"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "dm_messages_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       notifications: {
         Row: {
@@ -312,6 +450,7 @@ export type Database = {
           read_at?: string | null;
         };
         Update: Partial<Pick<Database["public"]["Tables"]["notifications"]["Row"], "read_at">>;
+        Relationships: [];
       };
       user_prefs: {
         Row: {
@@ -321,6 +460,10 @@ export type Database = {
           high_contrast: boolean;
           hub_order: Json;
           hub_notif_modes: Json;
+          push_enabled: boolean;
+          notif_sound: boolean;
+          notif_mentions_only: boolean;
+          notif_match_dnd: boolean;
           updated_at: string;
         };
         Insert: {
@@ -330,16 +473,168 @@ export type Database = {
           high_contrast?: boolean;
           hub_order?: Json;
           hub_notif_modes?: Json;
+          push_enabled?: boolean;
+          notif_sound?: boolean;
+          notif_mentions_only?: boolean;
+          notif_match_dnd?: boolean;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["user_prefs"]["Insert"], "user_id">>;
+        Relationships: [];
+      };
+      push_devices: {
+        Row: {
+          id: string;
+          user_id: string;
+          platform: string;
+          token: string;
+          enabled: boolean;
+          user_agent: string | null;
+          last_seen_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          platform: string;
+          token: string;
+          enabled?: boolean;
+          user_agent?: string | null;
+          last_seen_at?: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["push_devices"]["Insert"], "id">>;
+        Relationships: [];
+      };
+      voice_token_mints: {
+        Row: {
+          id: number;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: { [_ in never]: never };
+        Relationships: [];
+      };
+      platform_roles: {
+        Row: {
+          user_id: string;
+          role: "platform_admin";
+          granted_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          role?: "platform_admin";
+          granted_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["platform_roles"]["Insert"], "user_id">>;
+        Relationships: [];
+      };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          actor_id: string;
+          action: string;
+          target_type: string | null;
+          target_id: string | null;
+          meta: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id: string;
+          action: string;
+          target_type?: string | null;
+          target_id?: string | null;
+          meta?: Json;
+          created_at?: string;
+        };
+        Update: { [_ in never]: never };
+        Relationships: [];
+      };
+      account_deletion_log: {
+        Row: {
+          id: string;
+          user_id: string;
+          username: string | null;
+          email_hash: string | null;
+          requested_at: string;
+          meta: Json;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          username?: string | null;
+          email_hash?: string | null;
+          requested_at?: string;
+          meta?: Json;
+        };
+        Update: { [_ in never]: never };
+        Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: { [_ in never]: never };
     Functions: {
       is_hub_member: { Args: { p_hub_id: string; p_user_id: string }; Returns: boolean };
       are_friends: { Args: { a: string; b: string }; Returns: boolean };
+      is_platform_admin: { Args: { p_user_id: string }; Returns: boolean };
+      is_hub_mod: { Args: { p_hub_id: string; p_user_id: string }; Returns: boolean };
+      is_hub_admin: { Args: { p_hub_id: string; p_user_id: string }; Returns: boolean };
+      hub_kick_member: { Args: { p_hub_id: string; p_user_id: string }; Returns: undefined };
+      hub_set_member_role: {
+        Args: { p_hub_id: string; p_user_id: string; p_role: string };
+        Returns: undefined;
+      };
+      hub_write_mod_audit: {
+        Args: {
+          p_actor: string;
+          p_action: string;
+          p_target_type: string;
+          p_target_id: string;
+          p_meta?: Json;
+        };
+        Returns: undefined;
+      };
+      soft_delete_message: { Args: { p_message_id: string }; Returns: undefined };
+      soft_delete_dm_message: { Args: { p_message_id: string }; Returns: undefined };
+      mark_channel_read: { Args: { p_channel_id: string }; Returns: undefined };
+      mark_dm_read: { Args: { p_thread_id: string }; Returns: undefined };
+      accept_friend_request: { Args: { p_request_id: string }; Returns: undefined };
+      decline_friend_request: { Args: { p_request_id: string }; Returns: undefined };
+      remove_friend: { Args: { p_friend_id: string }; Returns: undefined };
+      get_or_create_dm_thread: { Args: { p_other_user_id: string }; Returns: string };
+      hub_channel_unreads: {
+        Args: { p_hub_id: string };
+        Returns: { channel_id: string; unread: number }[];
+      };
+      dm_thread_unread: { Args: { p_thread_id: string }; Returns: number };
+      set_presence: { Args: { p_status: string }; Returns: undefined };
+      refresh_hub_active_count: { Args: { p_hub_id: string }; Returns: string };
+      user_message_unread_totals: {
+        Args: Record<PropertyKey, never>;
+        Returns: { channel_unread: number; dm_unread: number }[];
+      };
+      attachment_bytes_used: { Args: Record<PropertyKey, never>; Returns: number };
+      claim_voice_token_mint: { Args: Record<PropertyKey, never>; Returns: undefined };
+      list_hub_members_visible: {
+        Args: { p_hub_id: string };
+        Returns: {
+          user_id: string;
+          role: string;
+          username: string;
+          tag: string;
+          status: string;
+          status_text: string | null;
+        }[];
+      };
     };
-    Enums: Record<string, never>;
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
 };
 

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
-import { GAMES } from "@/lib/mock-data";
+import { GAMES, type HubCard } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { useT, LANG_LABELS, type Lang, type TKey } from "@/lib/i18n";
 import {
@@ -26,6 +26,10 @@ import {
   type HubNotifMode,
 } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth-provider";
+import { shouldUseMockData } from "@/lib/supabase/env";
+import { fetchLiveHubs, fetchUserHubs } from "@/lib/chat/api";
+import { getVoiceHealth } from "@/lib/voice/create-voice-token";
+import { deleteMyAccount, exportMyData } from "@/lib/account/api";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -145,7 +149,7 @@ function SettingsPage() {
               })}
             </div>
           </div>
-          <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-10">
+          <div className="mx-auto w-full max-w-2xl px-4 py-5 pb-8 md:px-6 md:py-10">
             {section === "account" && <AccountSection />}
             {section === "privacy" && <PrivacySection />}
             {section === "billing" && <BillingSection />}
@@ -358,6 +362,273 @@ function AccountSection() {
         <div className="h-px bg-border-subtle" />
         <Row label={t("settings.2fa")} desc={t("settings.2faDesc")} action={<Toggle soon />} />
       </Card>
+      <SessionSecurityCard />
+      <LinkedAccountsCard />
+      <AccountDataCard />
+    </>
+  );
+}
+
+function SessionSecurityCard() {
+  const { t } = useT();
+  const { configured } = useAuth();
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <Card>
+      <Row
+        label={t("account.sessions")}
+        desc={t("account.sessionsDesc")}
+        action={
+          <button
+            type="button"
+            disabled={!configured || busy}
+            className="text-xs font-semibold text-accent disabled:opacity-50"
+            onClick={async () => {
+              if (!configured) {
+                toast.error(t("account.needLogin"));
+                return;
+              }
+              setBusy(true);
+              try {
+                const { signOutOtherSessions } = await import("@/lib/supabase/auth");
+                const res = await signOutOtherSessions();
+                if (!res.ok) toast.error(res.error);
+                else toast.success(t("account.sessionsDone"));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? t("account.sessionsBusy") : t("account.sessionsAction")}
+          </button>
+        }
+      />
+    </Card>
+  );
+}
+
+function LinkedAccountsCard() {
+  const { t } = useT();
+  const { configured } = useAuth();
+  const [identities, setIdentities] = useState<
+    Array<{ identityId: string; provider: string; email?: string }>
+  >([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const refresh = async () => {
+    if (!configured) {
+      setIdentities([]);
+      return;
+    }
+    const { listLinkedIdentities } = await import("@/lib/supabase/auth");
+    const res = await listLinkedIdentities();
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    setIdentities(
+      res.identities.filter((i) => i.provider === "google" || i.provider === "discord"),
+    );
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, [configured]);
+
+  if (!configured) return null;
+
+  return (
+    <Card>
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+        {t("account.linkedTitle")}
+      </p>
+      {identities.length === 0 ? (
+        <p className="text-xs text-stone-500">{t("account.linkedEmpty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {identities.map((id) => (
+            <li
+              key={id.identityId}
+              className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold capitalize text-white">{id.provider}</p>
+                {id.email ? <p className="truncate text-[11px] text-stone-500">{id.email}</p> : null}
+              </div>
+              <button
+                type="button"
+                disabled={busyId === id.identityId || identities.length < 2}
+                title={identities.length < 2 ? t("account.unlinkLast") : undefined}
+                className="shrink-0 text-xs font-semibold text-danger disabled:opacity-40"
+                onClick={async () => {
+                  setBusyId(id.identityId);
+                  try {
+                    const { unlinkOAuthIdentity } = await import("@/lib/supabase/auth");
+                    const res = await unlinkOAuthIdentity(id.identityId);
+                    if (!res.ok) toast.error(res.error);
+                    else {
+                      toast.success(t("account.unlinked"));
+                      void refresh();
+                    }
+                  } finally {
+                    setBusyId(null);
+                  }
+                }}
+              >
+                {busyId === id.identityId ? t("account.unlinkBusy") : t("account.unlink")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 text-[11px] text-stone-500">{t("account.linkedHint")}</p>
+    </Card>
+  );
+}
+
+function AccountDataCard() {
+  const { t } = useT();
+  const navigate = useNavigate();
+  const { configured, accessToken, profile, signOut } = useAuth();
+  const [busy, setBusy] = useState<"export" | "delete" | null>(null);
+  const [confirmUser, setConfirmUser] = useState("");
+  const [confirmPhrase, setConfirmPhrase] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+
+  const onExport = async () => {
+    if (!configured || !accessToken) {
+      toast.error(t("account.needLogin"));
+      return;
+    }
+    setBusy("export");
+    try {
+      const res = await exportMyData({ data: { accessToken } });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      const blob = new Blob([res.payloadJson], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nexus-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t("account.exportDone"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onDelete = async () => {
+    if (!configured || !accessToken) {
+      toast.error(t("account.needLogin"));
+      return;
+    }
+    setBusy("delete");
+    try {
+      const res = await deleteMyAccount({
+        data: {
+          accessToken,
+          confirmUsername: confirmUser,
+          confirmPhrase,
+        },
+      });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      await signOut();
+      toast.success(t("account.deleteDone"));
+      navigate({ to: "/login" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+          {t("account.dataTitle")}
+        </p>
+        <Row
+          label={t("account.export")}
+          desc={t("account.exportDesc")}
+          action={
+            <button
+              type="button"
+              disabled={busy === "export"}
+              onClick={() => void onExport()}
+              className="text-xs font-semibold text-accent disabled:opacity-50"
+            >
+              {busy === "export" ? t("account.exportBusy") : t("account.exportAction")}
+            </button>
+          }
+        />
+      </Card>
+      <Card>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-danger">
+          {t("account.dangerTitle")}
+        </p>
+        <p className="mb-3 text-xs text-stone-400">{t("account.deleteDesc")}</p>
+        {!showDelete ? (
+          <button
+            type="button"
+            onClick={() => setShowDelete(true)}
+            className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-danger hover:bg-danger/15"
+          >
+            {t("account.deleteAction")}
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-stone-400">
+              {t("account.deleteConfirmHint", {
+                username: profile?.username ?? "username",
+              })}
+            </p>
+            <input
+              value={confirmUser}
+              onChange={(e) => setConfirmUser(e.target.value)}
+              placeholder={t("account.deleteConfirmUser")}
+              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+              autoComplete="off"
+            />
+            <input
+              value={confirmPhrase}
+              onChange={(e) => setConfirmPhrase(e.target.value)}
+              placeholder={t("account.deleteConfirmPhrase")}
+              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+              autoComplete="off"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy === "delete"}
+                onClick={() => void onDelete()}
+                className="rounded-md bg-danger px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:brightness-110 disabled:opacity-50"
+              >
+                {busy === "delete" ? t("account.deleteBusy") : t("account.deleteConfirm")}
+              </button>
+              <button
+                type="button"
+                disabled={busy === "delete"}
+                onClick={() => {
+                  setShowDelete(false);
+                  setConfirmUser("");
+                  setConfirmPhrase("");
+                }}
+                className="rounded-md px-3 py-2 text-xs font-semibold text-stone-400 hover:text-white"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
     </>
   );
 }
@@ -392,6 +663,9 @@ function PrivacySection() {
           </Link>
           <Link to="/privacy" className="text-accent hover:underline">
             {t("legal.privacy.title")}
+          </Link>
+          <Link to="/guidelines" className="text-accent hover:underline">
+            {t("legal.guidelines.title")}
           </Link>
           <Link to="/cookies" className="text-accent hover:underline">
             {t("legal.cookies.title")}
@@ -542,10 +816,42 @@ function AppearanceSection() {
 
 function VoiceSection() {
   const { t } = useT();
+  const [voiceHealth, setVoiceHealth] = useState<{
+    livekitConfigured: boolean;
+    urlHost: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    void getVoiceHealth().then(setVoiceHealth).catch(() => setVoiceHealth(null));
+  }, []);
+
+  const healthDesc =
+    voiceHealth == null
+      ? "…"
+      : voiceHealth.livekitConfigured
+        ? voiceHealth.urlHost
+          ? t("voice.healthHost").replace("{host}", voiceHealth.urlHost)
+          : t("voice.healthOk")
+        : t("voice.healthOff");
+
   return (
     <>
       <SettingsHeader title={t("settings.section.voice")} sub={t("settings.voice.deviceSoon")} />
       <Card>
+        <Row
+          label={t("voice.healthLabel")}
+          desc={healthDesc}
+          action={
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wide ${
+                voiceHealth?.livekitConfigured ? "text-online" : "text-amber-200/90"
+              }`}
+            >
+              {voiceHealth?.livekitConfigured ? "Live" : "Stub"}
+            </span>
+          }
+        />
+        <div className="h-px bg-border-subtle" />
         <Row
           label={t("settings.voice.input")}
           desc={t("common.comingSoon")}
@@ -605,8 +911,13 @@ function VoiceSection() {
 
 function NotificationsSection() {
   const { t } = useT();
-  const { configured, prefs, savePrefs } = useAuth();
+  const { configured, prefs, savePrefs, user, accessToken } = useAuth();
+  const live = !shouldUseMockData();
+  const [hubs, setHubs] = useState<HubCard[]>(() => GAMES);
+  const [hubsLoading, setHubsLoading] = useState(false);
   const [modes, setModes] = useState<Record<string, HubNotifMode>>({});
+  const [pushBusy, setPushBusy] = useState(false);
+  const pushOn = Boolean(prefs?.push_enabled);
 
   useEffect(() => {
     if (prefs?.hub_notif_modes && typeof prefs.hub_notif_modes === "object") {
@@ -616,9 +927,34 @@ function NotificationsSection() {
     setModes(getHubNotifs());
   }, [prefs]);
 
-  const setMode = (hubId: string, mode: HubNotifMode) => {
-    setHubNotif(hubId, mode);
-    const next = { ...modes, [hubId]: mode };
+  useEffect(() => {
+    if (!live) {
+      setHubs(GAMES);
+      return;
+    }
+    let cancelled = false;
+    setHubsLoading(true);
+    void (async () => {
+      const result = user?.id
+        ? await fetchUserHubs(user.id)
+        : await fetchLiveHubs().then((r) => ({
+            hubs: r.hubs.map((h) => h.game),
+            error: r.error,
+          }));
+      if (cancelled) return;
+      if (result.error) toast.error(result.error);
+      setHubs(result.hubs);
+      setHubsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [live, user?.id]);
+
+  /** Keys are `hubs.slug` (same as dock / `/?hub=`). */
+  const setMode = (hubSlug: string, mode: HubNotifMode) => {
+    setHubNotif(hubSlug, mode);
+    const next = { ...modes, [hubSlug]: mode };
     setModes(next);
     if (configured) {
       void savePrefs({ hub_notif_modes: next }).then((r) => {
@@ -627,65 +963,159 @@ function NotificationsSection() {
     }
   };
 
+  const setPushEnabled = async (next: boolean) => {
+    if (!configured || !accessToken) {
+      toast.error(t("account.needLogin"));
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const { enableBrowserPush, disableBrowserPush } = await import("@/lib/push/client");
+      if (next) {
+        const enabled = await enableBrowserPush(accessToken);
+        if (!enabled.ok) {
+          toast.error(enabled.error ?? "Could not enable push");
+          return;
+        }
+      } else {
+        const disabled = await disableBrowserPush(accessToken);
+        if (!disabled.ok) {
+          toast.error(disabled.error ?? "Could not disable push");
+          return;
+        }
+      }
+      const saved = await savePrefs({ push_enabled: next });
+      if (!saved.ok) {
+        toast.error(saved.error);
+        return;
+      }
+      toast.success(next ? t("settings.notif.pushOn") : t("settings.notif.pushOff"));
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   return (
     <>
       <SettingsHeader title={t("settings.section.notifications")} />
       <Card>
-        <Row label={t("settings.notif.desktop")} action={<Toggle soon />} />
+        <Row
+          label={t("settings.notif.desktop")}
+          desc={t("settings.notif.desktopDesc")}
+          action={
+            <Toggle
+              on={pushOn}
+              onChange={(v) => {
+                if (pushBusy) return;
+                void setPushEnabled(v);
+              }}
+            />
+          }
+        />
         <div className="h-px bg-border-subtle" />
-        <Row label={t("settings.notif.sound")} action={<Toggle soon />} />
+        <Row
+          label={t("settings.notif.sound")}
+          action={
+            <Toggle
+              on={prefs?.notif_sound !== false}
+              onChange={(v) => {
+                if (!configured) {
+                  toast.error(t("account.needLogin"));
+                  return;
+                }
+                void savePrefs({ notif_sound: v }).then((r) => {
+                  if (!r.ok) toast.error(r.error);
+                });
+              }}
+            />
+          }
+        />
         <div className="h-px bg-border-subtle" />
         <Row
           label={t("settings.notif.mentions")}
           desc={t("settings.notif.mentionsDesc")}
-          action={<Toggle soon />}
+          action={
+            <Toggle
+              on={Boolean(prefs?.notif_mentions_only)}
+              onChange={(v) => {
+                if (!configured) {
+                  toast.error(t("account.needLogin"));
+                  return;
+                }
+                void savePrefs({ notif_mentions_only: v }).then((r) => {
+                  if (!r.ok) toast.error(r.error);
+                });
+              }}
+            />
+          }
         />
         <div className="h-px bg-border-subtle" />
         <Row
           label={t("settings.notif.dnd")}
           desc={t("settings.notif.dndDesc")}
-          action={<Toggle soon />}
+          action={
+            <Toggle
+              on={Boolean(prefs?.notif_match_dnd)}
+              onChange={(v) => {
+                if (!configured) {
+                  toast.error(t("account.needLogin"));
+                  return;
+                }
+                void savePrefs({ notif_match_dnd: v }).then((r) => {
+                  if (!r.ok) toast.error(r.error);
+                });
+              }}
+            />
+          }
         />
       </Card>
       <Card>
         <p className="mb-1 text-sm font-semibold text-white">{t("settings.notif.perHub")}</p>
         <p className="mb-4 text-xs text-stone-500">{t("settings.notif.perHubDesc")}</p>
-        <div className="space-y-3">
-          {GAMES.map((g) => {
-            const mode = modes[g.id] ?? "all";
-            return (
-              <div key={g.id} className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className={`grid size-8 shrink-0 place-items-center rounded-lg font-display text-[10px] font-bold ${g.tint} ${g.textTint}`}
-                  >
-                    {g.short}
-                  </span>
-                  <span className="truncate text-sm text-stone-200">{g.hubName}</span>
-                </div>
-                <div className="flex shrink-0 gap-1 rounded-lg border border-border-subtle p-0.5">
-                  {(
-                    [
-                      ["all", t("settings.notif.hubAll")],
-                      ["mentions", t("settings.notif.hubMentions")],
-                      ["mute", t("settings.notif.hubMute")],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      onClick={() => setMode(g.id, id)}
-                      className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                        mode === id ? "bg-accent/15 text-accent" : "text-stone-500 hover:text-white"
-                      }`}
+        {hubsLoading ? (
+          <p className="text-xs text-stone-500">Loading hubs…</p>
+        ) : hubs.length === 0 ? (
+          <p className="text-xs text-stone-500">
+            {user ? "Join a hub to configure per-hub notifications." : "Sign in to manage hub notifications."}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {hubs.map((g) => {
+              const mode = modes[g.id] ?? "all";
+              return (
+                <div key={g.id} className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={`grid size-8 shrink-0 place-items-center rounded-lg font-display text-[10px] font-bold ${g.tint} ${g.textTint}`}
                     >
-                      {label}
-                    </button>
-                  ))}
+                      {g.short}
+                    </span>
+                    <span className="truncate text-sm text-stone-200">{g.hubName}</span>
+                  </div>
+                  <div className="flex shrink-0 gap-1 rounded-lg border border-border-subtle p-0.5">
+                    {(
+                      [
+                        ["all", t("settings.notif.hubAll")],
+                        ["mentions", t("settings.notif.hubMentions")],
+                        ["mute", t("settings.notif.hubMute")],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        onClick={() => setMode(g.id, id)}
+                        className={`rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                          mode === id ? "bg-accent/15 text-accent" : "text-stone-500 hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </>
   );

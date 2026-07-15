@@ -1,4 +1,6 @@
 -- =============================================================================
+-- MANUAL / LEGACY — prefer migrations/20260715060000_phase6_launch.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Phase 6 — Reports + bans (SQL Editor)
 -- Requires: core schema. Safe to re-run.
 -- =============================================================================

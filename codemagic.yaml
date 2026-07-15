@@ -8,11 +8,29 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       node: 22
+      # Optional live probe: set HEALTH_CHECK_URL (or CAPACITOR_SERVER_URL / SITE_URL)
+      # in workflow vars; OPS_HEALTH_REQUIRE=1 to fail when missing.
     scripts:
       - name: Install dependencies
         script: npm ci
+      - name: Unit tests
+        script: npm test
+      - name: Scoped typecheck
+        script: npm run typecheck
+      - name: Full typecheck
+        script: npm run typecheck:full
+      - name: Security smoke
+        script: npm run smoke:security
+      - name: Lint (non-prettier)
+        script: npm run lint:ci
+      - name: Launch / App Store packaging smoke
+        script: npm run smoke:launch
       - name: Build web app
         script: npm run build
+      - name: Capacitor packaging smoke
+        script: npm run cap:smoke
+      - name: Deployed health probe
+        script: npm run ops:health
     artifacts:
       - .output/public/**
 
@@ -49,6 +67,7 @@ workflows:
             exit 1
           fi
           echo "CAPACITOR_SERVER_URL=$CAPACITOR_SERVER_URL"
+          export CAPACITOR_REQUIRE_SERVER=1
           npm run cap:prepare
           npx cap sync ios
           npm run cap:inject-server
@@ -72,3 +91,43 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+
+  # Scaffold workflow — enable after `npx cap add android` creates android/.
+  android-capacitor:
+    name: Capacitor Android (scaffold)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      node: 22
+      java: 17
+      groups:
+        - test
+    scripts:
+      - name: Require android/ tree
+        script: |
+          if [ ! -d "$CM_BUILD_DIR/android" ]; then
+            echo "android/ missing — run locally: npx cap add android && commit"
+            echo "See docs/CAPACITOR.md § Android"
+            exit 1
+          fi
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web app
+        script: npm run build
+      - name: Prepare Capacitor + sync Android
+        script: |
+          if [ -z "$CAPACITOR_SERVER_URL" ]; then
+            echo "ERROR: CAPACITOR_SERVER_URL required (HTTPS, no trailing slash)"
+            exit 1
+          fi
+          export CAPACITOR_REQUIRE_SERVER=1
+          npm run cap:prepare
+          npx cap sync android
+      - name: Assemble release APK (unsigned scaffold)
+        script: |
+          cd "$CM_BUILD_DIR/android"
+          chmod +x gradlew
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab

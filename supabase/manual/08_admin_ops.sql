@@ -1,5 +1,6 @@
+-- MANUAL / LEGACY — prefer migrations/20260715100000_admin_ops.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Admin ops: catalog image URLs, hub-media bucket, service_role hub role bypass
--- Same as migrations/20260715100000_admin_ops.sql
 
 alter table public.games
   add column if not exists image_url text;

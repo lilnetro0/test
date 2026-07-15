@@ -17,6 +17,7 @@ const PATHS = [
   "/help",
   "/terms",
   "/privacy",
+  "/guidelines",
   "/cookies",
 ];
 

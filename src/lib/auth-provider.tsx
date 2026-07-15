@@ -34,6 +34,7 @@ import {
   type Result,
   type UserPrefs,
 } from "@/lib/supabase/profile";
+import { usePresenceHeartbeat } from "@/hooks/use-presence-heartbeat";
 import { useT, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -231,6 +232,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       savePrefs,
     }),
     [configured, loading, session, profile, prefs, refreshProfile, updateProfile, savePrefs],
+  );
+
+  usePresenceHeartbeat(
+    Boolean(configured && session?.user && !loading),
+    profile?.status,
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

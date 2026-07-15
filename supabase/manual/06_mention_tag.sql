@@ -1,5 +1,7 @@
+-- MANUAL / LEGACY — prefer migrations/20260715080000_mention_tag.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Mentions notify only on exact @Username#1234 (avoids wrong-user collisions).
--- Run after Phase 4. Same as migrations/20260715080000_mention_tag.sql
+-- Run after Phase 4.
 
 create or replace function public.trg_message_mention_notify()
 returns trigger

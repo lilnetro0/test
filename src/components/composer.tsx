@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
-import { uploadAttachment } from "@/lib/supabase/storage";
+import { uploadAttachment, ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES } from "@/lib/supabase/storage";
+import {
+  assertFileSize,
+  ATTACHMENT_MIME_TYPES,
+  resolveAllowedMime,
+} from "@/lib/supabase/storage-policy";
 
 export type ComposerHandle = { focus: () => void };
 
@@ -20,6 +25,8 @@ export const Composer = forwardRef<
     mentionMembers?: MemberInfo[];
     replyTo?: { id?: string; author: string; body: string };
     onCancelReply?: () => void;
+    onTyping?: () => void;
+    typingLabel?: string | null;
     onSend?: (
       body: string,
       replyToId?: string,
@@ -27,7 +34,7 @@ export const Composer = forwardRef<
     ) => Promise<{ ok: boolean; error?: string } | void> | { ok: boolean; error?: string } | void;
   }
 >(function Composer(
-  { channelName, gameId, mentionMembers, replyTo, onCancelReply, onSend },
+  { channelName, gameId, mentionMembers, replyTo, onCancelReply, onTyping, typingLabel, onSend },
   ref,
 ) {
   const [value, setValue] = useState("");
@@ -62,6 +69,7 @@ export const Composer = forwardRef<
     setValue(v);
     const match = v.match(/@([A-Za-z0-9_]*)$/);
     setMentionQuery(match ? match[1] : null);
+    if (v.trim()) onTyping?.();
   };
 
   const insertMention = (name: string, tag?: string) => {
@@ -100,7 +108,7 @@ export const Composer = forwardRef<
         const up = await uploadAttachment(user.id, pendingFile);
         setUploading(false);
         if (up.error || !up.url) {
-          toast.error(up.error ?? "Upload failed");
+          toast.error(up.error ?? t("msg.err.upload"));
           return;
         }
         attachment = { url: up.url, name: up.name ?? pendingFile.name, mime: up.mime ?? pendingFile.type };
@@ -121,16 +129,27 @@ export const Composer = forwardRef<
   const canSend = Boolean(value.trim() || pendingFile) && !sending && !uploading;
 
   return (
-    <div className="shrink-0 border-t border-border-subtle/60 bg-background/40 p-3 md:p-6">
+    <div className="shrink-0 border-t border-border-subtle/60 bg-background/40 p-2.5 md:p-6">
       <input
         ref={fileRef}
         type="file"
-        accept="image/*,.pdf,.txt,.mp4"
+        accept={ATTACHMENT_ACCEPT}
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0] ?? null;
-          setPendingFile(f);
           e.target.value = "";
+          if (!f) return;
+          const sizeErr = assertFileSize(f.size, ATTACHMENT_MAX_BYTES);
+          if (sizeErr) {
+            toast.error(sizeErr);
+            return;
+          }
+          const mimeResult = resolveAllowedMime(f, ATTACHMENT_MIME_TYPES);
+          if ("error" in mimeResult) {
+            toast.error(mimeResult.error);
+            return;
+          }
+          setPendingFile(f);
         }}
       />
       {replyTo && (
@@ -162,6 +181,11 @@ export const Composer = forwardRef<
           </button>
         </div>
       )}
+      {typingLabel ? (
+        <p className="mb-1 truncate px-1 text-[11px] text-stone-500" aria-live="polite">
+          {typingLabel}
+        </p>
+      ) : null}
       {mentionMatches.length > 0 && (
         <div className="mb-2 overflow-hidden rounded-lg border border-border-subtle bg-surface-mid">
           <div className="border-b border-border-subtle px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">

@@ -9,12 +9,15 @@ import {
   adminDeleteHub,
   adminDeleteTextChannel,
   adminDeleteVoiceChannel,
+  adminGrantPlatformRole,
   adminListBanned,
   adminListChannels,
   adminListGames,
   adminListHubs,
+  adminListPlatformAdmins,
   adminListReports,
   adminLookupUser,
+  adminRevokePlatformRole,
   adminSetReportStatus,
   adminUploadHubMedia,
   adminUpsertGame,
@@ -23,7 +26,9 @@ import {
   adminUpsertVoiceChannel,
   checkIsAdmin,
 } from "@/lib/admin/api";
-import { Gamepad2, Hash, Mic, Shield, Flag, Users } from "lucide-react";
+import { Gamepad2, Hash, Mic, Shield, Flag, Users, Database } from "lucide-react";
+import { getAppHealth } from "@/server/health";
+import type { AppHealthReport } from "@/lib/ops/health";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -61,6 +66,7 @@ function AdminPage() {
   const { user, accessToken, loading } = useAuth();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("hubs");
+  const [health, setHealth] = useState<AppHealthReport | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -71,11 +77,16 @@ function AdminPage() {
     void checkIsAdmin({ data: { accessToken } }).then((r) => setAllowed(r.admin));
   }, [user, accessToken, loading]);
 
+  useEffect(() => {
+    if (allowed !== true) return;
+    void getAppHealth().then(setHealth).catch(() => setHealth(null));
+  }, [allowed]);
+
   if (allowed === false) {
     return (
       <AppShell>
         <main className="grid flex-1 place-items-center p-8 text-sm text-stone-500">
-          Admin access required. Set ADMIN_USER_IDS to your user UUID.
+          Admin access required. Use platform_roles or ADMIN_USER_IDS (see docs/ADMIN-SECURITY.md).
         </main>
       </AppShell>
     );
@@ -105,6 +116,26 @@ function AdminPage() {
           <h1 className="font-display text-base font-bold uppercase tracking-tight text-white">
             Admin console
           </h1>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+            <span className="inline-flex items-center gap-1">
+              <Database className="size-3.5" />
+              {health == null
+                ? "…"
+                : health.supabase.ok
+                  ? `DB · ${health.supabase.games ?? 0} games`
+                  : "DB · down"}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Mic className="size-3.5" />
+              {health == null
+                ? "…"
+                : !health.livekit.configured
+                  ? "LiveKit · stub"
+                  : health.livekit.reachable === false
+                    ? `LiveKit · unreachable`
+                    : `LiveKit · ${health.livekit.urlHost ?? "ok"}`}
+            </span>
+          </div>
         </header>
         <div className="flex gap-1 overflow-x-auto border-b border-border-subtle px-3 py-2 no-scrollbar">
           {tabs.map((t) => {
@@ -130,7 +161,7 @@ function AdminPage() {
           {tab === "hubs" && <HubsTab accessToken={accessToken} />}
           {tab === "games" && <GamesTab accessToken={accessToken} />}
           {tab === "channels" && <ChannelsTab accessToken={accessToken} />}
-          {tab === "users" && <UsersTab accessToken={accessToken} />}
+          {tab === "users" && <UsersTab accessToken={accessToken} selfUserId={user!.id} />}
           {tab === "reports" && <ReportsTab accessToken={accessToken} />}
         </div>
       </main>
@@ -197,6 +228,9 @@ function HubsTab({ accessToken }: { accessToken: string }) {
       return;
     }
     toast.success(form.id ? "Hub updated" : "Hub created");
+    if ("slugDiffersFromGame" in result && result.slugDiffersFromGame) {
+      toast.message("Slug differs from game id — URLs use the hub slug; hero art uses the game id.");
+    }
     setForm({ id: "", game_id: games[0]?.id ?? "", name: "", slug: "", image_url: "" });
     void refresh();
   };
@@ -243,7 +277,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
               value={form.slug}
               onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
               className={inputCls}
-              placeholder="auto from name"
+              placeholder="defaults to game id"
             />
           </Field>
           <Field label="Game">
@@ -272,7 +306,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
             Upload image
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               className="hidden"
               onChange={(e) => void upload(e.target.files?.[0] ?? null, form.id || undefined)}
             />
@@ -335,7 +369,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
                 Pic
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
                   onChange={(e) => void upload(e.target.files?.[0] ?? null, h.id)}
                 />
@@ -467,7 +501,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
             Upload image
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
@@ -743,7 +777,7 @@ function ChannelsTab({ accessToken }: { accessToken: string }) {
   );
 }
 
-function UsersTab({ accessToken }: { accessToken: string }) {
+function UsersTab({ accessToken, selfUserId }: { accessToken: string; selfUserId: string }) {
   const [query, setQuery] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -763,15 +797,33 @@ function UsersTab({ accessToken }: { accessToken: string }) {
       ban_reason: string | null;
     }>
   >([]);
+  const [platformAdmins, setPlatformAdmins] = useState<
+    Array<{
+      user_id: string;
+      username: string;
+      tag: string;
+      created_at: string;
+    }>
+  >([]);
 
   const loadBanned = useCallback(async () => {
     const r = await adminListBanned({ data: { accessToken } });
     if (r.ok) setBanned(r.profiles);
   }, [accessToken]);
 
+  const loadAdmins = useCallback(async () => {
+    const r = await adminListPlatformAdmins({ data: { accessToken } });
+    if (!r.ok) {
+      toast.error(r.error);
+      return;
+    }
+    setPlatformAdmins(r.admins);
+  }, [accessToken]);
+
   useEffect(() => {
     void loadBanned();
-  }, [loadBanned]);
+    void loadAdmins();
+  }, [loadBanned, loadAdmins]);
 
   const lookup = async () => {
     setBusy(true);
@@ -807,8 +859,74 @@ function UsersTab({ accessToken }: { accessToken: string }) {
     if (found?.id === id) void lookup();
   };
 
+  const grantAdmin = async (userId?: string) => {
+    const id = userId ?? found?.id;
+    if (!id) return;
+    setBusy(true);
+    const result = await adminGrantPlatformRole({ data: { accessToken, targetUserId: id } });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Platform admin granted");
+    void loadAdmins();
+  };
+
+  const revokeAdmin = async (userId: string) => {
+    setBusy(true);
+    const result = await adminRevokePlatformRole({ data: { accessToken, targetUserId: userId } });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Platform admin revoked");
+    void loadAdmins();
+  };
+
+  const foundIsAdmin = found ? platformAdmins.some((a) => a.user_id === found.id) : false;
+
   return (
     <div className="space-y-6">
+      <Panel title="Platform admins">
+        <p className="mb-3 text-xs text-stone-500">
+          Durable access via <span className="font-mono text-stone-400">platform_roles</span>. Env{" "}
+          <span className="font-mono text-stone-400">ADMIN_USER_IDS</span> is bootstrap only.
+        </p>
+        {platformAdmins.length === 0 ? (
+          <p className="text-xs text-stone-500">No rows yet — open this console with env UUID to bootstrap.</p>
+        ) : (
+          <ul className="space-y-2">
+            {platformAdmins.map((a) => (
+              <li
+                key={a.user_id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle bg-background/40 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {a.username}
+                    <span className="ms-1 font-mono text-xs text-stone-500">#{a.tag}</span>
+                    {a.user_id === selfUserId ? (
+                      <span className="ms-2 text-[10px] uppercase tracking-wide text-accent">you</span>
+                    ) : null}
+                  </p>
+                  <p className="truncate font-mono text-[10px] text-stone-600">{a.user_id}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void revokeAdmin(a.user_id)}
+                  className="shrink-0 rounded-md border border-border-subtle px-2 py-1 text-[10px] font-semibold uppercase text-stone-300 hover:border-danger/40 hover:text-danger disabled:opacity-40"
+                >
+                  Revoke
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
       <Panel title="Look up user">
         <div className="flex gap-2">
           <input
@@ -836,6 +954,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
               {found.banned_at
                 ? `Banned${found.ban_reason ? `: ${found.ban_reason}` : ""}`
                 : "Not banned"}
+              {foundIsAdmin ? " · Platform admin" : ""}
             </p>
             <input
               value={reason}
@@ -843,7 +962,7 @@ function UsersTab({ accessToken }: { accessToken: string }) {
               placeholder="Ban reason"
               className={inputCls}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={busy || Boolean(found.banned_at)}
@@ -860,6 +979,24 @@ function UsersTab({ accessToken }: { accessToken: string }) {
               >
                 Unban
               </button>
+              <button
+                type="button"
+                disabled={busy || foundIsAdmin || Boolean(found.banned_at)}
+                onClick={() => void grantAdmin()}
+                className="rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-bold uppercase text-accent disabled:opacity-40"
+              >
+                Grant platform admin
+              </button>
+              {foundIsAdmin ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void revokeAdmin(found.id)}
+                  className="rounded-lg border border-border-subtle px-4 py-2 text-xs font-semibold text-stone-200 disabled:opacity-40"
+                >
+                  Revoke platform admin
+                </button>
+              ) : null}
             </div>
           </div>
         )}
@@ -895,6 +1032,10 @@ function UsersTab({ accessToken }: { accessToken: string }) {
 }
 
 function ReportsTab({ accessToken }: { accessToken: string }) {
+  const [filter, setFilter] = useState<"open" | "reviewing" | "resolved" | "dismissed" | "all">(
+    "open",
+  );
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [reports, setReports] = useState<
     Array<{
       id: string;
@@ -902,6 +1043,9 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
       details: string;
       status: string;
       created_at: string;
+      message_id: string | null;
+      dm_message_id: string | null;
+      resolution_note: string;
       target_user_id: string | null;
       reporter?: { username: string; tag: string } | { username: string; tag: string }[] | null;
       target?: { username: string; tag: string } | { username: string; tag: string }[] | null;
@@ -909,13 +1053,15 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
   >([]);
 
   const refresh = useCallback(async () => {
-    const r = await adminListReports({ data: { accessToken, status: "open" } });
+    const r = await adminListReports({
+      data: { accessToken, status: filter === "all" ? "all" : filter },
+    });
     if (!r.ok) {
       toast.error(r.error);
       return;
     }
-    setReports(r.reports as typeof reports);
-  }, [accessToken]);
+    setReports(r.reports as unknown as typeof reports);
+  }, [accessToken, filter]);
 
   useEffect(() => {
     void refresh();
@@ -929,13 +1075,53 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
     return row ? `${row.username}#${row.tag}` : "—";
   };
 
+  const setStatus = async (
+    reportId: string,
+    status: "open" | "reviewing" | "resolved" | "dismissed",
+  ) => {
+    const res = await adminSetReportStatus({
+      data: {
+        accessToken,
+        reportId,
+        status,
+        resolutionNote: noteDrafts[reportId],
+      },
+    });
+    if (!res.ok) toast.error(res.error);
+    else {
+      toast.success(`Marked ${status}`);
+      void refresh();
+    }
+  };
+
   return (
-    <Panel title="Open reports">
+    <Panel title="Reports">
+      <div className="mb-3 flex flex-wrap gap-2">
+        {(["open", "reviewing", "resolved", "dismissed", "all"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setFilter(s)}
+            className={`rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
+              filter === s
+                ? "bg-accent/20 text-accent"
+                : "bg-white/5 text-stone-400 hover:text-white"
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
       <ul className="divide-y divide-border-subtle">
         {reports.map((r) => (
           <li key={r.id} className="space-y-2 py-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-bold text-white">{r.reason}</p>
+              <p className="text-sm font-bold text-white">
+                {r.reason}{" "}
+                <span className="ms-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                  {r.status}
+                </span>
+              </p>
               <span className="text-[10px] uppercase tracking-widest text-stone-500">
                 {new Date(r.created_at).toLocaleString()}
               </span>
@@ -943,37 +1129,38 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
             <p className="text-xs text-stone-400">{r.details || "No details"}</p>
             <p className="text-[11px] text-stone-500">
               Reporter {pickUser(r.reporter)} → Target {pickUser(r.target)}
+              {r.message_id ? ` · msg ${r.message_id.slice(0, 8)}` : ""}
+              {r.dm_message_id ? ` · dm ${r.dm_message_id.slice(0, 8)}` : ""}
             </p>
+            <input
+              value={noteDrafts[r.id] ?? r.resolution_note ?? ""}
+              onChange={(e) =>
+                setNoteDrafts((prev) => ({ ...prev, [r.id]: e.target.value.slice(0, 500) }))
+              }
+              placeholder="Resolution note (optional)"
+              className="w-full rounded-md border border-border-subtle bg-background px-2 py-1.5 text-xs text-white outline-none focus:border-accent/50"
+            />
             <div className="flex flex-wrap gap-2">
+              {r.status === "open" ? (
+                <button
+                  type="button"
+                  className="rounded-md bg-accent/15 px-2 py-1 text-[10px] font-bold uppercase text-accent"
+                  onClick={() => void setStatus(r.id, "reviewing")}
+                >
+                  Reviewing
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="rounded-md bg-online/15 px-2 py-1 text-[10px] font-bold uppercase text-online"
-                onClick={async () => {
-                  const res = await adminSetReportStatus({
-                    data: { accessToken, reportId: r.id, status: "resolved" },
-                  });
-                  if (!res.ok) toast.error(res.error);
-                  else {
-                    toast.success("Resolved");
-                    void refresh();
-                  }
-                }}
+                onClick={() => void setStatus(r.id, "resolved")}
               >
                 Resolve
               </button>
               <button
                 type="button"
                 className="rounded-md bg-white/5 px-2 py-1 text-[10px] font-bold uppercase text-stone-300"
-                onClick={async () => {
-                  const res = await adminSetReportStatus({
-                    data: { accessToken, reportId: r.id, status: "dismissed" },
-                  });
-                  if (!res.ok) toast.error(res.error);
-                  else {
-                    toast.success("Dismissed");
-                    void refresh();
-                  }
-                }}
+                onClick={() => void setStatus(r.id, "dismissed")}
               >
                 Dismiss
               </button>
@@ -993,7 +1180,12 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
                     if (!res.ok) toast.error(res.error);
                     else {
                       await adminSetReportStatus({
-                        data: { accessToken, reportId: r.id, status: "resolved" },
+                        data: {
+                          accessToken,
+                          reportId: r.id,
+                          status: "resolved",
+                          resolutionNote: noteDrafts[r.id] || `Banned for ${r.reason}`,
+                        },
                       });
                       toast.success("Banned + resolved");
                       void refresh();
@@ -1007,7 +1199,7 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
           </li>
         ))}
         {reports.length === 0 ? (
-          <li className="py-8 text-center text-xs text-stone-500">No open reports</li>
+          <li className="py-8 text-center text-xs text-stone-500">No reports in this filter</li>
         ) : null}
       </ul>
     </Panel>

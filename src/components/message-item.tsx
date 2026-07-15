@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ChatMessage } from "@/lib/mock-data";
 import { EmojiPicker } from "./emoji-picker";
 import { Reply, MoreHorizontal, Pin, SmilePlus, Trash2, File as FileIcon, Flag, Pencil } from "lucide-react";
@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { resolveAttachmentUrl } from "@/lib/supabase/storage";
+import { useT } from "@/lib/i18n";
 
 export function MessageItem({
   msg,
@@ -23,12 +24,14 @@ export function MessageItem({
 }: {
   msg: ChatMessage;
   onReply?: (m: ChatMessage) => void;
+  /** When omitted, pin action is hidden. */
   onPin?: (m: ChatMessage, pinned: boolean) => void | Promise<void>;
   onReport?: (m: ChatMessage) => void | Promise<void>;
   onDelete?: (m: ChatMessage) => void | Promise<void>;
   onEdit?: (m: ChatMessage, body: string) => void | Promise<void>;
   onReact?: (m: ChatMessage, emoji: string) => void | Promise<void>;
 }) {
+  const { t } = useT();
   const isMobile = useIsMobile();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(msg.body);
@@ -45,7 +48,7 @@ export function MessageItem({
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-baseline gap-2">
             <span className="text-sm font-bold text-stone-400">{msg.author}</span>
-            <span className="text-[10px] font-medium uppercase text-stone-600">System</span>
+            <span className="text-[10px] font-medium uppercase text-stone-600">{t("msg.system")}</span>
           </div>
           <p className="text-sm italic text-stone-500">{msg.body}</p>
         </div>
@@ -68,7 +71,7 @@ export function MessageItem({
           <span className="text-sm font-bold text-white">{msg.author}</span>
           <span className="text-[10px] text-stone-600">{msg.time}</span>
           {msg.pinned && <Pin className="size-3 text-accent" />}
-          {msg.edited && <span className="text-[10px] text-stone-600">(edited)</span>}
+          {msg.edited && <span className="text-[10px] text-stone-600">{t("msg.edited")}</span>}
         </div>
         {editing ? (
           <form
@@ -91,7 +94,7 @@ export function MessageItem({
                 type="submit"
                 className="rounded-md bg-accent px-3 py-1 text-xs font-bold uppercase text-accent-foreground"
               >
-                Save
+                {t("msg.save")}
               </button>
               <button
                 type="button"
@@ -101,7 +104,7 @@ export function MessageItem({
                 }}
                 className="rounded-md px-3 py-1 text-xs text-stone-400 hover:text-white"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </form>
@@ -111,34 +114,7 @@ export function MessageItem({
           </p>
         )}
         {msg.attachment && (
-          <div className="mt-2 max-w-sm">
-            {msg.attachment.kind === "image" && msg.attachment.url ? (
-              <a href={msg.attachment.url} target="_blank" rel="noreferrer" className="block">
-                <img
-                  src={msg.attachment.url}
-                  alt={msg.attachment.name}
-                  className="max-h-64 rounded-lg border border-border-subtle object-contain"
-                />
-              </a>
-            ) : (
-              <a
-                href={msg.attachment.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-3 rounded-lg border border-border-subtle bg-background/50 p-3 hover:border-accent/40"
-              >
-                <div className="grid size-10 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
-                  <FileIcon className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-white">{msg.attachment.name}</p>
-                  {msg.attachment.meta && (
-                    <p className="text-[10px] text-stone-500">{msg.attachment.meta}</p>
-                  )}
-                </div>
-              </a>
-            )}
-          </div>
+          <AttachmentBlock attachment={msg.attachment} />
         )}
         {reactions.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -163,7 +139,7 @@ export function MessageItem({
                   className={`grid size-6 place-items-center rounded-full border border-border-subtle bg-white/[0.03] text-stone-400 transition-opacity hover:text-white ${
                     isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                   }`}
-                  aria-label="Add reaction"
+                  aria-label={t("msg.react")}
                 >
                   <SmilePlus className="size-3" />
                 </button>
@@ -183,7 +159,7 @@ export function MessageItem({
           trigger={
             <button
               className="grid size-7 place-items-center rounded text-stone-400 hover:bg-white/5 hover:text-white"
-              aria-label="Add reaction"
+              aria-label={t("msg.react")}
             >
               <SmilePlus className="size-3.5" />
             </button>
@@ -192,7 +168,7 @@ export function MessageItem({
         <button
           onClick={() => onReply?.(msg)}
           className="grid size-7 place-items-center rounded text-stone-400 hover:bg-white/5 hover:text-white"
-          aria-label="Reply"
+          aria-label={t("msg.reply")}
         >
           <Reply className="size-3.5" />
         </button>
@@ -200,21 +176,22 @@ export function MessageItem({
           <DropdownMenuTrigger asChild>
             <button
               className="grid size-7 place-items-center rounded text-stone-400 hover:bg-white/5 hover:text-white"
-              aria-label="More"
+              aria-label={t("msg.more")}
             >
               <MoreHorizontal className="size-3.5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="border-border-subtle bg-surface-mid">
-            <DropdownMenuItem
-              onClick={() => {
-                const next = !msg.pinned;
-                if (onPin) void onPin(msg, next);
-                else toast(next ? "Message pinned" : "Message unpinned");
-              }}
-            >
-              <Pin className="mr-2 size-3.5" /> {msg.pinned ? "Unpin message" : "Pin message"}
-            </DropdownMenuItem>
+            {onPin ? (
+              <DropdownMenuItem
+                onClick={() => {
+                  const next = !msg.pinned;
+                  void onPin(msg, next);
+                }}
+              >
+                <Pin className="me-2 size-3.5" /> {msg.pinned ? t("msg.unpin") : t("msg.pin")}
+              </DropdownMenuItem>
+            ) : null}
             {onEdit ? (
               <DropdownMenuItem
                 onClick={() => {
@@ -222,7 +199,7 @@ export function MessageItem({
                   setEditing(true);
                 }}
               >
-                <Pencil className="mr-2 size-3.5" /> Edit
+                <Pencil className="me-2 size-3.5" /> {t("msg.edit")}
               </DropdownMenuItem>
             ) : null}
             {onReport ? (
@@ -231,7 +208,7 @@ export function MessageItem({
                   void onReport(msg);
                 }}
               >
-                <Flag className="mr-2 size-3.5" /> Report
+                <Flag className="me-2 size-3.5" /> {t("msg.report")}
               </DropdownMenuItem>
             ) : null}
             {onDelete ? (
@@ -243,7 +220,7 @@ export function MessageItem({
                     void onDelete(msg);
                   }}
                 >
-                  <Trash2 className="mr-2 size-3.5" /> Delete
+                  <Trash2 className="me-2 size-3.5" /> {t("msg.delete")}
                 </DropdownMenuItem>
               </>
             ) : null}
@@ -251,6 +228,58 @@ export function MessageItem({
         </DropdownMenu>
       </div>
     </div>
+  );
+}
+
+function AttachmentBlock({
+  attachment,
+}: {
+  attachment: NonNullable<ChatMessage["attachment"]>;
+}) {
+  const [url, setUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveAttachmentUrl(attachment.url).then((resolved) => {
+      if (!cancelled) setUrl(resolved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [attachment.url]);
+
+  if (attachment.kind === "image") {
+    const src = url ?? attachment.url;
+    if (!src) return null;
+    return (
+      <a href={src} target="_blank" rel="noreferrer" className="mt-2 block max-w-sm">
+        <img
+          src={src}
+          alt={attachment.name}
+          className="max-h-64 rounded-lg border border-border-subtle object-contain"
+        />
+      </a>
+    );
+  }
+
+  const href = url ?? attachment.url;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-2 flex max-w-sm items-center gap-3 rounded-lg border border-border-subtle bg-background/50 p-3 hover:border-accent/40"
+    >
+      <div className="grid size-10 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
+        <FileIcon className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-white">{attachment.name}</p>
+        {attachment.meta && (
+          <p className="text-[10px] text-stone-500">{attachment.meta}</p>
+        )}
+      </div>
+    </a>
   );
 }
 

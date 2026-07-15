@@ -8,9 +8,13 @@ import { EmptyState } from "@/components/empty-state";
 import { VoiceDock } from "@/components/voice-dock";
 import { useT } from "@/lib/i18n";
 import { useDms } from "@/hooks/use-dms";
+import { useTypingIndicator } from "@/hooks/use-typing-indicator";
+import { bumpMessageUnreadRefresh } from "@/hooks/use-message-unread-totals";
 import { useAuth } from "@/lib/auth-provider";
 import { getVoiceClient } from "@/lib/voice";
 import { toast } from "sonner";
+import { submitReport } from "@/lib/social/api";
+import { ReportDialog, type ReportDialogTarget } from "@/components/report-dialog";
 
 type DmSearch = { thread?: string };
 
@@ -30,11 +34,24 @@ export const Route = createFileRoute("/dm")({
 function DMPage() {
   const { t } = useT();
   const navigate = useNavigate();
-  const { accessToken, profile } = useAuth();
+  const { accessToken, profile, user } = useAuth();
   const { thread: threadFromSearch } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [inVoice, setInVoice] = useState(false);
   const dms = useDms(threadFromSearch);
+
+  const { typingNames, notifyTyping } = useTypingIndicator({
+    topicKey: dms.live && dms.activeId ? `dm:${dms.activeId}` : null,
+    userId: user?.id,
+    username: profile?.username ?? dms.profileName,
+    enabled: dms.live,
+  });
+
+  const typingLabel = useMemo(() => {
+    if (!typingNames.length) return null;
+    if (typingNames.length === 1) return `${typingNames[0]} ${t("home.typing.single")}`;
+    return `${typingNames.slice(0, 3).join(", ")} ${t("home.typing.plural")}`;
+  }, [typingNames, t]);
 
   const selectThread = (id: string) => {
     dms.setActiveId(id);
@@ -44,6 +61,7 @@ function DMPage() {
   const soon = () => toast(t("common.comingSoon"));
 
   const [joiningVoice, setJoiningVoice] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportDialogTarget | null>(null);
 
   const joinDmVoice = async () => {
     if (!dms.activeId || !dms.active || joiningVoice) return;
@@ -59,9 +77,13 @@ function DMPage() {
       });
       setInVoice(true);
       const live = getVoiceClient().getSession()?.live;
-      toast.success(live ? `Joined voice with ${dms.active.with.name}` : t("voice.joinedPreview"));
+      toast.success(
+        live
+          ? t("voice.joinDmOk", { name: dms.active.with.name })
+          : t("voice.joinedPreview"),
+      );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not join voice");
+      toast.error(e instanceof Error ? e.message : t("voice.joinFail"));
     } finally {
       setJoiningVoice(false);
     }
@@ -190,28 +212,32 @@ function DMPage() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="border-b border-border-subtle bg-surface-mid/60 md:hidden">
-            <div className="flex h-12 items-center gap-2 px-3">
-              <h1 className="min-w-0 flex-1 font-display text-sm font-bold uppercase tracking-tight text-white">
-                {t("dm.title")}
-              </h1>
-              <Link
-                to="/friends"
-                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-accent/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-accent"
-              >
-                <UserPlus className="size-3.5" />
-                {t("dm.new")}
-              </Link>
-            </div>
-            <div className="flex items-center gap-2 px-3 pb-2">
-              <Search className="size-3.5 shrink-0 text-stone-500" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t("dm.find")}
-                className="min-w-0 flex-1 rounded-lg bg-background px-3 py-1.5 text-xs text-stone-300 outline-none placeholder:text-stone-600"
-              />
-            </div>
-            <div className="flex gap-2 overflow-x-auto px-3 pb-2 no-scrollbar">
+            {!active ? (
+              <>
+                <div className="flex h-12 items-center gap-2 px-3">
+                  <h1 className="min-w-0 flex-1 font-display text-sm font-bold uppercase tracking-tight text-white">
+                    {t("dm.title")}
+                  </h1>
+                  <Link
+                    to="/friends"
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-accent/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-accent"
+                  >
+                    <UserPlus className="size-3.5" />
+                    {t("dm.new")}
+                  </Link>
+                </div>
+                <div className="flex items-center gap-2 px-3 pb-2">
+                  <Search className="size-3.5 shrink-0 text-stone-500" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("dm.find")}
+                    className="min-w-0 flex-1 rounded-lg bg-background px-3 py-1.5 text-xs text-stone-300 outline-none placeholder:text-stone-600"
+                  />
+                </div>
+              </>
+            ) : null}
+            <div className={`flex gap-2 overflow-x-auto px-3 no-scrollbar ${active ? "py-2" : "pb-2"}`}>
               {conversations.map((c) => {
                 const isActive = c.id === dms.activeId;
                 return (
@@ -249,7 +275,7 @@ function DMPage() {
             />
           ) : (
             <>
-              <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-surface-mid/30 px-4 backdrop-blur-md md:px-6">
+              <header className="flex h-12 shrink-0 items-center justify-between border-b border-border-subtle bg-surface-mid/30 px-3 backdrop-blur-md md:h-16 md:px-6">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative shrink-0">
                     <div className="size-8 rounded-full bg-stone-800" />
@@ -293,7 +319,7 @@ function DMPage() {
                 </div>
               </header>
 
-              <div className="flex-1 space-y-6 overflow-y-auto p-4 md:space-y-8 md:p-6">
+              <div className="flex-1 space-y-4 overflow-y-auto p-3 md:space-y-8 md:p-6">
                 <div className="pb-4 text-center">
                   <div className="mx-auto mb-3 size-16 rounded-full bg-stone-800" />
                   <h2 className="font-display text-xl font-bold uppercase tracking-tight text-white">
@@ -304,7 +330,30 @@ function DMPage() {
                   </p>
                 </div>
                 {dms.messages.map((m) => (
-                  <MessageItem key={m.id} msg={m} />
+                  <MessageItem
+                    key={m.id}
+                    msg={m}
+                    onReport={
+                      m.authorId && m.authorId !== user?.id
+                        ? (msg) => {
+                            setReportTarget({
+                              dmMessageId: msg.id,
+                              targetUserId: msg.authorId,
+                              preview: msg.body.slice(0, 200),
+                            });
+                          }
+                        : undefined
+                    }
+                    onDelete={
+                      m.authorId && m.authorId === user?.id
+                        ? async (msg) => {
+                            const result = await dms.deleteMessage(msg.id);
+                            if (!result.ok) toast.error(result.error ?? t("msg.err.delete"));
+                            else toast.success(t("msg.deleted"));
+                          }
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
 
@@ -320,12 +369,15 @@ function DMPage() {
               )}
               <Composer
                 channelName={active.with.name}
+                onTyping={notifyTyping}
+                typingLabel={typingLabel}
                 onSend={async (body, _replyToId, attachment) => {
                   const result = await dms.send(body, attachment);
                   if (!result.ok) {
-                    toast.error(result.error ?? "Send failed");
+                    toast.error(result.error ?? t("msg.err.send"));
                     return result;
                   }
+                  bumpMessageUnreadRefresh();
                   return { ok: true };
                 }}
               />
@@ -333,6 +385,33 @@ function DMPage() {
           )}
         </main>
       </div>
+
+      <ReportDialog
+        open={!!reportTarget}
+        onOpenChange={(open) => {
+          if (!open) setReportTarget(null);
+        }}
+        target={reportTarget}
+        onSubmit={async ({ reason, details }) => {
+          if (!dms.live || !user?.id || !reportTarget) {
+            toast.success(t("report.thanks"));
+            return { ok: true };
+          }
+          const result = await submitReport({
+            reporterId: user.id,
+            dmMessageId: reportTarget.dmMessageId,
+            targetUserId: reportTarget.targetUserId,
+            reason,
+            details: details || reportTarget.preview,
+          });
+          if (!result.ok) {
+            toast.error(result.error ?? t("msg.err.report"));
+            return result;
+          }
+          toast.success(t("report.thanks"));
+          return { ok: true };
+        }}
+      />
     </AppShell>
   );
 }

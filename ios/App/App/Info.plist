@@ -41,6 +41,10 @@
 	<string>Nexus may use the camera for profile photos and future video chat features.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Nexus needs the microphone so you can join hub and DM voice channels.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Nexus needs photo library access so you can set an avatar or attach images in chat.</string>
 	<key>UILaunchStoryboardName</key>

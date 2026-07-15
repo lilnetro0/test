@@ -1,0 +1,21 @@
+Nexus is a social chat + voice product for gamers (13+).
+
+TEST ACCOUNT
+- Email: REVIEWER_EMAIL_HERE
+- Password: REVIEWER_PASSWORD_HERE
+- Notes: Pre-join a public hub if self-serve discovery is empty. Voice may use LiveKit or a stub dock when LIVEKIT_* is unset.
+
+ARCHITECTURE
+- The iOS binary is a Capacitor shell that loads our production HTTPS origin (CAPACITOR_SERVER_URL).
+- Native capabilities in this binary:
+  • Custom URL scheme com.lilnetro0.nexus:// for OAuth callback
+  • Microphone + background audio for LiveKit voice
+  • Camera / photo library for avatars & chat attachments
+  • Push notification registration (APNs send when APNS_* env is configured on the server)
+  • Keyboard / safe-area chrome and offline connectivity banner
+- Remote shell is required because TanStack Start server functions are origin-bound (see CAPACITOR.md).
+- Guideline 4.2: native inventory above; not a website bookmark. Bundled offline SPA remains a future architecture change, not this binary.
+
+REQUIRED PERMISSIONS
+- Microphone — hub / DM voice
+- Photos / Camera — optional avatar & attachments

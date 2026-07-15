@@ -41,13 +41,13 @@ function FriendsPage() {
 
   const openDm = async (f: Friend) => {
     if (!social.live || !f.id) {
-      toast(`Opening DM with ${f.name}`);
+      toast(t("toast.openingDm", { name: f.name }));
       void navigate({ to: "/dm" });
       return;
     }
     const result = await social.startDm(f.id);
     if (!result.ok) {
-      toast.error(result.error ?? "Could not open DM");
+      toast.error(result.error ?? t("toast.dmOpenFail"));
       return;
     }
     void navigate({ to: "/dm", search: { thread: result.threadId } });
@@ -96,17 +96,17 @@ function FriendsPage() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6">
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-8 md:px-6">
           {tab === "Add Friend" ? (
             <AddFriend
               onSend={async (tag) => {
                 if (!social.live) {
-                  toast.success("Friend request sent");
+                  toast.success(t("toast.friendSent"));
                   return;
                 }
                 const result = await social.sendRequest(tag);
-                if (!result.ok) toast.error(result.error ?? "Failed");
-                else toast.success("Friend request sent");
+                if (!result.ok) toast.error(result.error ?? t("toast.failed"));
+                else toast.success(t("toast.friendSent"));
               }}
             />
           ) : tab === "Pending" ? (
@@ -114,21 +114,21 @@ function FriendsPage() {
               requests={social.incoming}
               onAccept={async (req) => {
                 if (!social.live) {
-                  toast.success(`${req.name} added as friend`);
+                  toast.success(t("toast.friendAdded", { name: req.name }));
                   return;
                 }
                 const result = await social.accept(req.requestId);
-                if (!result.ok) toast.error(result.error ?? "Failed");
-                else toast.success(`${req.name} added as friend`);
+                if (!result.ok) toast.error(result.error ?? t("toast.failed"));
+                else toast.success(t("toast.friendAdded", { name: req.name }));
               }}
               onDecline={async (req) => {
                 if (!social.live) {
-                  toast(`Declined ${req.name}`);
+                  toast(t("toast.declined", { name: req.name }));
                   return;
                 }
                 const result = await social.decline(req.requestId);
-                if (!result.ok) toast.error(result.error ?? "Failed");
-                else toast(`Declined ${req.name}`);
+                if (!result.ok) toast.error(result.error ?? t("toast.failed"));
+                else toast(t("toast.declined", { name: req.name }));
               }}
             />
           ) : tab === "Blocked" ? (
@@ -148,12 +148,12 @@ function FriendsPage() {
                 mode="blocked"
                 onUnblock={async (f) => {
                   if (!social.live || !f.id) {
-                    toast.success(`Unblocked ${f.name}`);
+                    toast.success(t("toast.unblocked", { name: f.name }));
                     return;
                   }
                   const result = await social.unblock(f.id);
-                  if (!result.ok) toast.error(result.error ?? "Failed");
-                  else toast.success(`Unblocked ${f.name}`);
+                  if (!result.ok) toast.error(result.error ?? t("toast.failed"));
+                  else toast.success(t("toast.unblocked", { name: f.name }));
                 }}
               />
             )
@@ -171,12 +171,12 @@ function FriendsPage() {
               onMessage={(f) => void openDm(f)}
               onBlock={async (f) => {
                 if (!social.live || !f.id) {
-                  toast.success(`Blocked ${f.name}`);
+                  toast.success(t("toast.blocked", { name: f.name }));
                   return;
                 }
                 const result = await social.block(f.id);
-                if (!result.ok) toast.error(result.error ?? "Failed");
-                else toast.success(`Blocked ${f.name}`);
+                if (!result.ok) toast.error(result.error ?? t("toast.failed"));
+                else toast.success(t("toast.blocked", { name: f.name }));
               }}
             />
           )}

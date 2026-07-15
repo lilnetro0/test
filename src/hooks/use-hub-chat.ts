@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  DISCOVER_HUBS,
   GAMES,
   HUBS,
   type ChatMessage,
-  type Game,
+  type HubCard,
   type MemberInfo,
   type TextChannel,
   type VoiceChannel,
@@ -20,12 +21,15 @@ import {
   fetchMessage,
   fetchMessages,
   joinHub,
+  markChannelRead,
+  refreshHubActiveCount,
   sendChannelMessage,
   setMessagePinned,
   toggleReaction,
   type LiveHub,
 } from "@/lib/chat/api";
 import { adminDeleteMessage, adminPinMessage } from "@/lib/admin/api";
+import type { HubRole } from "@/lib/supabase/types";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -51,6 +55,8 @@ export function useHubChat(opts?: { initialSlug?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     shouldUseMockData() ? [...(HUBS[initialSlug || "fortnite"] ?? HUBS.fortnite).messages] : [],
   );
+  const [hasMoreOlder, setHasMoreOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [members, setMembers] = useState<{ online: MemberInfo[]; offline: MemberInfo[] }>({
     online: [],
     offline: [],
@@ -59,7 +65,7 @@ export function useHubChat(opts?: { initialSlug?: string }) {
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<string | null>(null);
 
-  const games = useMemo<Game[]>(() => {
+  const games = useMemo<HubCard[]>(() => {
     if (!live) return GAMES;
     return liveHubs.map((h) => h.game);
   }, [live, liveHubs]);
@@ -69,8 +75,14 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     return liveHubs.find((h) => h.slug === activeSlug) ?? liveHubs[0] ?? null;
   }, [live, liveHubs, activeSlug]);
 
-  const game = useMemo<Game>(() => {
-    if (!live) return GAMES.find((g) => g.id === activeSlug) ?? GAMES[0];
+  const game = useMemo<HubCard>(() => {
+    if (!live) {
+      return (
+        DISCOVER_HUBS.find((g) => g.id === activeSlug) ??
+        GAMES.find((g) => g.id === activeSlug) ??
+        GAMES[0]
+      );
+    }
     return activeHub?.game ?? games[0] ?? GAMES[0];
   }, [live, activeSlug, activeHub, games]);
 
@@ -88,6 +100,12 @@ export function useHubChat(opts?: { initialSlug?: string }) {
   const displayVoiceChannels = live ? voiceChannels : mockHub.voiceChannels;
   const displayMembers = live ? members : mockHub.members;
   const pinnedCount = messages.filter((m) => m.pinned).length;
+
+  const viewerHubRole = useMemo<HubRole | null>(() => {
+    if (!user?.id) return null;
+    const roster = [...displayMembers.online, ...displayMembers.offline];
+    return roster.find((m) => m.userId === user.id)?.role ?? null;
+  }, [displayMembers, user?.id]);
 
   // Seed mock thread into mutable state so local send/edit/react show up.
   useEffect(() => {
@@ -150,6 +168,18 @@ export function useHubChat(opts?: { initialSlug?: string }) {
       setVoiceChannels(ch.voice);
       setMembers({ online: mem.online, offline: mem.offline });
 
+      const active = await refreshHubActiveCount(activeHub.uuid);
+      if (!cancelled && active.activeCount) {
+        const label = active.activeCount;
+        setLiveHubs((prev) =>
+          prev.map((h) =>
+            h.uuid === activeHub.uuid
+              ? { ...h, game: { ...h.game, activeCount: label } }
+              : h,
+          ),
+        );
+      }
+
       const first = ch.text[0]?.id;
       setActiveChannelId((prev) => {
         if (prev && ch.text.some((c) => c.id === prev)) return prev;
@@ -169,10 +199,18 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     let cancelled = false;
     channelRef.current = activeChannelId;
 
-    void fetchMessages(activeChannelId, { viewerId: user?.id }).then(({ messages: msgs, error: err }) => {
+    void fetchMessages(activeChannelId, { viewerId: user?.id }).then(({ messages: msgs, hasMore, error: err }) => {
       if (cancelled || channelRef.current !== activeChannelId) return;
       if (err) setError(err);
       setMessages(msgs);
+      setHasMoreOlder(Boolean(hasMore));
+      void markChannelRead(activeChannelId).then(() => {
+        if (cancelled || channelRef.current !== activeChannelId) return;
+        setTextChannels((prev) =>
+          prev.map((c) => (c.id === activeChannelId ? { ...c, unread: undefined } : c)),
+        );
+        window.dispatchEvent(new Event("nexus:unread-refresh"));
+      });
     });
 
     const client = getSupabaseBrowserClient();
@@ -207,8 +245,16 @@ export function useHubChat(opts?: { initialSlug?: string }) {
             setMessages((prev) => prev.filter((m) => m.id !== id));
             return;
           }
-          const id = (payload.new as { id: string }).id;
-          refreshMsg(id);
+          const row = payload.new as { id: string; deleted_at?: string | null };
+          // Soft-delete UPDATE (or Realtime DELETE-shaped visibility loss)
+          if (row.deleted_at) {
+            setMessages((prev) => prev.filter((m) => m.id !== row.id));
+            return;
+          }
+          refreshMsg(row.id);
+          if (payload.eventType === "INSERT") {
+            void markChannelRead(activeChannelId);
+          }
         },
       )
       .on(
@@ -233,6 +279,43 @@ export function useHubChat(opts?: { initialSlug?: string }) {
       void client.removeChannel(topic);
     };
   }, [live, activeChannelId, user?.id]);
+
+  // Hub-wide inserts → bump unread on other text channels in this hub
+  useEffect(() => {
+    if (!live || !activeHub?.uuid || !user?.id) return;
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+
+    const hubFeed = client
+      .channel(`nexus-hub-unreads:${activeHub.uuid}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const row = payload.new as { channel_id?: string; author_id?: string };
+          if (!row.channel_id || row.channel_id === channelRef.current) return;
+          if (row.author_id === user.id) return;
+          setTextChannels((prev) => {
+            if (!prev.some((c) => c.id === row.channel_id)) return prev;
+            return prev.map((c) => {
+              if (c.id !== row.channel_id) return c;
+              const next = Math.min((c.unread ?? 0) + 1, 99);
+              return { ...c, unread: next };
+            });
+          });
+          window.dispatchEvent(new Event("nexus:unread-refresh"));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(hubFeed);
+    };
+  }, [live, activeHub?.uuid, user?.id]);
 
   const selectGame = useCallback(
     (slug: string) => {
@@ -400,8 +483,9 @@ export function useHubChat(opts?: { initialSlug?: string }) {
       }
       const q = query.trim();
       if (!q) {
-        const { messages: msgs } = await fetchMessages(activeChannelId, { viewerId: user?.id });
+        const { messages: msgs, hasMore } = await fetchMessages(activeChannelId, { viewerId: user?.id });
         setMessages(msgs);
+        setHasMoreOlder(Boolean(hasMore));
         return msgs;
       }
       const { messages: msgs } = await fetchMessages(activeChannelId, {
@@ -410,10 +494,41 @@ export function useHubChat(opts?: { initialSlug?: string }) {
         viewerId: user?.id,
       });
       setMessages(msgs);
+      setHasMoreOlder(false);
       return msgs;
     },
     [live, activeChannelId, displayMessages, user?.id],
   );
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!live || !activeChannelId || !isChannelUuid(activeChannelId) || loadingOlder) {
+      return { ok: false as const, error: "Not ready" };
+    }
+    const oldest = messages[0]?.createdAt;
+    if (!oldest) return { ok: false as const, error: "No cursor" };
+    setLoadingOlder(true);
+    try {
+      const { messages: older, hasMore, error: err } = await fetchMessages(activeChannelId, {
+        before: oldest,
+        viewerId: user?.id,
+      });
+      if (err) return { ok: false as const, error: err };
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        return [...older.filter((m) => !seen.has(m.id)), ...prev];
+      });
+      setHasMoreOlder(Boolean(hasMore));
+      return { ok: true as const };
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [live, activeChannelId, loadingOlder, messages, user?.id]);
+
+  const refreshMembers = useCallback(async () => {
+    if (!live || !activeHub?.uuid) return;
+    const mem = await fetchHubMembers(activeHub.uuid);
+    setMembers({ online: mem.online, offline: mem.offline });
+  }, [live, activeHub?.uuid]);
 
   return {
     live,
@@ -429,6 +544,7 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     voiceChannels: displayVoiceChannels,
     messages: displayMessages,
     members: displayMembers,
+    viewerHubRole,
     pinnedCount,
     profileName: profile?.username ?? "You",
     selectGame,
@@ -439,5 +555,9 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     pinMessage,
     deleteMessage,
     searchMessages,
+    loadOlderMessages,
+    hasMoreOlder,
+    loadingOlder,
+    refreshMembers,
   };
 }

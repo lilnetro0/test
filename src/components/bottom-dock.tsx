@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Home,
   Compass,
@@ -15,6 +15,8 @@ import logo from "@/assets/nexus-logo.png";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { useNotifications } from "@/lib/notifications-provider";
+import { useMessageUnreadTotals } from "@/hooks/use-message-unread-totals";
+import { trapFocus } from "@/lib/focus-trap";
 import { toast } from "sonner";
 
 /**
@@ -32,6 +34,7 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
   const [youOpen, setYouOpen] = useState(false);
   const { t } = useT();
   const { unreadCount } = useNotifications();
+  const { channelUnread, dmUnread } = useMessageUnreadTotals();
   const isHome = pathname === "/";
   const inYouSection =
     pathname.startsWith("/friends") ||
@@ -45,16 +48,22 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
       onBrandClick();
       return;
     }
-    void navigate({ to: "/", search: { hubs: "1" } });
+    void navigate({ to: "/", search: { hubs: "1" } as const });
   };
 
   return (
     <>
       <nav
-        aria-label="Primary"
-        className="relative z-30 flex min-h-[68px] shrink-0 items-center justify-around gap-1 border-t border-border-subtle bg-surface-left/95 px-2 pb-safe pt-1 backdrop-blur-xl"
+        aria-label={t("a11y.primaryNav")}
+        className="bottom-dock relative z-30 flex min-h-[var(--dock-base-height)] shrink-0 items-center justify-around gap-1 border-t border-border-subtle bg-surface-left/95 px-2 pb-safe pt-1 backdrop-blur-xl"
       >
-        <DockItem to="/" icon={<Home className="size-5" />} label={t("nav.home")} active={isHome} />
+        <DockItem
+          to="/"
+          icon={<Home className="size-5" />}
+          label={t("nav.home")}
+          active={isHome}
+          badge={channelUnread}
+        />
         <DockItem
           to="/discover"
           icon={<Compass className="size-5" />}
@@ -66,13 +75,13 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           type="button"
           onClick={openHubs}
           aria-label={t("nav.openHubs")}
-          className={`grid size-12 place-items-center rounded-2xl border transition-all sm:size-14 sm:-translate-y-3 ${
+          className={`grid size-12 place-items-center rounded-2xl border transition-all md:size-14 md:-translate-y-2 ${
             brandActive
               ? "border-accent bg-accent/15 shadow-[var(--shadow-glow-accent)]"
               : "border-accent/40 bg-accent/10 hover:border-accent hover:shadow-[var(--shadow-glow-accent)]"
           }`}
         >
-          <img src={logo} alt="" width={28} height={28} className="size-6 object-contain sm:size-7" />
+          <img src={logo} alt="" width={28} height={28} className="size-6 object-contain md:size-7" />
         </button>
 
         <DockItem
@@ -80,6 +89,7 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           icon={<MessageSquare className="size-5" />}
           label={t("nav.messages")}
           active={pathname.startsWith("/dm")}
+          badge={dmUnread}
         />
 
         <button
@@ -111,21 +121,30 @@ function DockItem({
   icon,
   label,
   active,
+  badge,
 }: {
   to: string;
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
       to={to}
-      aria-label={label}
-      className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors ${
+      aria-label={badge && badge > 0 ? `${label} (${badge})` : label}
+      className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors ${
         active ? "text-accent" : "text-stone-500 hover:text-stone-200"
       }`}
     >
-      {icon}
+      <span className="relative">
+        {icon}
+        {badge && badge > 0 ? (
+          <span className="absolute -top-1.5 min-w-[1rem] rounded-full bg-danger px-1 text-center text-[9px] font-bold leading-4 text-white ring-2 ring-surface-left ltr:-right-2 rtl:-left-2">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
+      </span>
       <span className="text-[10px] font-semibold uppercase tracking-wide">{label}</span>
     </Link>
   );
@@ -135,12 +154,20 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
   const { t } = useT();
   const { profile, configured, signOut } = useAuth();
   const { unreadCount } = useNotifications();
+  const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const releaseTrap = rootRef.current ? trapFocus(rootRef.current) : () => undefined;
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+      releaseTrap();
+    };
   }, [onClose]);
   const items = [
     { to: "/friends", icon: Users, label: t("nav.friends"), hint: t("you.friendsHint") },
@@ -160,13 +187,13 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
   const displayName = profile?.display_name || profile?.username || t("nav.you");
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div ref={rootRef} className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label={t("nav.you")}>
       <button
         aria-label={t("onboarding.close")}
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
-      <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 sm:inset-x-auto sm:w-80 ltr:sm:right-3 rtl:sm:left-3">
+      <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 md:inset-x-auto md:w-80 ltr:md:right-3 rtl:md:left-3">
         <Link
           to="/me"
           onClick={onClose}
@@ -209,7 +236,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
-                <span className="truncate text-[10px] text-stone-500">{item.hint}</span>
+                <span className="hidden truncate text-[10px] text-stone-500 md:inline">{item.hint}</span>
               </Link>
             );
           })}

@@ -11,6 +11,8 @@ const PROFILE_KEY = "nexus.pref.profile";
 
 export type HubNotifMode = "all" | "mentions" | "mute";
 
+/** hub_order / hub_notif_modes keys are hubs.slug (same as UI HubCard.id). */
+
 export type ProfileDraft = {
   displayName: string;
   bio: string;
@@ -100,9 +102,9 @@ export function getHubNotifs(): Record<string, HubNotifMode> {
   }
 }
 
-export function setHubNotif(hubId: string, mode: HubNotifMode) {
+export function setHubNotif(hubSlug: string, mode: HubNotifMode) {
   const all = getHubNotifs();
-  all[hubId] = mode;
+  all[hubSlug] = mode;
   try {
     window.localStorage.setItem(HUB_NOTIF_KEY, JSON.stringify(all));
   } catch {

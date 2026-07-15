@@ -1,4 +1,6 @@
 -- =============================================================================
+-- MANUAL / LEGACY — prefer migrations/20260715030000_phase3_friends_dms.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Phase 3 — Friends + DMs RPCs (SQL Editor)
 -- Requires: core schema already applied (hubs, profiles, friend_*, dm_* tables).
 -- Safe to re-run (create or replace + idempotent policy).

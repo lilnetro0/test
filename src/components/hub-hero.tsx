@@ -1,7 +1,7 @@
 /**
  * Per-game hero art for Discover tiles.
  * CSS-only atmospheric panels — no stock photos required.
- * Each game id maps to a distinct gradient + pattern so tiles never look generic.
+ * Keys are **catalog `games.id`** (not hub slug). See docs/DOMAIN-MODEL.md.
  */
 
 const HERO: Record<

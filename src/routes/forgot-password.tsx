@@ -4,6 +4,7 @@ import { AuthShell, AuthField } from "@/components/auth-shell";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { checkAuthCooldown, markAuthCooldown } from "@/lib/rate-limit";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/forgot-password")({
@@ -31,6 +32,12 @@ function ForgotPage() {
       return;
     }
 
+    const cool = checkAuthCooldown("forgot", 60);
+    if (!cool.ok) {
+      toast.error(t("auth.cooldown", { n: String(cool.retryInSec) }));
+      return;
+    }
+
     setBusy(true);
     const result = await resetPassword(email.trim());
     setBusy(false);
@@ -39,6 +46,7 @@ function ForgotPage() {
       toast.error(result.error);
       return;
     }
+    markAuthCooldown("forgot");
     toast.success(t("auth.forgot.sent"), {
       description: t("auth.forgot.sentHint"),
     });

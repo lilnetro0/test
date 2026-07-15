@@ -11,22 +11,30 @@ function formatTime(iso: string): string {
 }
 
 export const listMessages = createServerFn({ method: "GET" })
-  .validator((data: { accessToken: string; channelId: string; limit?: number }) => data)
-  .handler(async ({ data }): Promise<{ messages: MessageDto[]; error?: string }> => {
+  .validator((data: { accessToken: string; channelId: string; limit?: number; before?: string }) => data)
+  .handler(async ({ data }): Promise<{ messages: MessageDto[]; hasMore?: boolean; error?: string }> => {
     const client = getSupabaseServerClient(data.accessToken);
     if (!client) return { messages: [], error: "Supabase not configured" };
 
     const limit = Math.min(data.limit ?? 50, 100);
-    const { data: rows, error } = await client
+    let q = client
       .from("messages")
       .select("id, body, pinned, edited_at, created_at, author_id, author:profiles!author_id(username), reply:messages!reply_to(body, author:profiles!author_id(username))")
       .eq("channel_id", data.channelId)
-      .order("created_at", { ascending: true })
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
       .limit(limit);
+
+    if (data.before) {
+      q = q.lt("created_at", data.before);
+    }
+
+    const { data: raw, error } = await q;
 
     if (error) return { messages: [], error: error.message };
 
-    const messages: MessageDto[] = (rows ?? []).map((m) => {
+    const rows = (raw ?? []).slice().reverse();
+    const messages: MessageDto[] = rows.map((m) => {
       const author = Array.isArray(m.author) ? m.author[0] : m.author;
       const reply = Array.isArray(m.reply) ? m.reply[0] : m.reply;
       const replyAuthor = reply
@@ -52,7 +60,7 @@ export const listMessages = createServerFn({ method: "GET" })
       };
     });
 
-    return { messages };
+    return { messages, hasMore: rows.length >= limit };
   });
 
 export const sendMessage = createServerFn({ method: "POST" })

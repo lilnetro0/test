@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { GAMES, ME, type Game } from "@/lib/mock-data";
+import { GAMES, ME, type HubCard } from "@/lib/mock-data";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Gamepad2, Pencil, Trophy, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { getProfile, setProfile, type ProfileDraft } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth-provider";
-import { uploadAvatar } from "@/lib/supabase/storage";
+import { uploadAvatar, AVATAR_ACCEPT } from "@/lib/supabase/storage";
 import { fetchUserHubs } from "@/lib/chat/api";
 import { shouldUseMockData } from "@/lib/supabase/env";
 
@@ -27,7 +27,10 @@ type FormState = {
   tag: string;
   displayName: string;
   bio: string;
+  /** Custom activity line → profiles.status_text */
   status: string;
+  /** Presence enum → profiles.status */
+  presence: "online" | "idle" | "dnd" | "offline";
 };
 
 const MOCK_DEFAULT: ProfileDraft = {
@@ -43,23 +46,30 @@ function MePage() {
   const [busy, setBusy] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [hubs, setHubs] = useState<Game[]>(() => GAMES);
+  const [hubs, setHubs] = useState<HubCard[]>(() => GAMES);
   const [form, setForm] = useState<FormState>({
     username: "You",
     tag: "0420",
     displayName: ME.name,
     bio: ME.bio,
     status: MOCK_DEFAULT.status,
+    presence: "online",
   });
 
   useEffect(() => {
     if (configured && profile) {
+      const presence = (["online", "idle", "dnd", "offline"] as const).includes(
+        profile.status as FormState["presence"],
+      )
+        ? (profile.status as FormState["presence"])
+        : "online";
       setForm({
         username: profile.username,
         tag: profile.tag,
         displayName: profile.display_name || profile.username,
         bio: profile.bio,
         status: profile.status_text || "",
+        presence,
       });
       return;
     }
@@ -71,6 +81,7 @@ function MePage() {
       status: local.status,
       username: ME.name,
       tag: ME.tag.replace("#", ""),
+      presence: "online",
     }));
   }, [configured, profile]);
 
@@ -109,6 +120,7 @@ function MePage() {
       display_name: form.displayName.trim(),
       bio: form.bio,
       status_text: form.status,
+      status: form.presence,
     });
     setBusy(false);
 
@@ -129,6 +141,11 @@ function MePage() {
         displayName: profile.display_name || profile.username,
         bio: profile.bio,
         status: profile.status_text || "",
+        presence: (["online", "idle", "dnd", "offline"] as const).includes(
+          profile.status as FormState["presence"],
+        )
+          ? (profile.status as FormState["presence"])
+          : "online",
       });
     }
     setEditing(false);
@@ -192,7 +209,7 @@ function MePage() {
                   <input
                     ref={avatarInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    accept={AVATAR_ACCEPT}
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -286,6 +303,29 @@ function MePage() {
             </h3>
             {editing ? (
               <div className="space-y-4">
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                    {t("me.presence")}
+                  </span>
+                  <select
+                    value={form.presence}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        presence: e.target.value as FormState["presence"],
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+                  >
+                    <option value="online">{t("me.presenceOnline")}</option>
+                    <option value="idle">{t("me.presenceIdle")}</option>
+                    <option value="dnd">{t("me.presenceDnd")}</option>
+                    <option value="offline">{t("me.presenceOffline")}</option>
+                  </select>
+                  {form.presence === "dnd" ? (
+                    <p className="mt-1 text-[11px] text-stone-500">{t("me.presenceDndHint")}</p>
+                  ) : null}
+                </label>
                 <label className="block">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
                     {t("me.status")}

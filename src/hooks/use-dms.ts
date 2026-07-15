@@ -4,9 +4,11 @@ import { shouldUseMockData } from "@/lib/supabase/env";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-provider";
 import {
+  deleteDmMessage,
   fetchDmMessage,
   fetchDmMessages,
   fetchDmThreads,
+  markDmRead,
   sendDmMessage,
 } from "@/lib/social/api";
 
@@ -79,6 +81,13 @@ export function useDms(initialThreadId?: string) {
       if (cancelled || threadRef.current !== activeId) return;
       if (err) setError(err);
       setMessages(msgs);
+      void markDmRead(activeId).then(() => {
+        if (cancelled || threadRef.current !== activeId) return;
+        setThreads((prev) =>
+          prev.map((t) => (t.id === activeId ? { ...t, unread: 0 } : t)),
+        );
+        window.dispatchEvent(new Event("nexus:unread-refresh"));
+      });
     });
 
     const client = getSupabaseBrowserClient();
@@ -89,25 +98,39 @@ export function useDms(initialThreadId?: string) {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "dm_messages",
           filter: `thread_id=eq.${activeId}`,
         },
         (payload) => {
           if (threadRef.current !== activeId) return;
-          const id = (payload.new as { id: string }).id;
-          void fetchDmMessage(id).then((msg) => {
-            if (!msg || threadRef.current !== activeId) return;
-            setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-            setThreads((prev) =>
-              prev.map((t) =>
-                t.id === activeId
-                  ? { ...t, lastMessage: msg.body, lastTime: msg.time }
-                  : t,
-              ),
-            );
-          });
+          if (payload.eventType === "DELETE") {
+            const id = (payload.old as { id: string }).id;
+            setMessages((prev) => prev.filter((m) => m.id !== id));
+            return;
+          }
+          const row = payload.new as { id: string; deleted_at?: string | null; body?: string };
+          if (row.deleted_at) {
+            setMessages((prev) => prev.filter((m) => m.id !== row.id));
+            return;
+          }
+          if (payload.eventType === "INSERT") {
+            void fetchDmMessage(row.id).then((msg) => {
+              if (!msg || threadRef.current !== activeId) return;
+              setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+              setThreads((prev) =>
+                prev.map((t) =>
+                  t.id === activeId
+                    ? { ...t, lastMessage: msg.body, lastTime: msg.time, unread: 0 }
+                    : t,
+                ),
+              );
+              void markDmRead(activeId).then(() => {
+                window.dispatchEvent(new Event("nexus:unread-refresh"));
+              });
+            });
+          }
         },
       )
       .subscribe();
@@ -117,6 +140,52 @@ export function useDms(initialThreadId?: string) {
       void client.removeChannel(topic);
     };
   }, [live, activeId]);
+
+  // Live badges for inactive DM threads while the DM page is open
+  useEffect(() => {
+    if (!live || !user?.id) return;
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+
+    const feed = client
+      .channel(`nexus-dm-unreads:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "dm_messages",
+        },
+        (payload) => {
+          const row = payload.new as {
+            thread_id?: string;
+            author_id?: string;
+            body?: string;
+            deleted_at?: string | null;
+          };
+          if (!row.thread_id || row.deleted_at) return;
+          if (row.author_id === user.id) return;
+          if (row.thread_id === threadRef.current) return;
+          setThreads((prev) => {
+            if (!prev.some((t) => t.id === row.thread_id)) return prev;
+            return prev.map((t) => {
+              if (t.id !== row.thread_id) return t;
+              return {
+                ...t,
+                lastMessage: row.body?.trim() || t.lastMessage,
+                unread: Math.min((t.unread ?? 0) + 1, 99),
+              };
+            });
+          });
+          window.dispatchEvent(new Event("nexus:unread-refresh"));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(feed);
+    };
+  }, [live, user?.id]);
 
   const active = useMemo(() => {
     const t =
@@ -186,6 +255,20 @@ export function useDms(initialThreadId?: string) {
     [live, user, activeId, profile?.username],
   );
 
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      if (!live) {
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+        return { ok: true as const };
+      }
+      const result = await deleteDmMessage(messageId);
+      if (!result.ok) return result;
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      return { ok: true as const };
+    },
+    [live],
+  );
+
   return {
     live,
     loading,
@@ -198,5 +281,6 @@ export function useDms(initialThreadId?: string) {
     profileName: profile?.username ?? "You",
     refreshThreads,
     send,
+    deleteMessage,
   };
 }

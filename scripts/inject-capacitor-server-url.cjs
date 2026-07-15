@@ -1,25 +1,18 @@
 /**
- * Ensures ios/.../capacitor.config.json has server.url from CAPACITOR_SERVER_URL / SITE_URL.
- * Runs after `npx cap sync` so Codemagic env is never dropped silently.
+ * Ensures ios/.../capacitor.config.json has server.url + allowNavigation
+ * from CAPACITOR_SERVER_URL / SITE_URL. Fail-closed for remote TestFlight builds.
  */
 const fs = require("node:fs");
 const path = require("node:path");
+const {
+  resolveCapacitorServerUrl,
+  assertRemoteServerUrl,
+  allowNavigationHosts,
+} = require("./resolve-capacitor-server.cjs");
 
-const serverUrl = String(
-  process.env.CAPACITOR_SERVER_URL || process.env.SITE_URL || "",
-).replace(/\/$/, "");
-
-if (!serverUrl) {
-  console.error(
-    "CAPACITOR_SERVER_URL (or SITE_URL) is empty. Set it in Codemagic Environment variables and rebuild.",
-  );
-  process.exit(1);
-}
-
-if (!/^https:\/\//i.test(serverUrl)) {
-  console.error("CAPACITOR_SERVER_URL must be an https:// URL. Got:", serverUrl);
-  process.exit(1);
-}
+const serverUrl = resolveCapacitorServerUrl();
+assertRemoteServerUrl(serverUrl);
+const hosts = allowNavigationHosts(serverUrl);
 
 const configPath = path.join(
   process.cwd(),
@@ -41,8 +34,10 @@ config.server = {
   cleartext: false,
   androidScheme: "https",
   iosScheme: "https",
+  allowNavigation: hosts,
 };
 
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
 console.log("Injected server.url →", serverUrl);
+console.log("allowNavigation →", hosts.join(", "));
 console.log("Wrote", configPath);

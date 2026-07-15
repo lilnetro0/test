@@ -1,6 +1,6 @@
 import { getSupabaseBrowserClient } from "./client";
 import { isSupabaseConfigured } from "./env";
-import type { Tables } from "./types";
+import type { Database, Tables } from "./types";
 import type { HubNotifMode } from "@/lib/prefs";
 import {
   setHighContrast,
@@ -27,7 +27,12 @@ export type PrefsUpdate = {
   reduce_motion?: boolean;
   high_contrast?: boolean;
   hub_order?: string[];
+  /** Keys = hubs.slug (HubCard.id) */
   hub_notif_modes?: Record<string, HubNotifMode>;
+  push_enabled?: boolean;
+  notif_sound?: boolean;
+  notif_mentions_only?: boolean;
+  notif_match_dnd?: boolean;
 };
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string; mock?: boolean };
@@ -138,7 +143,7 @@ export async function ensureProfile(
       ok: false,
       error:
         error?.message ??
-        "Profile missing. Run supabase/01_backfill_profiles.sql in the SQL Editor.",
+        "Profile missing. Run supabase/manual/01_backfill_profiles.sql (see docs/DATABASE-OPERATIONS.md).",
     };
   }
 
@@ -201,12 +206,19 @@ export async function updateUserPrefs(userId: string, patch: PrefsUpdate): Promi
   }
   const client = getSupabaseBrowserClient()!;
 
-  const row: Record<string, unknown> = { user_id: userId };
+  const row: Database["public"]["Tables"]["user_prefs"]["Insert"] = { user_id: userId };
   if (patch.lang !== undefined) row.lang = patch.lang;
   if (patch.reduce_motion !== undefined) row.reduce_motion = patch.reduce_motion;
   if (patch.high_contrast !== undefined) row.high_contrast = patch.high_contrast;
-  if (patch.hub_order !== undefined) row.hub_order = patch.hub_order;
-  if (patch.hub_notif_modes !== undefined) row.hub_notif_modes = patch.hub_notif_modes;
+  if (patch.hub_order !== undefined) row.hub_order = patch.hub_order as Database["public"]["Tables"]["user_prefs"]["Insert"]["hub_order"];
+  if (patch.hub_notif_modes !== undefined) {
+    row.hub_notif_modes =
+      patch.hub_notif_modes as Database["public"]["Tables"]["user_prefs"]["Insert"]["hub_notif_modes"];
+  }
+  if (patch.push_enabled !== undefined) row.push_enabled = patch.push_enabled;
+  if (patch.notif_sound !== undefined) row.notif_sound = patch.notif_sound;
+  if (patch.notif_mentions_only !== undefined) row.notif_mentions_only = patch.notif_mentions_only;
+  if (patch.notif_match_dnd !== undefined) row.notif_match_dnd = patch.notif_match_dnd;
 
   const { data, error } = await client
     .from("user_prefs")

@@ -1,4 +1,5 @@
 import type { JoinVoiceInput, VoiceClient, VoiceSession } from "./types";
+import { enterVoiceAudioSession, leaveVoiceAudioSession } from "./native-audio";
 
 /**
  * No-op voice client for mock mode / when LiveKit env is missing.
@@ -20,14 +21,19 @@ export const livekitStubClient: VoiceClient = {
       roomName: input.roomName,
       connected: true,
       live: false,
+      reconnecting: false,
+      localMuted: false,
+      localDeafened: false,
       participants: [],
     };
+    void enterVoiceAudioSession();
     emit();
     return session;
   },
 
   async leaveVoiceChannel() {
     session = null;
+    void leaveVoiceAudioSession();
     emit();
   },
 

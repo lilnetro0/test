@@ -1,0 +1,39 @@
+# Nexus — English App Store metadata (deliver / ASC paste)
+
+Use with Fastlane `deliver` (`fastlane/metadata` symlink or copy) or paste into App Store Connect.
+
+name
+Nexus
+
+subtitle
+Voice & chat for gamers
+
+promotional_text
+Jump between game hubs. Chat, DM friends, and hop into voice — built for play sessions, not meetings.
+
+description
+Nexus is a game-first chat and voice app. Every game is a hub with text channels and voice rooms. Discover hubs, chat in real time, manage friends and DMs, and join LiveKit voice when you are ready to talk.
+
+• Game hubs with channels and roster
+• Real-time chat (edit, react, pin, attachments)
+• Friends, blocks, and direct messages
+• Hub + DM voice (microphone permission)
+• English and Arabic (RTL)
+• Account export and deletion in Settings
+
+Requires a Nexus account and network access for live features. Voice uses your microphone; the photo library or camera may be used for avatars and chat attachments.
+
+keywords
+nexus,gaming,voice chat,game hubs,live chat,friends,dm,gamer
+
+support_url
+https://YOUR_ORIGIN/help
+
+privacy_url
+https://YOUR_ORIGIN/privacy
+
+marketing_url
+https://YOUR_ORIGIN/
+
+primary_category
+MZGenre.SocialNetworking

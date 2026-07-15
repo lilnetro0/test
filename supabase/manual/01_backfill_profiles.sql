@@ -1,8 +1,12 @@
 -- =============================================================================
+-- MANUAL / LEGACY (cloud SQL Editor catch-up)
+-- Prefer equivalent file under supabase/migrations/ when applying a greenfield project.
+-- See docs/DATABASE-OPERATIONS.md
+--
 -- Run in Supabase SQL Editor if hub_members fails with:
 --   hub_members_user_id_fkey
 -- Meaning: you have auth.users rows but no matching public.profiles
--- (common after 00_reset_nexus.sql — auth logins survive, profiles were dropped).
+-- (common after a destructive reset — auth logins survive, profiles were dropped).
 -- =============================================================================
 
 -- Requires schema already applied. Also adds insert policy if missing.

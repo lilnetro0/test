@@ -1,10 +1,14 @@
 /**
- * DTOs shaped like current UI / mock-data types so Phase 1–3 can swap sources
- * without redesigning components.
+ * DTOs shaped like UI / mock-data types so sources can swap without redesigning components.
+ * Domain: docs/DOMAIN-MODEL.md — `id` = hub slug; `gameId` = catalog games.id.
  */
 
-export type GameDto = {
+export type HubCardDto = {
+  /** hubs.slug — route / join key */
   id: string;
+  /** games.id — catalog / hero key */
+  gameId: string;
+  hubUuid?: string;
   name: string;
   short: string;
   hubName: string;
@@ -13,7 +17,11 @@ export type GameDto = {
   activeCount: string;
   category: string;
   members: number;
+  imageUrl?: string | null;
 };
+
+/** @deprecated Prefer `HubCardDto`. */
+export type GameDto = HubCardDto;
 
 export type TextChannelDto = {
   id: string;

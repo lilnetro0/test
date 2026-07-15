@@ -1,8 +1,21 @@
 // Central mock data for the entire Nexus frontend.
 // No persistence, no backend — this is a design-complete UI.
+// Domain rules: docs/DOMAIN-MODEL.md (games = catalog, hubs = joinable).
 
-export type Game = {
+/**
+ * UI card for a joinable hub (Discover, dock, settings).
+ * `id` = hubs.slug; `gameId` = games.id. Not a catalog `games` row.
+ */
+export type HubCard = {
+  /**
+   * Hub route / join key = `hubs.slug` in live mode.
+   * In mock mode this usually matches the catalog game id.
+   */
   id: string;
+  /** Catalog `games.id` — hero presets, category. Defaults to `id` when omitted. */
+  gameId?: string;
+  /** Live `hubs.id` (uuid). */
+  hubUuid?: string;
   name: string;
   short: string;
   hubName: string;
@@ -11,26 +24,35 @@ export type Game = {
   activeCount: string;
   category: "shooter" | "moba" | "sandbox" | "battle-royale" | "sports";
   members: number;
-  /** Optional catalog cover from admin upload */
+  /** Resolved cover: hub image, else game image */
   imageUrl?: string | null;
 };
 
-export const GAMES: Game[] = [
-  { id: "fortnite", name: "Fortnite", short: "FTN", hubName: "Fortnite Hub", tint: "bg-purple-500/20", textTint: "text-purple-300", activeCount: "1.2k", category: "battle-royale", members: 42800 },
-  { id: "valorant", name: "Valorant", short: "VAL", hubName: "Valorant Protocol", tint: "bg-rose-500/20", textTint: "text-rose-300", activeCount: "4.8k", category: "shooter", members: 89200 },
-  { id: "lol", name: "League of Legends", short: "LOL", hubName: "Summoner's Rift", tint: "bg-amber-500/20", textTint: "text-amber-300", activeCount: "3.4k", category: "moba", members: 61500 },
-  { id: "cs2", name: "Counter-Strike 2", short: "CS2", hubName: "CS2 Global", tint: "bg-orange-500/20", textTint: "text-orange-300", activeCount: "2.1k", category: "shooter", members: 54300 },
-  { id: "minecraft", name: "Minecraft", short: "MC", hubName: "Overworld", tint: "bg-emerald-500/20", textTint: "text-emerald-300", activeCount: "980", category: "sandbox", members: 33900 },
-  { id: "apex", name: "Apex Legends", short: "APX", hubName: "Apex Games", tint: "bg-red-500/20", textTint: "text-red-300", activeCount: "1.7k", category: "battle-royale", members: 28100 },
-  { id: "rocket", name: "Rocket League", short: "RL", hubName: "Boost Arena", tint: "bg-sky-500/20", textTint: "text-sky-300", activeCount: "640", category: "sports", members: 18700 },
-  { id: "overwatch", name: "Overwatch 2", short: "OW", hubName: "Watchpoint", tint: "bg-orange-400/20", textTint: "text-orange-200", activeCount: "820", category: "shooter", members: 22400 },
+/** @deprecated Prefer `HubCard` — same shape (historical mock name). */
+export type Game = HubCard;
+
+/** Catalog id for hero presets / filters (`gameId` or fallback to card `id`). */
+export function catalogGameId(g: Pick<HubCard, "id" | "gameId">): string {
+  return g.gameId ?? g.id;
+}
+
+export const GAMES: HubCard[] = [
+  { id: "fortnite", gameId: "fortnite", name: "Fortnite", short: "FTN", hubName: "Fortnite Hub", tint: "bg-purple-500/20", textTint: "text-purple-300", activeCount: "1.2k", category: "battle-royale", members: 42800 },
+  { id: "valorant", gameId: "valorant", name: "Valorant", short: "VAL", hubName: "Valorant Protocol", tint: "bg-rose-500/20", textTint: "text-rose-300", activeCount: "4.8k", category: "shooter", members: 89200 },
+  { id: "lol", gameId: "lol", name: "League of Legends", short: "LOL", hubName: "Summoner's Rift", tint: "bg-amber-500/20", textTint: "text-amber-300", activeCount: "3.4k", category: "moba", members: 61500 },
+  { id: "cs2", gameId: "cs2", name: "Counter-Strike 2", short: "CS2", hubName: "CS2 Global", tint: "bg-orange-500/20", textTint: "text-orange-300", activeCount: "2.1k", category: "shooter", members: 54300 },
+  { id: "minecraft", gameId: "minecraft", name: "Minecraft", short: "MC", hubName: "Overworld", tint: "bg-emerald-500/20", textTint: "text-emerald-300", activeCount: "980", category: "sandbox", members: 33900 },
+  { id: "apex", gameId: "apex", name: "Apex Legends", short: "APX", hubName: "Apex Games", tint: "bg-red-500/20", textTint: "text-red-300", activeCount: "1.7k", category: "battle-royale", members: 28100 },
+  { id: "rocket", gameId: "rocket", name: "Rocket League", short: "RL", hubName: "Boost Arena", tint: "bg-sky-500/20", textTint: "text-sky-300", activeCount: "640", category: "sports", members: 18700 },
+  { id: "overwatch", gameId: "overwatch", name: "Overwatch 2", short: "OW", hubName: "Watchpoint", tint: "bg-orange-400/20", textTint: "text-orange-200", activeCount: "820", category: "shooter", members: 22400 },
 ];
 
-export const DISCOVER_HUBS: Game[] = [
-  { id: "dota2", name: "Dota 2", short: "DT2", hubName: "Ancient Grounds", tint: "bg-red-600/20", textTint: "text-red-300", activeCount: "2.9k", category: "moba", members: 41200 },
-  { id: "cod", name: "Call of Duty: Warzone", short: "COD", hubName: "Verdansk Ops", tint: "bg-lime-500/20", textTint: "text-lime-300", activeCount: "3.6k", category: "battle-royale", members: 67000 },
-  { id: "elden", name: "Elden Ring", short: "ELD", hubName: "The Lands Between", tint: "bg-yellow-600/20", textTint: "text-yellow-300", activeCount: "580", category: "sandbox", members: 15200 },
-  { id: "gta", name: "GTA Online", short: "GTA", hubName: "Los Santos", tint: "bg-pink-500/20", textTint: "text-pink-300", activeCount: "1.9k", category: "sandbox", members: 39400 },
+/** Mock Discover = every joinable hub (matches seed: one hub per catalog game). */
+export const DISCOVER_HUBS: HubCard[] = [
+  { id: "dota2", gameId: "dota2", name: "Dota 2", short: "DT2", hubName: "Ancient Grounds", tint: "bg-red-600/20", textTint: "text-red-300", activeCount: "2.9k", category: "moba", members: 41200 },
+  { id: "cod", gameId: "cod", name: "Call of Duty: Warzone", short: "COD", hubName: "Verdansk Ops", tint: "bg-lime-500/20", textTint: "text-lime-300", activeCount: "3.6k", category: "battle-royale", members: 67000 },
+  { id: "elden", gameId: "elden", name: "Elden Ring", short: "ELD", hubName: "The Lands Between", tint: "bg-yellow-600/20", textTint: "text-yellow-300", activeCount: "580", category: "sandbox", members: 15200 },
+  { id: "gta", gameId: "gta", name: "GTA Online", short: "GTA", hubName: "Los Santos", tint: "bg-pink-500/20", textTint: "text-pink-300", activeCount: "1.9k", category: "sandbox", members: 39400 },
   ...GAMES,
 ];
 
@@ -59,6 +81,8 @@ export type ChatMessage = {
   replyToId?: string;
   /** Live mode: author profile id */
   authorId?: string;
+  /** Live mode: ISO created_at for pagination cursors */
+  createdAt?: string;
   edited?: boolean;
   pinned?: boolean;
   attachment?: { name: string; kind: "image" | "file"; meta?: string; url?: string };
@@ -74,6 +98,7 @@ export type MemberInfo = {
   userId?: string;
 };
 
+/** Mock chat layout keyed by hub slug (= catalog id in mock). Not a DB hubs row. */
 export type Hub = {
   textChannels: TextChannel[];
   voiceChannels: VoiceChannel[];
@@ -159,6 +184,10 @@ export const HUBS: Record<string, Hub> = {
   apex: baseHub("Legend"),
   rocket: baseHub("Driver"),
   overwatch: baseHub("Hero"),
+  dota2: baseHub("Ancient"),
+  cod: baseHub("Operator"),
+  elden: baseHub("Tarnished"),
+  gta: baseHub("Hustler"),
 };
 
 function baseHub(role: string): Hub {

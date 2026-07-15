@@ -38,10 +38,89 @@ const dict = {
     "home.demoLive": "demo",
     "voice.preview": "Preview · no live mic",
     "voice.joinedPreview": "Joined preview (no LiveKit)",
+    "voice.reconnecting": "Reconnecting…",
+    "voice.disconnected": "Disconnected from voice",
+    "voice.healthLabel": "LiveKit status",
+    "voice.healthOk": "LiveKit configured",
+    "voice.healthOff": "LiveKit not configured (stub voice)",
+    "voice.healthHost": "Host: {host}",
+    "voice.mute": "Mute",
+    "voice.unmute": "Unmute",
+    "voice.deafen": "Deafen",
+    "voice.undeafen": "Undeafen",
+    "voice.camera": "Camera",
+    "voice.screenShare": "Screen share",
+    "voice.disconnect": "Disconnect",
+    "voice.settingsAria": "Voice settings",
+    "voice.err.mute": "Could not change mute",
+    "voice.err.deafen": "Could not change deafen",
+    "voice.err.camera": "Camera failed",
+    "voice.err.screen": "Screen share failed",
+    "voice.toast.shareOn": "Screen sharing started",
+    "voice.toast.shareOff": "Stopped screen share",
+    "voice.toast.shareMockOn": "Screen share (mock)",
+    "voice.toast.shareMockOff": "Stopped screen share",
+    "voice.toast.camMockOn": "Camera on (mock)",
+    "voice.toast.camMockOff": "Camera off",
+    "voice.joinOk": "Joined {name}",
+    "voice.joinDmOk": "Joined voice with {name}",
+    "voice.joinFail": "Could not join voice",
+
+    "msg.system": "System",
+    "msg.edited": "(edited)",
+    "msg.save": "Save",
+    "msg.react": "Add reaction",
+    "msg.reply": "Reply",
+    "msg.more": "More",
+    "msg.pin": "Pin message",
+    "msg.unpin": "Unpin message",
+    "msg.edit": "Edit",
+    "msg.report": "Report",
+    "msg.delete": "Delete",
+    "msg.pinned": "Message pinned",
+    "msg.unpinned": "Message unpinned",
+    "msg.deleted": "Message deleted",
+    "msg.err.pin": "Could not update pin",
+    "msg.err.delete": "Could not delete",
+    "msg.err.edit": "Could not edit",
+    "msg.err.react": "Could not react",
+    "msg.err.send": "Send failed",
+    "msg.err.loadOlder": "Could not load older messages",
+    "msg.err.report": "Could not submit report",
+    "msg.err.upload": "Upload failed",
+
+    "toast.friendSent": "Friend request sent",
+    "toast.friendAdded": "{name} added as friend",
+    "toast.blocked": "Blocked {name}",
+    "toast.unblocked": "Unblocked {name}",
+    "toast.dmOpenFail": "Could not open DM",
+    "toast.joinedHub": "Joined {name}",
+    "toast.joinHubSignIn": "Sign in to join hubs",
+    "toast.joinHubFail": "Could not join hub",
+    "toast.kicked": "Kicked {name}",
+    "toast.roleSet": "{name} → {role}",
+    "toast.failed": "Failed",
+    "toast.declined": "Declined {name}",
+    "toast.openingDm": "Opening DM with {name}",
+
+    "error.loadTitle": "This page didn't load",
+    "error.loadBody": "Something went wrong on our end. You can try refreshing or head back home.",
+    "error.tryAgain": "Try again",
+    "error.goHome": "Go home",
+
+    "a11y.closePanel": "Close panel",
+    "a11y.primaryNav": "Primary",
+    "a11y.insertEmoji": "Insert emoji",
+    "a11y.searchEmoji": "Search emoji",
+
     "me.demoStat": "Demo",
     "nav.openPalette": "Open command palette",
     "nav.skip": "Skip to main content",
     "nav.me": "My profile",
+    "meta.title": "Nexus — Voice & Chat for Gamers",
+    "meta.description": "A Discord-style app built for gamers. Every game is a hub with its own text and voice channels.",
+    "cap.offline": "You're offline — Nexus needs a connection.",
+    "cap.retry": "Retry",
 
     "you.viewProfile": "Profile",
     "you.online": "Online",
@@ -68,6 +147,8 @@ const dict = {
     "home.searchPlaceholder": "Search in this channel…",
     "home.searchEmpty": "No messages match your search.",
     "home.searchResults": "results",
+    "home.loadOlder": "Load older messages",
+    "home.loadingOlder": "Loading…",
     "home.reorderHint": "Drag to reorder hubs",
     "home.admin": "Admin",
 
@@ -184,11 +265,14 @@ const dict = {
     "settings.voice.video": "Video",
     "settings.voice.camera": "Camera",
     "settings.notif.desktop": "Desktop notifications",
+    "settings.notif.desktopDesc": "Browser / OS push when Nexus is in the background (needs permission).",
+    "settings.notif.pushOn": "Push enabled",
+    "settings.notif.pushOff": "Push disabled",
     "settings.notif.sound": "Sound on new message",
     "settings.notif.mentions": "Mention notifications only",
     "settings.notif.mentionsDesc": "Only ping me when I'm @mentioned",
     "settings.notif.dnd": "Do not disturb during matches",
-    "settings.notif.dndDesc": "Auto-silence when a game is fullscreen",
+    "settings.notif.dndDesc": "Silence toasts while the browser tab is fullscreen (client only).",
     "settings.notif.perHub": "Per-hub preferences",
     "settings.notif.perHubDesc": "Mute or prioritize notifications for each game hub.",
     "settings.notif.hubAll": "All",
@@ -283,6 +367,12 @@ const dict = {
     "me.title": "Profile",
     "me.about": "About",
     "me.status": "Status",
+    "me.presence": "Availability",
+    "me.presenceOnline": "Online",
+    "me.presenceIdle": "Idle",
+    "me.presenceDnd": "Do not disturb",
+    "me.presenceOffline": "Invisible",
+    "me.presenceDndHint": "Heartbeat won’t override DND until you change this.",
     "me.displayName": "Display name",
     "me.bio": "Bio",
     "me.save": "Save",
@@ -306,6 +396,7 @@ const dict = {
     "auth.demoBannerShort": "Demo mode — Supabase env not set.",
     "auth.oauthSoon": "{provider} sign-in — coming soon",
     "auth.login.title": "Welcome Back",
+    "auth.cooldown": "Please wait {n}s before trying again.",
     "auth.login.subtitle": "Drop back into your squad.",
     "auth.login.footer": "New here?",
     "auth.login.create": "Create an account",
@@ -327,6 +418,8 @@ const dict = {
     "auth.register.terms": "Terms",
     "auth.register.and": "and",
     "auth.register.privacy": "Privacy Policy",
+    "auth.register.guidelines": "Community Guidelines",
+    "auth.register.comma": ",",
     "auth.register.submit": "Create Account",
     "auth.register.busy": "Creating…",
     "auth.register.ageError": "You must be at least 13 years old to use Nexus",
@@ -363,7 +456,28 @@ const dict = {
     "legal.termsNav": "Terms",
     "legal.privacyNav": "Privacy",
     "legal.cookiesNav": "Cookies",
+    "legal.guidelinesNav": "Guidelines",
     "legal.footerTag": "For gamers, by gamers.",
+    "legal.guidelines.title": "Community Guidelines",
+    "legal.guidelines.s1": "1. Be a decent teammate",
+    "legal.guidelines.s1p": "Nexus is for gaming chat and voice. Treat players with respect — same energy you’d bring to a squad that plays together again tomorrow.",
+    "legal.guidelines.s2": "2. Not allowed",
+    "legal.guidelines.s2p": "We remove and may ban for:",
+    "legal.guidelines.s2l1": "Harassment, threats, doxxing, or hate aimed at people",
+    "legal.guidelines.s2l2": "Spam, scams, malware, or unwanted mass DMs",
+    "legal.guidelines.s2l3": "Illegal content or sexual content involving minors",
+    "legal.guidelines.s2l4": "Ban evasion, impersonation, or cheating systems",
+    "legal.guidelines.s3": "3. Chat & voice",
+    "legal.guidelines.s3p": "Keep hubs playable:",
+    "legal.guidelines.s3l1": "Don’t flood channels or blast abuse in voice",
+    "legal.guidelines.s3l2": "Respect hub mods when they kick or pin for safety",
+    "legal.guidelines.s3l3": "NSFW only where clearly expected by that community — never unsolicited",
+    "legal.guidelines.s4": "4. Reporting",
+    "legal.guidelines.s4p": "Use Report on messages or profiles. Share what happened. We review open reports; false mass-reporting is itself abuse.",
+    "legal.guidelines.s5": "5. Enforcement",
+    "legal.guidelines.s5p": "Actions range from content removal and hub kicks to platform bans. Severe or illegal cases may be referred to authorities where required.",
+    "legal.guidelines.s6": "6. Contact",
+    "legal.guidelines.s6p": "Safety questions:",
     "legal.terms.title": "Terms of Service",
     "legal.terms.s1": "1. Acceptance",
     "legal.terms.s1p": "By creating a Nexus account or using the app, you agree to these Terms. If you do not agree, do not use Nexus.",
@@ -403,7 +517,7 @@ const dict = {
     "legal.privacy.s5": "5. Retention",
     "legal.privacy.s5p": "Account data is kept while your account is active. You may request deletion; some records (e.g. safety / fraud) may be retained as required by law.",
     "legal.privacy.s6": "6. Your choices",
-    "legal.privacy.s6p": "Update your profile in Settings or /me. Control notification preferences per hub. Contact us to export or delete account data where required.",
+    "legal.privacy.s6p": "Update your profile in Settings or /me. Control notification preferences per hub. Export your data or delete your account anytime under Settings → Account.",
     "legal.privacy.s7": "7. Children",
     "legal.privacy.s7p": "Nexus is not directed at children under 13. If we learn we collected data from a child under 13, we will delete it.",
     "legal.privacy.s8": "8. Contact",
@@ -441,10 +555,54 @@ const dict = {
 
     "common.back": "Back",
     "common.close": "Close",
+    "common.cancel": "Cancel",
     "common.soon": "Soon",
     "common.comingSoon": "Coming soon",
     "composer.mediaSoon": "Attachments & GIFs coming soon",
     "composer.mentionHint": "Use @user#1234 to notify someone",
+    "report.title": "Report",
+    "report.desc": "Tell us what’s wrong. Our team reviews reports — false reports can get you restricted.",
+    "report.reasonLabel": "Reason",
+    "report.detailsLabel": "Details (optional)",
+    "report.detailsPlaceholder": "What happened?",
+    "report.submit": "Submit report",
+    "report.submitting": "Submitting…",
+    "report.thanks": "Report submitted — thanks for keeping Nexus safe",
+    "report.reason.abuse": "Abuse or harmful content",
+    "report.reason.spam": "Spam or scams",
+    "report.reason.harassment": "Harassment or bullying",
+    "report.reason.illegal": "Illegal activity",
+    "report.reason.other": "Something else",
+    "profile.report": "Report",
+    "profile.blocked": "Blocked",
+    "account.dataTitle": "Your data",
+    "account.export": "Download my data",
+    "account.exportDesc": "JSON export of your profile, messages, friends, and reports.",
+    "account.exportAction": "Export",
+    "account.exportBusy": "Exporting…",
+    "account.exportDone": "Export downloaded",
+    "account.dangerTitle": "Danger zone",
+    "account.deleteDesc": "Permanently deletes your account, messages you authored, and uploads. This cannot be undone.",
+    "account.deleteAction": "Delete account",
+    "account.deleteConfirmHint": "Type your username ({username}) and DELETE to confirm.",
+    "account.deleteConfirmUser": "Your username",
+    "account.deleteConfirmPhrase": "Type DELETE",
+    "account.deleteConfirm": "Delete forever",
+    "account.deleteBusy": "Deleting…",
+    "account.deleteDone": "Account deleted",
+    "account.needLogin": "Sign in to manage your account",
+    "account.sessions": "Other sessions",
+    "account.sessionsDesc": "Sign out everywhere except this device.",
+    "account.sessionsAction": "Sign out others",
+    "account.sessionsBusy": "Signing out…",
+    "account.sessionsDone": "Other sessions signed out",
+    "account.linkedTitle": "Linked accounts",
+    "account.linkedEmpty": "No Google or Discord accounts linked.",
+    "account.linkedHint": "You must keep at least one sign-in method.",
+    "account.unlink": "Unlink",
+    "account.unlinkBusy": "Unlinking…",
+    "account.unlinkLast": "Cannot unlink your only sign-in method",
+    "account.unlinked": "Account unlinked",
   },
   ar: {
     "nav.home": "المراكز",
@@ -464,10 +622,90 @@ const dict = {
     "home.demoLive": "تجريبي",
     "voice.preview": "معاينة · بدون ميكروفون حي",
     "voice.joinedPreview": "انضممت للمعاينة (بدون LiveKit)",
+    "voice.reconnecting": "جارٍ إعادة الاتصال…",
+    "voice.disconnected": "تم قطع الاتصال الصوتي",
+    "voice.healthLabel": "حالة LiveKit",
+    "voice.healthOk": "LiveKit مُعدّ",
+    "voice.healthOff": "LiveKit غير مُعدّ (صوت تجريبي)",
+    "voice.healthHost": "المضيف: {host}",
+    "voice.mute": "كتم",
+    "voice.unmute": "إلغاء الكتم",
+    "voice.deafen": "كتم السماعة",
+    "voice.undeafen": "تشغيل السماعة",
+    "voice.camera": "الكاميرا",
+    "voice.screenShare": "مشاركة الشاشة",
+    "voice.disconnect": "قطع الاتصال",
+    "voice.settingsAria": "إعدادات الصوت",
+    "voice.err.mute": "تعذر تغيير الكتم",
+    "voice.err.deafen": "تعذر تغيير كتم السماعة",
+    "voice.err.camera": "فشلت الكاميرا",
+    "voice.err.screen": "فشلت مشاركة الشاشة",
+    "voice.toast.shareOn": "بدأت مشاركة الشاشة",
+    "voice.toast.shareOff": "توقفت مشاركة الشاشة",
+    "voice.toast.shareMockOn": "مشاركة الشاشة (تجريبي)",
+    "voice.toast.shareMockOff": "توقفت مشاركة الشاشة",
+    "voice.toast.camMockOn": "الكاميرا تعمل (تجريبي)",
+    "voice.toast.camMockOff": "الكاميرا متوقفة",
+    "voice.joinOk": "انضممت إلى {name}",
+    "voice.joinDmOk": "انضممت للصوت مع {name}",
+    "voice.joinFail": "تعذر الانضمام للصوت",
+
+    "msg.system": "نظام",
+    "msg.edited": "(معدّل)",
+    "msg.save": "حفظ",
+    "msg.react": "إضافة تفاعل",
+    "msg.reply": "رد",
+    "msg.more": "المزيد",
+    "msg.pin": "تثبيت الرسالة",
+    "msg.unpin": "إلغاء تثبيت الرسالة",
+    "msg.edit": "تعديل",
+    "msg.report": "بلاغ",
+    "msg.delete": "حذف",
+    "msg.pinned": "تم تثبيت الرسالة",
+    "msg.unpinned": "أُلغي تثبيت الرسالة",
+    "msg.deleted": "تم حذف الرسالة",
+    "msg.err.pin": "تعذر تحديث التثبيت",
+    "msg.err.delete": "تعذر الحذف",
+    "msg.err.edit": "تعذر التعديل",
+    "msg.err.react": "تعذر التفاعل",
+    "msg.err.send": "فشل الإرسال",
+    "msg.err.loadOlder": "تعذر تحميل رسائل أقدم",
+    "msg.err.report": "تعذر إرسال البلاغ",
+    "msg.err.upload": "فشل الرفع",
+
+    "toast.friendSent": "أُرسل طلب الصداقة",
+    "toast.friendAdded": "أُضيف {name} كصديق",
+    "toast.blocked": "تم حظر {name}",
+    "toast.unblocked": "أُلغي حظر {name}",
+    "toast.dmOpenFail": "تعذر فتح المحادثة",
+    "toast.joinedHub": "انضممت إلى {name}",
+    "toast.joinHubSignIn": "سجّل الدخول للانضمام للمراكز",
+    "toast.joinHubFail": "تعذر الانضمام للمركز",
+    "toast.kicked": "تم طرد {name}",
+    "toast.roleSet": "{name} ← {role}",
+    "toast.failed": "فشل",
+    "toast.declined": "رفضت {name}",
+    "toast.openingDm": "فتح محادثة مع {name}",
+
+    "error.loadTitle": "تعذر تحميل الصفحة",
+    "error.loadBody": "حدث خطأ من جهتنا. يمكنك إعادة المحاولة أو العودة للرئيسية.",
+    "error.tryAgain": "أعد المحاولة",
+    "error.goHome": "الرئيسية",
+
+    "a11y.closePanel": "إغلاق اللوحة",
+    "a11y.primaryNav": "التنقل الرئيسي",
+    "a11y.insertEmoji": "إدراج إيموجي",
+    "a11y.searchEmoji": "بحث الإيموجي",
+
     "me.demoStat": "تجريبي",
     "nav.openPalette": "فتح لوحة الأوامر",
     "nav.skip": "التخطي إلى المحتوى الرئيسي",
     "nav.me": "ملفي الشخصي",
+
+    "meta.title": "Nexus — صوت ودردشة للاعبين",
+    "meta.description": "تطبيق بأسلوب Discord مخصص للألعاب. كل لعبة مركز بقنوات نصية وصوتية.",
+    "cap.offline": "أنت دون اتصال — يحتاج Nexus إلى شبكة.",
+    "cap.retry": "إعادة المحاولة",
 
     "you.viewProfile": "الملف",
     "you.online": "متصل",
@@ -494,6 +732,8 @@ const dict = {
     "home.searchPlaceholder": "ابحث في هذه القناة…",
     "home.searchEmpty": "لا رسائل تطابق بحثك.",
     "home.searchResults": "نتائج",
+    "home.loadOlder": "تحميل رسائل أقدم",
+    "home.loadingOlder": "جاري التحميل…",
     "home.reorderHint": "اسحب لإعادة ترتيب المراكز",
     "home.admin": "مشرف",
 
@@ -610,11 +850,14 @@ const dict = {
     "settings.voice.video": "الفيديو",
     "settings.voice.camera": "الكاميرا",
     "settings.notif.desktop": "إشعارات سطح المكتب",
+    "settings.notif.desktopDesc": "إشعارات المتصفح/النظام عندما يكون Nexus في الخلفية (يتطلب الإذن).",
+    "settings.notif.pushOn": "تم تفعيل الدفع",
+    "settings.notif.pushOff": "تم إيقاف الدفع",
     "settings.notif.sound": "صوت عند رسالة جديدة",
     "settings.notif.mentions": "إشعارات الإشارة فقط",
     "settings.notif.mentionsDesc": "نبّهني فقط عند ذكري بـ @",
     "settings.notif.dnd": "عدم الإزعاج أثناء المباريات",
-    "settings.notif.dndDesc": "كتم تلقائي عندما تكون اللعبة بملء الشاشة",
+    "settings.notif.dndDesc": "كتم التوست أثناء ملء الشاشة في المتصفح (جانب العميل فقط).",
     "settings.notif.perHub": "تفضيلات لكل مركز",
     "settings.notif.perHubDesc": "كتم أو أولوية الإشعارات لكل مركز لعبة.",
     "settings.notif.hubAll": "الكل",
@@ -709,6 +952,12 @@ const dict = {
     "me.title": "الملف الشخصي",
     "me.about": "نبذة",
     "me.status": "الحالة",
+    "me.presence": "التوفر",
+    "me.presenceOnline": "متصل",
+    "me.presenceIdle": "خامل",
+    "me.presenceDnd": "عدم الإزعاج",
+    "me.presenceOffline": "غير مرئي",
+    "me.presenceDndHint": "لن يتجاوز نبض التواجد وضع عدم الإزعاج حتى تغيّره.",
     "me.displayName": "الاسم الظاهر",
     "me.bio": "النبذة",
     "me.save": "حفظ",
@@ -732,6 +981,7 @@ const dict = {
     "auth.demoBannerShort": "وضع تجريبي — إعدادات Supabase غير موجودة.",
     "auth.oauthSoon": "تسجيل الدخول عبر {provider} — قريبًا",
     "auth.login.title": "مرحبًا بعودتك",
+    "auth.cooldown": "يرجى الانتظار {n} ثانية قبل المحاولة مجددًا.",
     "auth.login.subtitle": "عد إلى فريقك.",
     "auth.login.footer": "جديد هنا؟",
     "auth.login.create": "إنشاء حساب",
@@ -753,6 +1003,8 @@ const dict = {
     "auth.register.terms": "الشروط",
     "auth.register.and": "و",
     "auth.register.privacy": "سياسة الخصوصية",
+    "auth.register.guidelines": "إرشادات المجتمع",
+    "auth.register.comma": "،",
     "auth.register.submit": "إنشاء حساب",
     "auth.register.busy": "جارٍ الإنشاء…",
     "auth.register.ageError": "يجب أن يكون عمرك ١٣ سنة على الأقل لاستخدام Nexus",
@@ -789,7 +1041,28 @@ const dict = {
     "legal.termsNav": "الشروط",
     "legal.privacyNav": "الخصوصية",
     "legal.cookiesNav": "ملفات تعريف الارتباط",
+    "legal.guidelinesNav": "الإرشادات",
     "legal.footerTag": "للاعبين، من اللاعبين.",
+    "legal.guidelines.title": "إرشادات المجتمع",
+    "legal.guidelines.s1": "١. كن زميل فريق جيد",
+    "legal.guidelines.s1p": "Nexus للدردشة والصوت أثناء اللعب. عامل اللاعبين باحترام — كفريق ستلعب معه مجددًا.",
+    "legal.guidelines.s2": "٢. غير مسموح",
+    "legal.guidelines.s2p": "نزيل المحتوى وقد نحظر بسبب:",
+    "legal.guidelines.s2l1": "المضايقة أو التهديد أو كشف البيانات أو الكراهية",
+    "legal.guidelines.s2l2": "الرسائل المزعجة أو الاحتيال أو البرمجيات الخبيثة",
+    "legal.guidelines.s2l3": "محتوى غير قانوني أو جنسي يمس القُصّر",
+    "legal.guidelines.s2l4": "التحايل على الحظر أو انتحال الهوية أو التلاعب بالأنظمة",
+    "legal.guidelines.s3": "٣. الدردشة والصوت",
+    "legal.guidelines.s3p": "أبقِ المراكز قابلة للعب:",
+    "legal.guidelines.s3l1": "لا تغرق القنوات أو تسيء في الصوت",
+    "legal.guidelines.s3l2": "احترم مشرفي المركز عند الطرد أو التثبيت للأمان",
+    "legal.guidelines.s3l3": "المحتوى الحساس فقط حيث يُتوقّع — وليس دون طلب",
+    "legal.guidelines.s4": "٤. الإبلاغ",
+    "legal.guidelines.s4p": "استخدم الإبلاغ على الرسائل أو الملفات. صف ما حدث. نراجع البلاغات المفتوحة؛ البلاغات الزائفة الجماعية إساءة.",
+    "legal.guidelines.s5": "٥. التنفيذ",
+    "legal.guidelines.s5p": "الإجراءات تشمل حذف المحتوى وطرد المركز وحظر المنصة. الحالات الجسيمة أو غير القانونية قد تُحال للسلطات عند اللزوم.",
+    "legal.guidelines.s6": "٦. التواصل",
+    "legal.guidelines.s6p": "أسئلة السلامة:",
     "legal.terms.title": "شروط الخدمة",
     "legal.terms.s1": "١. القبول",
     "legal.terms.s1p": "بإنشاء حساب Nexus أو استخدام التطبيق، فإنك توافق على هذه الشروط. إن لم توافق، لا تستخدم Nexus.",
@@ -829,7 +1102,7 @@ const dict = {
     "legal.privacy.s5": "٥. الاحتفاظ",
     "legal.privacy.s5p": "تُحفظ بيانات الحساب أثناء نشاطه. يمكنك طلب الحذف؛ قد تُحتفظ بعض السجلات (سلامة / احتيال) كما يتطلب القانون.",
     "legal.privacy.s6": "٦. خياراتك",
-    "legal.privacy.s6p": "حدّث ملفك في الإعدادات أو /me. تحكم بإشعارات كل مركز. تواصل معنا لتصدير أو حذف البيانات حيث يلزم.",
+    "legal.privacy.s6p": "حدّث ملفك في الإعدادات أو /me. تحكم بإشعارات كل مركز. صدّر بياناتك أو احذف حسابك في أي وقت من الإعدادات ← الحساب.",
     "legal.privacy.s7": "٧. الأطفال",
     "legal.privacy.s7p": "Nexus ليس موجّهًا للأطفال دون ١٣. إن علمنا بجمع بيانات دون ١٣، سنحذفها.",
     "legal.privacy.s8": "٨. التواصل",
@@ -867,10 +1140,54 @@ const dict = {
 
     "common.back": "رجوع",
     "common.close": "إغلاق",
+    "common.cancel": "إلغاء",
     "common.soon": "قريبًا",
     "common.comingSoon": "قريبًا",
     "composer.mediaSoon": "المرفقات وملفات GIF قريبًا",
     "composer.mentionHint": "استخدم @user#1234 لإشعار شخص",
+    "report.title": "إبلاغ",
+    "report.desc": "أخبرنا بالمشكلة. يراجع فريقنا البلاغات — البلاغات الزائفة قد تقيّد حسابك.",
+    "report.reasonLabel": "السبب",
+    "report.detailsLabel": "التفاصيل (اختياري)",
+    "report.detailsPlaceholder": "ماذا حدث؟",
+    "report.submit": "إرسال البلاغ",
+    "report.submitting": "جارٍ الإرسال…",
+    "report.thanks": "تم إرسال البلاغ — شكرًا لجعل Nexus آمنًا",
+    "report.reason.abuse": "إساءة أو محتوى ضار",
+    "report.reason.spam": "رسائل مزعجة أو احتيال",
+    "report.reason.harassment": "مضايقة أو تنمر",
+    "report.reason.illegal": "نشاط غير قانوني",
+    "report.reason.other": "شيء آخر",
+    "profile.report": "إبلاغ",
+    "profile.blocked": "تم الحظر",
+    "account.dataTitle": "بياناتك",
+    "account.export": "تنزيل بياناتي",
+    "account.exportDesc": "تصدير JSON لملفك ورسائلك وأصدقائك وبلاغاتك.",
+    "account.exportAction": "تصدير",
+    "account.exportBusy": "جارٍ التصدير…",
+    "account.exportDone": "تم تنزيل التصدير",
+    "account.dangerTitle": "منطقة الخطر",
+    "account.deleteDesc": "يحذف حسابك ورسائلك وملفاتك نهائيًا. لا يمكن التراجع.",
+    "account.deleteAction": "حذف الحساب",
+    "account.deleteConfirmHint": "اكتب اسم المستخدم ({username}) وكلمة DELETE للتأكيد.",
+    "account.deleteConfirmUser": "اسم المستخدم",
+    "account.deleteConfirmPhrase": "اكتب DELETE",
+    "account.deleteConfirm": "حذف نهائي",
+    "account.deleteBusy": "جارٍ الحذف…",
+    "account.deleteDone": "تم حذف الحساب",
+    "account.needLogin": "سجّل الدخول لإدارة حسابك",
+    "account.sessions": "الجلسات الأخرى",
+    "account.sessionsDesc": "تسجيل الخروج من كل الأجهزة عدا هذا الجهاز.",
+    "account.sessionsAction": "خروج الآخرين",
+    "account.sessionsBusy": "جارٍ الخروج…",
+    "account.sessionsDone": "تم تسجيل خروج الجلسات الأخرى",
+    "account.linkedTitle": "الحسابات المرتبطة",
+    "account.linkedEmpty": "لا حسابات Google أو Discord مرتبطة.",
+    "account.linkedHint": "يجب الإبقاء على طريقة دخول واحدة على الأقل.",
+    "account.unlink": "إلغاء الربط",
+    "account.unlinkBusy": "جارٍ الإلغاء…",
+    "account.unlinkLast": "لا يمكن إلغاء طريقة الدخول الوحيدة",
+    "account.unlinked": "تم إلغاء ربط الحساب",
   },
 } as const;
 
@@ -892,17 +1209,57 @@ function interpolate(template: string, vars?: Record<string, string>) {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`);
 }
 
+function readCookieLang(): Lang | null {
+  if (typeof document === "undefined") return null;
+  try {
+    const m = document.cookie.match(/(?:^|; )nexus\.lang=([^;]*)/);
+    const v = m ? decodeURIComponent(m[1]!) : null;
+    return v === "en" || v === "ar" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function detectBrowserLang(): Lang {
+  try {
+    const nav = (navigator.language || navigator.languages?.[0] || "").toLowerCase();
+    if (nav.startsWith("ar")) return "ar";
+  } catch {
+    /* ignore */
+  }
+  return "en";
+}
+
+function persistLang(l: Lang) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, l);
+    document.cookie = `${STORAGE_KEY}=${l};path=/;max-age=31536000;SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Resolve preferred lang: storage → cookie → browser (first visit) → en. */
+export function resolveClientLang(): { lang: Lang; fromStored: boolean } {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "en" || stored === "ar") return { lang: stored, fromStored: true };
+  } catch {
+    /* ignore */
+  }
+  const cookie = readCookieLang();
+  if (cookie) return { lang: cookie, fromStored: true };
+  return { lang: detectBrowserLang(), fromStored: false };
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
 
-  // Hydrate from storage after mount to avoid SSR mismatch.
+  // Hydrate after mount (SSR snapshot stays "en"); persist auto-detect on first visit.
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY) as Lang | null;
-      if (stored === "en" || stored === "ar") setLangState(stored);
-    } catch {
-      /* storage may be blocked; ignore */
-    }
+    const { lang: next, fromStored } = resolveClientLang();
+    setLangState(next);
+    if (!fromStored) persistLang(next);
   }, []);
 
   // Reflect language + direction onto the root <html> element.
@@ -918,11 +1275,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       dir: LANG_LABELS[lang].dir,
       setLang: (l) => {
         setLangState(l);
-        try {
-          window.localStorage.setItem(STORAGE_KEY, l);
-        } catch {
-          /* ignore */
-        }
+        persistLang(l);
       },
       t: (key, vars) => interpolate(dict[lang][key] ?? dict.en[key] ?? key, vars),
     }),

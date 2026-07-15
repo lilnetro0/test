@@ -29,8 +29,8 @@
   --color-input: var(--border-subtle);
   --color-ring: var(--accent);
 
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-glow-accent: 0 0 12px color-mix(in oklab, var(--accent) 45%, transparent);
   --shadow-glow-online: 0 0 8px color-mix(in oklab, var(--online) 55%, transparent);
@@ -38,6 +38,15 @@
 
 :root {
   --radius: 0.75rem;
+
+  /* Mobile chrome — keep bottom-dock and floating panels in sync (Phase 14) */
+  --dock-base-height: 4.25rem;
+  --dock-gap: 0.5rem;
+  --keyboard-inset: 0px;
+  --dock-clearance: calc(
+    var(--dock-base-height) + env(safe-area-inset-bottom, 0px) + var(--dock-gap) +
+      var(--keyboard-inset)
+  );
 
   --background: oklch(0.145 0.005 260);
   --foreground: oklch(0.92 0.005 260);
@@ -91,6 +100,12 @@
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
   }
+
+  /* Arabic: avoid Latin-style uppercase tracking on display text */
+  html[lang="ar"] .uppercase {
+    text-transform: none;
+    letter-spacing: normal;
+  }
 }
 
 @utility pb-safe {
@@ -102,7 +117,17 @@
 }
 
 @utility bottom-dock-clearance {
-  bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: var(--dock-clearance);
+}
+
+/* Soft keyboard open: reclaim dock height for composer (Phase 14 follow-up) */
+html[data-keyboard-open] {
+  --dock-base-height: 0px;
+  --dock-gap: 0px;
+}
+
+html[data-keyboard-open] .bottom-dock {
+  display: none;
 }
 
 /* Respect OS + in-app reduce-motion preference */

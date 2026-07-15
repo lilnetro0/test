@@ -108,10 +108,60 @@ export async function updatePassword(password: string): Promise<AuthResult> {
   return { ok: true, session: null, user: data.user };
 }
 
-export async function signOut(): Promise<AuthResult> {
+export async function signOut(scope: "local" | "global" | "others" = "global"): Promise<AuthResult> {
   const client = getSupabaseBrowserClient();
   if (!client) return { ok: false, error: "Supabase is not configured", mock: true };
-  const { error } = await client.auth.signOut();
+  const { error } = await client.auth.signOut({ scope });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, session: null, user: null };
+}
+
+/** Revoke refresh sessions on other devices; keep the current session. */
+export async function signOutOtherSessions(): Promise<AuthResult> {
+  return signOut("others");
+}
+
+export type LinkedIdentity = {
+  identityId: string;
+  provider: string;
+  email?: string;
+};
+
+export async function listLinkedIdentities(): Promise<{
+  identities: LinkedIdentity[];
+  error?: string;
+}> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { identities: [], error: "Supabase is not configured" };
+
+  const { data, error } = await client.auth.getUserIdentities();
+  if (error) return { identities: [], error: error.message };
+
+  const identities = (data?.identities ?? []).map((id) => ({
+    identityId: id.identity_id,
+    provider: id.provider,
+    email:
+      typeof id.identity_data?.email === "string" ? id.identity_data.email : undefined,
+  }));
+  return { identities };
+}
+
+export async function unlinkOAuthIdentity(identityId: string): Promise<AuthResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase is not configured", mock: true };
+  }
+  const client = getSupabaseBrowserClient()!;
+  const { data, error: listError } = await client.auth.getUserIdentities();
+  if (listError) return { ok: false, error: listError.message };
+
+  const identity = (data?.identities ?? []).find((i) => i.identity_id === identityId);
+  if (!identity) return { ok: false, error: "Identity not found" };
+
+  if ((data?.identities ?? []).length < 2) {
+    return { ok: false, error: "Keep at least one sign-in method linked" };
+  }
+
+  const { error } = await client.auth.unlinkIdentity(identity);
   if (error) return { ok: false, error: error.message };
   return { ok: true, session: null, user: null };
 }

@@ -29,7 +29,7 @@ import {
   FRIENDS,
   DM_CONVERSATIONS,
   type Friend,
-  type Game,
+  type HubCard,
   type DMConversation,
 } from "@/lib/mock-data";
 import { useHotkey } from "@/hooks/use-hotkey";
@@ -50,7 +50,7 @@ export function CommandPalette() {
   const live = !shouldUseMockData();
   const { user } = useAuth();
 
-  const [hubs, setHubs] = useState<Game[]>(GAMES);
+  const [hubs, setHubs] = useState<HubCard[]>(GAMES);
   const [friends, setFriends] = useState<Friend[]>(FRIENDS);
   const [dms, setDms] = useState<DMConversation[]>(DM_CONVERSATIONS);
 

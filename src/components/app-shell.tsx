@@ -1,7 +1,10 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { BottomDock } from "@/components/bottom-dock";
+import { CapOfflineBanner } from "@/components/cap-offline-banner";
 import { DemoBanner } from "@/components/demo-banner";
 import { RequireAuth } from "@/components/require-auth";
+import { useT } from "@/lib/i18n";
+import { trapFocus } from "@/lib/focus-trap";
 
 /**
  * Universal app frame. Children fill the space above the persistent
@@ -21,6 +24,7 @@ export function AppShell({
     <RequireAuth>
       <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background pt-safe text-foreground">
         <DemoBanner />
+        <CapOfflineBanner />
         <div id="main-content" className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
@@ -31,8 +35,8 @@ export function AppShell({
 }
 
 /**
- * Slide-in bottom sheet used for contextual panels (hubs, members, filters).
- * Non-modal-looking: rounded top, glass surface. Dismiss by tapping backdrop.
+ * Contextual panel (hubs, members, pins). Fixed overlay covers the dock
+ * like YouMenu; bottom sheets sit above --dock-clearance (Phase 14).
  */
 export function Sheet({
   open,
@@ -47,30 +51,47 @@ export function Sheet({
   children: ReactNode;
   side?: "bottom" | "right" | "left";
 }) {
+  const { t } = useT();
+  const rootRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const releaseTrap = rootRef.current ? trapFocus(rootRef.current) : () => undefined;
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+      releaseTrap();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
   const panelBySide: Record<typeof side, string> = {
     bottom:
-      "absolute inset-x-0 bottom-0 max-h-[75dvh] rounded-t-2xl border-t border-border-subtle pb-safe motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
+      "fixed inset-x-0 bottom-[var(--dock-clearance)] max-h-[min(75dvh,calc(100dvh-var(--dock-clearance)))] rounded-t-2xl border-t border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
     right:
-      "absolute inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200 ltr:right-0 ltr:border-s rtl:left-0 rtl:border-s",
+      "fixed inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200 ltr:right-0 ltr:border-s rtl:left-0 rtl:border-s",
     left:
-      "absolute inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-left-8 motion-safe:duration-200 ltr:left-0 ltr:border-e rtl:right-0 rtl:border-e",
+      "fixed inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-left-8 motion-safe:duration-200 ltr:left-0 ltr:border-e rtl:right-0 rtl:border-e",
   };
 
   return (
-    <div className="absolute inset-0 z-40">
+    <div
+      ref={rootRef}
+      className="fixed inset-0 z-40"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       <button
-        aria-label="Close panel"
+        type="button"
+        aria-label={t("a11y.closePanel")}
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
@@ -81,15 +102,16 @@ export function Sheet({
               {title}
             </h3>
             <button
+              type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t("common.close")}
               className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 hover:text-white"
             >
               ✕
             </button>
           </header>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
       </div>
     </div>
   );

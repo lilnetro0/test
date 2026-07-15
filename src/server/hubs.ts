@@ -1,24 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { GameDto, TextChannelDto, VoiceChannelDto } from "@/lib/supabase/dto";
+import type { HubCardDto, TextChannelDto, VoiceChannelDto } from "@/lib/supabase/dto";
 
 export const listHubs = createServerFn({ method: "GET" })
   .validator((data: { accessToken?: string }) => data)
-  .handler(async ({ data }): Promise<{ hubs: GameDto[]; error?: string }> => {
+  .handler(async ({ data }): Promise<{ hubs: HubCardDto[]; error?: string }> => {
     const client = getSupabaseServerClient(data.accessToken);
     if (!client) return { hubs: [], error: "Supabase not configured" };
 
     const { data: rows, error } = await client
       .from("hubs")
-      .select("id, slug, name, member_count, active_count, game:games(*)")
+      .select("id, slug, name, member_count, active_count, image_url, game:games(*)")
       .order("name");
 
     if (error) return { hubs: [], error: error.message };
 
-    const hubs: GameDto[] = (rows ?? []).map((h) => {
+    const hubs: HubCardDto[] = (rows ?? []).map((h) => {
       const game = Array.isArray(h.game) ? h.game[0] : h.game;
+      const gameId = game?.id ?? h.slug;
       return {
         id: h.slug,
+        gameId,
+        hubUuid: h.id,
         name: game?.name ?? h.name,
         short: game?.short ?? h.slug.slice(0, 3).toUpperCase(),
         hubName: h.name,
@@ -27,6 +30,7 @@ export const listHubs = createServerFn({ method: "GET" })
         activeCount: h.active_count,
         category: game?.category ?? "sandbox",
         members: h.member_count,
+        imageUrl: h.image_url || game?.image_url || null,
       };
     });
 

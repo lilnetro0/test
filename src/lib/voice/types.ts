@@ -18,6 +18,12 @@ export type VoiceSession = {
   connected: boolean;
   /** true when connected via LiveKit (not stub) */
   live: boolean;
+  /** Transient reconnect in progress (LiveKit or app-level retry) */
+  reconnecting?: boolean;
+  /** Local mute preference (mic off) */
+  localMuted?: boolean;
+  /** Local deafen preference (hear nothing + mic off) */
+  localDeafened?: boolean;
   participants: VoiceParticipant[];
 };
 

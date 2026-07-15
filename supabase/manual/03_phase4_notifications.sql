@@ -1,4 +1,6 @@
 -- =============================================================================
+-- MANUAL / LEGACY — prefer migrations/20260715040000_phase4_notifications.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Phase 4 — Notification triggers (SQL Editor)
 -- Requires: core schema (+ Phase 3 RPCs recommended).
 -- Safe to re-run (create or replace + drop/create triggers).

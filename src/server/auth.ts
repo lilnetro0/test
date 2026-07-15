@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileDto } from "@/lib/supabase/dto";
 
 export const getSessionProfile = createServerFn({ method: "GET" })
@@ -38,12 +38,12 @@ export const getSessionProfile = createServerFn({ method: "GET" })
 
 /** Admin health check — confirms service role is available (never expose key). */
 export const getBackendHealth = createServerFn({ method: "GET" }).handler(async () => {
-  const admin = getSupabaseAdminClient();
-  const configured = Boolean(admin);
-  if (!admin) {
-    return { ok: false as const, configured, message: "Service role not configured" };
-  }
-  const { count, error } = await admin.from("games").select("*", { count: "exact", head: true });
-  if (error) return { ok: false as const, configured, message: error.message };
-  return { ok: true as const, configured, games: count ?? 0 };
+  const { collectAppHealth } = await import("@/lib/ops/health");
+  const h = await collectAppHealth();
+  return {
+    ok: h.supabase.ok,
+    configured: h.supabase.configured,
+    message: h.supabase.message,
+    games: h.supabase.games,
+  };
 });

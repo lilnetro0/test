@@ -1,0 +1,472 @@
+================================================================================
+NEXUS (GAME HUB CONNECT) — CONSULTANT PROJECT BRIEF
+================================================================================
+Document purpose : Full product / technical overview for external consultants
+Product name     : Nexus
+Workspace        : Game Hub Connect
+Date prepared    : July 2026
+Platforms        : Web (PWA) + iOS (Capacitor / TestFlight)
+Repo (example)   : https://github.com/lilnetro0/test.git
+Linked tooling   : Lovable, Supabase, LiveKit, Cloudflare (Workers), Codemagic
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+
+Nexus is a Discord-style social application for gamers. Each game is modeled as
+a "hub" with text channels and voice channels. Users authenticate, join hubs,
+chat in real time, manage friends and direct messages (DMs), receive
+notifications, and join WebRTC voice sessions.
+
+The product is a full-stack TypeScript web application (SSR) with an iOS shell
+built with Capacitor. The iOS app does not package a standalone offline SPA as
+its runtime; it loads a production HTTPS deployment of the same web app inside
+a native WebView (required because server-side functions / auth / APIs are
+origin-bound).
+
+Supabase is the backend-as-a-service (auth, Postgres, Realtime, storage).
+LiveKit provides real-time voice. Codemagic builds and signs the iOS IPA and
+can upload to TestFlight. Cloudflare (Workers / Nitro) is the intended host
+for the HTTPS web origin.
+
+--------------------------------------------------------------------------------
+2. PRODUCT POSITIONING
+--------------------------------------------------------------------------------
+
+Name / brand     : Nexus
+Audience         : Gamers (13+ age gate on registration)
+Tagline / meta   : "Voice & Chat for Gamers" — every game is a hub with text
+                   and voice channels
+
+Primary surfaces
+  - Home           : Active hub chat (channels, messages, reactions, pin, roster)
+  - Discover       : Browse / join hubs (creating hubs is admin-only)
+  - Messages       : DM threads + optional DM voice
+  - You            : Friends, notifications, settings, profile
+  - Admin          : God-mode console for allowlisted operators
+
+Legal / trust pages: Terms, Privacy, Cookies, Help
+
+Languages        : English and Arabic (RTL support)
+
+--------------------------------------------------------------------------------
+3. ARCHITECTURE OVERVIEW
+--------------------------------------------------------------------------------
+
+                    ┌──────────────────────┐
+                    │  iPhone (TestFlight) │
+                    │  Capacitor WebView   │
+                    └──────────┬───────────┘
+                               │ loads CAPACITOR_SERVER_URL (HTTPS)
+                               ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Web app (TanStack Start / React / Vite / Nitro → Cloudflare Workers)     │
+│  - SSR + createServerFn RPC                                              │
+│  - Client UI (hubs, chat, DMs, dock, admin)                              │
+└───────┬───────────────────────────────┬──────────────────────────────────┘
+        │                               │
+        ▼                               ▼
+┌───────────────────┐         ┌───────────────────┐
+│ Supabase          │         │ LiveKit Cloud     │
+│ Auth / Postgres   │         │ WebRTC voice      │
+│ Realtime / Storage│         │ Token minted by   │
+└───────────────────┘         │ server functions  │
+                              └───────────────────┘
+
+Local development: Vite (and optional tunnels: Cloudflare Tunnel / ngrok /
+Tailscale for device testing). Mock mode available when Supabase is unset or
+VITE_USE_MOCK=1.
+
+--------------------------------------------------------------------------------
+4. FRONTEND — TECHNOLOGY & STRUCTURE
+--------------------------------------------------------------------------------
+
+Core stack
+  - React 19
+  - TanStack Router + TanStack Start (SSR / full-stack)
+  - TanStack React Query
+  - Vite 8
+  - Tailwind CSS 4
+  - Nitro (default Cloudflare target via Lovable TanStack config)
+  - TypeScript throughout
+
+UI libraries
+  - Radix primitives + local shadcn-style components (src/components/ui/*)
+  - Lucide icons
+  - Sonner toasts
+  - cmdk command palette
+  - Vaul drawers
+  - React Hook Form + Zod validation
+
+Key frontend folders
+  src/routes/          File-based routes (home, discover, dm, friends, admin…)
+  src/components/      App shell, dock, composer, voice dock, auth, onboarding
+  src/hooks/           Mobile detection, chat hooks, friends, DMs, admin flag
+  src/lib/             Auth, Supabase clients, i18n, voice, prefs, Capacitor
+  src/server/          Server functions / privileged API surface
+
+Primary navigation
+  Persistent bottom dock: Home | Discover | Nexus brand (opens hubs) | DMs | You
+  You menu: Friends, Notifications, Settings, Profile, Logout
+  Desktop: command palette and keyboard shortcuts; mobile onboarding skips
+  desktop-only hotkey step
+
+PWA
+  Service worker, webmanifest, generated icons; installable on mobile Safari
+  as "Add to Home Screen" (separate from App Store / TestFlight path)
+
+Mobile UX work completed for TestFlight / Capacitor
+  - viewport-fit=cover and CSS safe-area insets (notch / home indicator)
+  - h-dvh app shell (avoids classic iOS 100vh clipping)
+  - Bottom dock + "You" sheet positioned above home indicator
+  - Compact VoiceDock on narrow screens; voice strip placed above composer
+  - Capacitor StatusBar overlay + Keyboard resize (body mode)
+  - Auth screens scrollable with safe padding
+  - Toasts moved toward top so they do not sit on the dock
+
+--------------------------------------------------------------------------------
+5. DESIGN SYSTEM
+--------------------------------------------------------------------------------
+
+Visual direction
+  Dark gaming UI (not light marketing purple). Atmosphere via layered dark
+  surfaces, subtle borders, accent glow on brand / online states.
+
+Typography
+  - Display : Space Grotesk (hub titles, uppercase tracked UI chrome)
+  - Body    : Inter
+
+Color tokens (OKLCH in src/styles.css)
+  - Background / foreground (near-black stone)
+  - Surface left / mid / right
+  - Border subtle
+  - Accent (cyan-forward accent for CTAs and active states)
+  - Online (green) / Danger (red)
+  - High-contrast and reduce-motion preference variants
+
+Interaction patterns
+  - Glass / blur panels and sheets
+  - Accent glow on focused brand dock button
+  - Uppercase micro-labels in the dock and section headers
+  - Bottom sheets for hubs / members / filters
+  - Demo banner when running without live backend
+
+Theme-color / Chromeless shell colors lean on #0e1116 / #0c0a09 for status
+and splash alignment on native.
+
+--------------------------------------------------------------------------------
+6. BACKEND — SUPABASE
+--------------------------------------------------------------------------------
+
+Role of Supabase
+  Backend only: authentication, relational data, row-level security (RLS),
+  Realtime subscriptions, and object storage. It does NOT host the SSR web
+  application UI.
+
+SQL layout under supabase/:
+  migrations/*.sql          Canonical schema (CLI / forward-only)
+  manual/01..08_*.sql       Legacy SQL Editor catch-up (prefer migrations)
+  dangerous/00_reset_nexus  Guarded destructive wipe (local/empty only)
+  00_reset_nexus.sql        Stub — blocks accidental wipe
+  verify_schema.sql         Read-only live project inventory
+  seed.sql                  Demo catalog seed
+
+Legacy manual scripts (prefer matching migration):
+  01_backfill_profiles.sql  Profile backfill
+  02_phase3_friends_dms.sql Friends + DM RPCs
+  03_phase4_notifications.sql Notifications triggers
+  04_phase6_launch.sql     Reports + ban fields
+  05_security_hardening.sql Security hardening
+  06_mention_tag.sql        Mention / tag support
+  07_storage.sql            Avatars + attachments buckets
+  08_admin_ops.sql          Admin media columns, hub-media bucket, role bypass
+
+Core domain tables (representative)
+  profiles, games, hubs, hub_members
+  text_channels, voice_channels
+  messages, message_reactions
+  friend_requests, friendships, blocks
+  dm_threads, dm_participants, dm_messages
+  notifications, user_prefs
+  reports (+ profiles.banned_at / ban_reason)
+
+Privileged operations
+  Service role key is used only on the server (createServerFn). The anon key
+  is the only Supabase secret exposed to the browser (VITE_*).
+
+Realtime
+  Hub chat and related social surfaces subscribe for live updates when not
+  in mock mode.
+
+Storage
+  Avatars and message / DM attachments when storage SQL is applied.
+
+--------------------------------------------------------------------------------
+7. AUTHENTICATION
+--------------------------------------------------------------------------------
+
+Implemented
+  - Email + password (register / login)
+  - Password reset flow (/forgot-password, /reset-password)
+  - Google OAuth (Supabase provider must be enabled)
+  - Discord OAuth (Supabase provider must be enabled)
+  - Session via Supabase Auth; profile ensure/create on first session
+  - Ban check: banned profiles are signed out with reason toast
+  - Age gate: minimum 13 on registration
+
+Deferred
+  - Steam OAuth (UI shows "Soon")
+
+Native (iOS) OAuth
+  - Uses Capacitor Browser with skipBrowserRedirect
+  - Deep link callback: com.lilnetro0.nexus://auth/callback
+  - Must be allowlisted in Supabase Auth → URL Configuration together with
+    the production HTTPS site URL
+
+Mock / demo
+  If Supabase is not configured (or VITE_USE_MOCK=1), UI runs with sample
+  data and honest “demo / preview” messaging where applicable.
+
+--------------------------------------------------------------------------------
+8. FEATURE MODULES (PRODUCT)
+--------------------------------------------------------------------------------
+
+Hubs & chat
+  - Select / switch hubs and text channels
+  - Send, edit, react, pin (permissions: author or admin)
+  - Attachments (when storage configured)
+  - Roster / member panels
+  - Mentions
+
+Discover
+  - Search / browse featured hubs
+  - Join hubs
+  - Create hub: admins open /admin; normal users get access denied toast
+
+Friends & DMs
+  - Add friend by Username#tag
+  - Accept / reject requests, block / unblock
+  - DM threads with Realtime-capable messaging
+  - DM voice via LiveKit room nexus-dm-{threadId}
+  - DM video / some secondary actions marked Soon
+
+Voice
+  - Hub voice channels and DM voice
+  - VoiceDock: mute, deafen, leave; camera / screen share when not compact
+  - LiveKit when LIVEKIT_* env set; otherwise stub “preview” join
+  - Mic permission string on iOS Info.plist
+
+Notifications
+  - Inbox route + unread badge on You / dock
+  - Realtime-driven counts when backend wired
+
+Profile & settings
+  - /me and /profile/$username
+  - Settings sections for account, privacy, appearance, voice, notifications,
+    billing (upgrade / Nexus Plus and several toggles still Soon)
+  - Preferences persisted (local + user_prefs where live)
+
+Admin god-mode (/admin)
+  - Gated by ADMIN_USER_IDS (server env, UUID allowlist)
+  - Tabs: Hubs, Games, Channels, Users, Reports
+  - CRUD for games / hubs / channels; hub image upload
+  - Ban / unban users; triage reports
+  - In-app: delete/pin any message; kick / set hub roles
+  - Normal users cannot create hubs
+
+--------------------------------------------------------------------------------
+9. VOICE — LIVEKIT DETAIL
+--------------------------------------------------------------------------------
+
+Flow
+  1. Authenticated client requests a token via createVoiceToken (server fn).
+  2. Server validates identity, ban state, and membership
+     (hub voice channel or DM thread participation).
+  3. Mint LiveKit JWT (publish/subscribe).
+  4. Client joins room with livekit-client.
+  5. VoiceDock mirrors mute / leave state.
+
+Room naming
+  - Hub: channel livekit_room_name or nexus-{channelId}
+  - DM: nexus-dm-{threadId}
+
+Env (server-only)
+  LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET
+
+Without LiveKit keys, the UI still offers join but in preview/stub mode
+(no real WebRTC).
+
+--------------------------------------------------------------------------------
+10. iOS / CAPACITOR / APP STORE PATH
+--------------------------------------------------------------------------------
+
+Why Capacitor (not Flutter / React Native rewrite)
+  The codebase is a React / TanStack Start web app. Codemagic “React Native”
+  or Flutter workflows do not apply. Capacitor wraps the product in a native
+  iOS shell for TestFlight / App Store.
+
+App identity
+  Bundle ID   : com.lilnetro0.nexus
+  Display name: Nexus
+  App Store Connect app created (SKU example: nexus-ios-001)
+  Primary locale may be Arabic depending on App Store Connect settings
+
+Remote shell model
+  The WebView loads CAPACITOR_SERVER_URL (HTTPS origin of the deployed web
+  app). Without that variable at build time, TestFlight shows a placeholder
+  instructing to deploy HTTPS and rebuild.
+
+Build helpers
+  scripts/prepare-capacitor-www.cjs  — builds www/ entry from Nitro public
+  scripts/inject-capacitor-server-url.cjs — forces server.url into iOS config
+  npm run mobile:ios / cap:sync
+
+Native plugins
+  @capacitor/app, browser, keyboard, splash-screen, status-bar
+
+Privacy / store compliance (native)
+  PrivacyInfo.xcprivacy
+  ITSAppUsesNonExemptEncryption = false
+  Usage strings: microphone, camera, photo library
+  URL scheme for OAuth deep links
+
+CI — Codemagic
+  Workflow web-smoke     : npm ci + npm run build
+  Workflow ios-capacitor : build web, Cap sync, inject URL, sign, IPA,
+                           publish to TestFlight (API key integration)
+  Env group example name : "test" must contain CAPACITOR_SERVER_URL
+  Signing                : Apple Distribution cert + App Store profile
+                           for com.lilnetro0.nexus (via App Store Connect API)
+
+Operational notes already encountered
+  - package-lock must stay in sync for npm ci
+  - TestFlight "invite code" is for public links; internal testing uses email
+    invite
+  - External beta review needs Beta App Information / Review contact fields
+  - Concurrent beta review of another build returns 422 (wait or use internal)
+
+--------------------------------------------------------------------------------
+11. HOSTING & ENV CONFIGURATION
+--------------------------------------------------------------------------------
+
+Recommended web host
+  Cloudflare Workers (Nitro Cloudflare output). Alternate: Lovable publish.
+  Supabase is NOT the website host.
+
+Critical environment variables
+  VITE_SUPABASE_URL              Public
+  VITE_SUPABASE_ANON_KEY         Public
+  SUPABASE_SERVICE_ROLE_KEY      Server only
+  VITE_USE_MOCK                  Optional force-mock
+  ADMIN_USER_IDS                 Server only (admin allowlist)
+  LIVEKIT_URL / API_KEY / SECRET Server only
+  SITE_URL                       Production HTTPS origin
+  CAPACITOR_SERVER_URL           Same HTTPS origin for iOS builds (Codemagic)
+
+Supabase Auth URL Configuration must include
+  - https://<production-host>/**
+  - com.lilnetro0.nexus://auth/callback
+
+--------------------------------------------------------------------------------
+12. SECURITY & COMPLIANCE NOTES
+--------------------------------------------------------------------------------
+
+  - CSRF middleware on Start server entry
+  - Security headers in server layer
+  - No service role in VITE_* variables
+  - RLS expected on member-scoped tables (SQL scripts)
+  - Admin actions require allowlisted user IDs on the server
+  - Banned users cannot obtain voice tokens / are signed out on load
+  - Age gate 13+; legal pages ship in-app
+  - Encryption export answered via ITSAppUsesNonExemptEncryption=false for
+    standard HTTPS use (confirm with counsel for final App Store answers)
+
+App Store risk note
+  Remote WebView shells can face review scrutiny (Guideline 4.2). Mitigate by
+  shipping real native polish (mic, deep links, splash, safe areas), a live
+  backend, and a clear demo of chat + voice for reviewers.
+
+--------------------------------------------------------------------------------
+13. WHAT WAS BUILT IN THIS ENGAGEMENT (HIGH LEVEL)
+--------------------------------------------------------------------------------
+
+Product / backend
+  - Live-by-default wiring when keys exist (mock escape hatch)
+  - Message edit, reactions, Realtime chat path
+  - Storage SQL + avatar / attachment pipelines
+  - Google / Discord OAuth paths; Steam left Soon
+  - Admin ban + expanded god-mode console (hubs, games, channels, media,
+    users, reports) and in-app admin message / role / kick tools
+  - Discover restricted so only admins create hubs
+  - DM voice over LiveKit room naming convention
+  - LiveKit client join serialization / softer mic failure handling
+
+UX
+  - Honest demo messaging; hubs-centric dock brand; notifications naming
+  - Mobile headers / polish for DM and settings
+  - Safe-area + keyboard + compact voice UI for phone / TestFlight
+
+Delivery
+  - GitHub upload of the project
+  - Capacitor iOS project (com.lilnetro0.nexus)
+  - codemagic.yaml for web smoke + signed IPA + TestFlight upload
+  - Mobile safe-area and native plugin hardening pushes
+
+Still ops / outside repo
+  - Apple Developer ($99), App Store Connect listing assets
+  - Apply Supabase SQL scripts on the project
+  - Deploy HTTPS web + set Codemagic CAPACITOR_SERVER_URL
+  - Enable OAuth providers and redirects
+  - Configure LiveKit and admin UUIDs
+  - Screenshots, privacy nutrition labels, public App Store review
+
+--------------------------------------------------------------------------------
+14. DEFERRED / “SOON” FEATURES (INTENTIONAL)
+--------------------------------------------------------------------------------
+
+  - Steam OAuth
+  - GIF search (attachments may work without GIF picker)
+  - DM video
+  - Full settings device pickers / PTT / noise AI / 2FA
+  - Nexus Plus billing
+  - Push notifications (native / FCM-style)
+  - User-facing create-hub (by design admin-only for now)
+  - Rate-limit infrastructure beyond basic checks
+
+--------------------------------------------------------------------------------
+15. SUGGESTED CONSULTANT READOUT AGENDA
+--------------------------------------------------------------------------------
+
+  1. Product walkthrough (web): auth → discover → hub chat → voice → DMs
+  2. Admin console with a test admin UUID
+  3. Architecture diagram (this document §3)
+  4. Supabase schema + which SQL still needs applying in their project
+  5. Cloudflare deploy + env matrix
+  6. iOS: Cap remote URL model, Codemagic signing, TestFlight internal vs
+     external beta
+  7. Gaps: Soon list, App Store 4.2 risk, content moderation ops
+  8. Roadmap recommendation: harden production host + SQL + LiveKit first;
+     only then invest in public App Store listing polish
+
+--------------------------------------------------------------------------------
+16. KEY FILE INDEX (FOR ENGINEERS)
+--------------------------------------------------------------------------------
+
+  package.json                 Scripts and dependencies
+  vite.config.ts               TanStack Start / Lovable Vite config
+  capacitor.config.ts          iOS Cap config + remote server.url
+  codemagic.yaml               CI web + iOS IPA / TestFlight
+  src/styles.css               Design tokens
+  src/routes/*                 UI routes
+  src/lib/supabase/*           Clients, auth, storage, profile
+  src/lib/voice/*              LiveKit client + token creation
+  src/lib/admin/api.ts         Admin server functions
+  src/lib/capacitor.ts         Native bootstrap / OAuth helpers
+  src/components/app-shell.tsx Universal frame + bottom dock host
+  supabase/*.sql               Schema / ops scripts
+  BACKEND.md / LAUNCH.md       Additional operator checklists
+  .env.example                 Canonical env documentation
+
+================================================================================
+END OF BRIEF
+================================================================================

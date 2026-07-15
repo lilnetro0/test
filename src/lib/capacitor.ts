@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
 
 /** Custom scheme registered in Info.plist + Supabase redirect allow-list. */
 export const NATIVE_AUTH_REDIRECT = "com.lilnetro0.nexus://auth/callback";
@@ -11,11 +12,13 @@ export function isNativeApp(): boolean {
   }
 }
 
-/** Touch phones / Capacitor — hide desktop-only UX. */
+/** Touch phones / Capacitor — hide desktop-only UX. Aligned with useIsMobile breakpoint. */
 export function isPhoneLikeUi(): boolean {
   if (typeof window === "undefined") return false;
   if (isNativeApp()) return true;
-  return window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+  return window.matchMedia(
+    `(max-width: ${MOBILE_BREAKPOINT - 1}px), (pointer: coarse)`,
+  ).matches;
 }
 
 export function authRedirectTo(path = "/"): string {

@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EMOJI_CATEGORIES } from "@/lib/mock-data";
 import { Smile } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function EmojiPicker({ onPick, trigger }: { onPick: (emoji: string) => void; trigger?: React.ReactNode }) {
+  const { t } = useT();
   const [activeCat, setActiveCat] = useState(0);
   const [query, setQuery] = useState("");
   const cat = EMOJI_CATEGORIES[activeCat];
@@ -18,7 +20,7 @@ export function EmojiPicker({ onPick, trigger }: { onPick: (emoji: string) => vo
           <button
             type="button"
             className="grid size-8 place-items-center rounded-lg text-stone-500 hover:text-white"
-            aria-label="Insert emoji"
+            aria-label={t("a11y.insertEmoji")}
           >
             <Smile className="size-4" />
           </button>
@@ -33,7 +35,7 @@ export function EmojiPicker({ onPick, trigger }: { onPick: (emoji: string) => vo
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search emoji"
+            placeholder={t("a11y.searchEmoji")}
             className="w-full rounded-md bg-background px-3 py-2 text-xs text-stone-300 placeholder-stone-600 outline-none focus:ring-1 focus:ring-accent"
           />
         </div>

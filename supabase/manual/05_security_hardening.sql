@@ -1,6 +1,7 @@
+-- MANUAL / LEGACY — prefer migrations/20260715070000_security_hardening.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Phase 7: security hardening (RLS + RPC)
 -- Run after phases 3–6. Safe to re-run (idempotent drops/recreates).
--- Same contents as migrations/20260715070000_security_hardening.sql
 
 -- ──────────────────────────────────────────────
 -- Helpers

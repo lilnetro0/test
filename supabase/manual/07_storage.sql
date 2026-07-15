@@ -1,5 +1,6 @@
+-- MANUAL / LEGACY — prefer migrations/20260715090000_storage_attachments.sql
+-- See docs/DATABASE-OPERATIONS.md
 -- Storage buckets + message/dm attachment columns
--- Same as migrations/20260715090000_storage_attachments.sql
 
 alter table public.messages
   add column if not exists attachment_url text,

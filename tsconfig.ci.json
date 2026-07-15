@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/lib/rate-limit.ts",
+    "src/lib/trust-safety.ts",
+    "src/lib/hub/permissions.ts",
+    "src/lib/supabase/env.ts",
+    "src/lib/supabase/storage-policy.ts",
+    "src/lib/utils.ts",
+    "src/lib/supabase/types.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vite/client", "node"]
+  }
+}

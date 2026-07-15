@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { DISCOVER_HUBS, type Game } from "@/lib/mock-data";
+import { DISCOVER_HUBS, catalogGameId, type HubCard } from "@/lib/mock-data";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ function DiscoverPage() {
   const [cat, setCat] = useState("All");
   const [query, setQuery] = useState("");
   const [joining, setJoining] = useState<string | null>(null);
-  const [liveHubs, setLiveHubs] = useState<Game[]>([]);
+  const [liveHubs, setLiveHubs] = useState<HubCard[]>([]);
   const [hubsLoading, setHubsLoading] = useState(false);
   const { t } = useT();
   const { user } = useAuth();
@@ -66,7 +66,8 @@ function DiscoverPage() {
       const qMatch =
         h.name.toLowerCase().includes(q) ||
         h.hubName.toLowerCase().includes(q) ||
-        h.id.toLowerCase().includes(q);
+        h.id.toLowerCase().includes(q) ||
+        catalogGameId(h).toLowerCase().includes(q);
       return catMatch && qMatch;
     });
   }, [catalog, cat, query]);
@@ -80,22 +81,22 @@ function DiscoverPage() {
 
   const joinHub = async (slug: string, hubName: string) => {
     if (!live) {
-      toast.success(`Joined ${hubName}`);
+      toast.success(t("toast.joinedHub", { name: hubName }));
       void navigate({ to: "/", search: { hub: slug, hubs: undefined } });
       return;
     }
     if (!user) {
-      toast.error("Sign in to join hubs");
+      toast.error(t("toast.joinHubSignIn"));
       return;
     }
     setJoining(slug);
     try {
       const result = await joinHubBySlug(slug, user.id);
       if (!result.ok) {
-        toast.error(result.error ?? "Could not join hub");
+        toast.error(result.error ?? t("toast.joinHubFail"));
         return;
       }
-      toast.success(`Joined ${hubName}`);
+      toast.success(t("toast.joinedHub", { name: hubName }));
       void navigate({ to: "/", search: { hub: slug, hubs: undefined } });
     } finally {
       setJoining(null);
@@ -166,7 +167,7 @@ function DiscoverPage() {
                     className="relative overflow-hidden rounded-2xl border border-border-subtle"
                   >
                     <HubHero
-                      gameId={h.id}
+                      gameId={catalogGameId(h)}
                       short={h.short}
                       imageUrl={h.imageUrl}
                       large
@@ -203,7 +204,7 @@ function DiscoverPage() {
                 key={h.id}
                 className="group overflow-hidden rounded-xl border border-border-subtle bg-surface-mid transition-colors hover:border-accent/30"
               >
-                <HubHero gameId={h.id} short={h.short} imageUrl={h.imageUrl} className="h-24" />
+                <HubHero gameId={catalogGameId(h)} short={h.short} imageUrl={h.imageUrl} className="h-24" />
                 <div className="p-4">
                   <h3 className="truncate font-semibold text-white">{h.hubName}</h3>
                   <p className="mt-1 truncate text-xs text-stone-500">{h.name}</p>

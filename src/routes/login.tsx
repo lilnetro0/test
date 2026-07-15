@@ -4,6 +4,7 @@ import { AuthShell, AuthField } from "@/components/auth-shell";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { checkAuthCooldown, markAuthCooldown } from "@/lib/rate-limit";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/login")({
@@ -30,20 +31,27 @@ function LoginPage() {
       toast.success(t("auth.login.mockSuccess"), {
         description: t("auth.login.mockHint"),
       });
-      navigate({ to: "/" });
+      navigate({ to: "/", search: {} });
+      return;
+    }
+
+    const cool = checkAuthCooldown("login", 3);
+    if (!cool.ok) {
+      toast.error(t("auth.cooldown", { n: String(cool.retryInSec) }));
       return;
     }
 
     setBusy(true);
     const result = await signIn(email.trim(), password);
     setBusy(false);
+    markAuthCooldown("login");
 
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
     toast.success(t("auth.login.success"));
-    navigate({ to: "/" });
+    navigate({ to: "/", search: {} });
   };
 
   return (

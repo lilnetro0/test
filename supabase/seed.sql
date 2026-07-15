@@ -1,4 +1,6 @@
 -- Seed catalog data matching src/lib/mock-data.ts (no auth.users required).
+-- Domain: games = catalog; hubs = joinable (one official hub per game here; slug = game_id).
+-- See docs/DOMAIN-MODEL.md.
 
 insert into public.games (id, name, short, category, tint, text_tint) values
   ('fortnite', 'Fortnite', 'FTN', 'battle-royale', 'bg-purple-500/20', 'text-purple-300'),
@@ -23,7 +25,11 @@ insert into public.hubs (id, game_id, slug, name, member_count, active_count) va
   ('11111111-1111-1111-1111-111111111105', 'minecraft', 'minecraft', 'Overworld', 33900, '980'),
   ('11111111-1111-1111-1111-111111111106', 'apex', 'apex', 'Apex Games', 28100, '1.7k'),
   ('11111111-1111-1111-1111-111111111107', 'rocket', 'rocket', 'Boost Arena', 18700, '640'),
-  ('11111111-1111-1111-1111-111111111108', 'overwatch', 'overwatch', 'Watchpoint', 22400, '820')
+  ('11111111-1111-1111-1111-111111111108', 'overwatch', 'overwatch', 'Watchpoint', 22400, '820'),
+  ('11111111-1111-1111-1111-111111111109', 'dota2', 'dota2', 'Ancient Grounds', 41200, '2.9k'),
+  ('11111111-1111-1111-1111-11111111110a', 'cod', 'cod', 'Verdansk Ops', 67000, '3.6k'),
+  ('11111111-1111-1111-1111-11111111110b', 'elden', 'elden', 'The Lands Between', 15200, '580'),
+  ('11111111-1111-1111-1111-11111111110c', 'gta', 'gta', 'Los Santos', 39400, '1.9k')
 on conflict (slug) do nothing;
 
 -- Fortnite channels
@@ -65,7 +71,7 @@ cross join (values
   ('lfg', 'lfg', 1),
   ('clips', 'clips', 2)
 ) as c(slug, name, pos)
-where h.slug in ('lol', 'cs2', 'minecraft', 'apex', 'rocket', 'overwatch')
+where h.slug in ('lol', 'cs2', 'minecraft', 'apex', 'rocket', 'overwatch', 'dota2', 'cod', 'elden', 'gta')
 on conflict (hub_id, slug) do nothing;
 
 insert into public.voice_channels (hub_id, slug, name, position, livekit_room_name)
@@ -75,5 +81,5 @@ cross join (values
   ('lobby', 'Main Lobby', 0),
   ('ranked', 'Ranked', 1)
 ) as c(slug, name, pos)
-where h.slug in ('lol', 'cs2', 'minecraft', 'apex', 'rocket', 'overwatch')
+where h.slug in ('lol', 'cs2', 'minecraft', 'apex', 'rocket', 'overwatch', 'dota2', 'cod', 'elden', 'gta')
 on conflict (hub_id, slug) do nothing;

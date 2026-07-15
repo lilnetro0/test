@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Headphones, PhoneOff, Monitor, Video, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { getVoiceClient } from "@/lib/voice";
@@ -24,26 +24,38 @@ export function VoiceDock({
   const navigate = useNavigate();
   const { t } = useT();
   const compact = useIsMobile();
-  const [muted, setMuted] = useState(false);
-  const [deafened, setDeafened] = useState(false);
+  const onDisconnectRef = useRef(onDisconnect);
+  onDisconnectRef.current = onDisconnect;
+  const [muted, setMuted] = useState(() => voice.getSession()?.localMuted ?? false);
+  const [deafened, setDeafened] = useState(() => voice.getSession()?.localDeafened ?? false);
   const [sharing, setSharing] = useState(false);
   const [video, setVideo] = useState(false);
   const [live, setLive] = useState(() => voice.getSession()?.live ?? false);
+  const [reconnecting, setReconnecting] = useState(
+    () => voice.getSession()?.reconnecting ?? false,
+  );
   const [participantCount, setParticipantCount] = useState(
     () => voice.getSession()?.participants.length ?? 1,
   );
 
   useEffect(() => {
     return voice.onSessionChange?.((session) => {
-      setLive(session?.live ?? false);
-      setParticipantCount(session?.participants.length ?? 0);
+      if (!session) {
+        onDisconnectRef.current();
+        return;
+      }
+      setLive(session.live);
+      setReconnecting(Boolean(session.reconnecting));
+      setParticipantCount(session.participants.length);
+      if (typeof session.localMuted === "boolean") setMuted(session.localMuted);
+      if (typeof session.localDeafened === "boolean") setDeafened(session.localDeafened);
     });
   }, [voice]);
 
   return (
     <div
-      className={`border-t border-border-subtle bg-background/80 backdrop-blur-md ${
-        compact ? "px-2 py-1.5" : "p-3"
+      className={`border-t border-border-subtle/80 bg-background/80 backdrop-blur-md ${
+        compact ? "px-2 py-1" : "p-3"
       }`}
     >
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3"}`}>
@@ -51,11 +63,21 @@ export function VoiceDock({
           <div
             className={`grid shrink-0 place-items-center rounded-lg ${
               compact ? "size-7" : "size-8"
-            } ${live ? "bg-online/15 text-online" : "bg-amber-500/15 text-amber-200"}`}
+            } ${
+              reconnecting
+                ? "bg-amber-500/15 text-amber-200"
+                : live
+                  ? "bg-online/15 text-online"
+                  : "bg-amber-500/15 text-amber-200"
+            }`}
           >
             <span
               className={`size-2 animate-pulse rounded-full ${
-                live ? "bg-online shadow-[var(--shadow-glow-online)]" : "bg-amber-400"
+                reconnecting
+                  ? "bg-amber-400"
+                  : live
+                    ? "bg-online shadow-[var(--shadow-glow-online)]"
+                    : "bg-amber-400"
               }`}
             />
           </div>
@@ -66,12 +88,18 @@ export function VoiceDock({
             {!compact && (
               <p
                 className={`truncate text-[10px] uppercase tracking-tight ${
-                  live ? "text-online" : "text-amber-200/90"
+                  reconnecting
+                    ? "text-amber-200/90"
+                    : live
+                      ? "text-online"
+                      : "text-amber-200/90"
                 }`}
               >
-                {live
-                  ? `${gameName} · LiveKit · ${participantCount || 1}`
-                  : `${gameName} · ${t("voice.preview")}`}
+                {reconnecting
+                  ? t("voice.reconnecting")
+                  : live
+                    ? `${gameName} · LiveKit · ${participantCount || 1}`
+                    : `${gameName} · ${t("voice.preview")}`}
               </p>
             )}
           </div>
@@ -87,12 +115,12 @@ export function VoiceDock({
                   setSharing(next);
                   void voice.setScreenShareEnabled(next).catch((e: Error) => {
                     setSharing(!next);
-                    toast.error(e.message || "Screen share failed");
+                    toast.error(e.message || t("voice.err.screen"));
                   });
-                  if (live) toast(next ? "Screen sharing started" : "Stopped screen share");
-                  else toast(next ? "Screen share (mock)" : "Stopped screen share");
+                  if (live) toast(next ? t("voice.toast.shareOn") : t("voice.toast.shareOff"));
+                  else toast(next ? t("voice.toast.shareMockOn") : t("voice.toast.shareMockOff"));
                 }}
-                label="Screen share"
+                label={t("voice.screenShare")}
               >
                 <Monitor className="size-4" />
               </DockButton>
@@ -104,11 +132,11 @@ export function VoiceDock({
                   setVideo(next);
                   void voice.setCameraEnabled(next).catch((e: Error) => {
                     setVideo(!next);
-                    toast.error(e.message || "Camera failed");
+                    toast.error(e.message || t("voice.err.camera"));
                   });
-                  if (!live) toast(next ? "Camera on (mock)" : "Camera off");
+                  if (!live) toast(next ? t("voice.toast.camMockOn") : t("voice.toast.camMockOff"));
                 }}
-                label="Camera"
+                label={t("voice.camera")}
               >
                 <Video className="size-4" />
               </DockButton>
@@ -122,9 +150,12 @@ export function VoiceDock({
               const next = !muted;
               setMuted(next);
               if (!next) setDeafened(false);
-              void voice.setMuted(next);
+              void voice.setMuted(next).catch((e: Error) => {
+                setMuted(!next);
+                toast.error(e.message || t("voice.err.mute"));
+              });
             }}
-            label={muted ? "Unmute" : "Mute"}
+            label={muted ? t("voice.unmute") : t("voice.mute")}
           >
             {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
           </DockButton>
@@ -136,9 +167,12 @@ export function VoiceDock({
               const next = !deafened;
               setDeafened(next);
               if (next) setMuted(true);
-              void voice.setDeafened(next);
+              void voice.setDeafened(next).catch((e: Error) => {
+                setDeafened(!next);
+                toast.error(e.message || t("voice.err.deafen"));
+              });
             }}
-            label={deafened ? "Undeafen" : "Deafen"}
+            label={deafened ? t("voice.undeafen") : t("voice.deafen")}
           >
             <Headphones className={`size-4 ${deafened ? "line-through" : ""}`} />
           </DockButton>
@@ -148,7 +182,7 @@ export function VoiceDock({
               onClick={() => {
                 void navigate({ to: "/settings" });
               }}
-              label="Voice settings"
+              label={t("voice.settingsAria")}
             >
               <Settings2 className="size-4" />
             </DockButton>
@@ -157,10 +191,10 @@ export function VoiceDock({
             onClick={() => {
               void voice.leaveVoiceChannel();
               onDisconnect();
-              toast("Disconnected from voice");
+              toast(t("voice.disconnected"));
             }}
-            title="Disconnect"
-            aria-label="Disconnect"
+            title={t("voice.disconnect")}
+            aria-label={t("voice.disconnect")}
             className={`grid place-items-center rounded-lg bg-danger/15 text-danger transition-colors hover:bg-danger/25 ${
               compact ? "size-8" : "size-9"
             }`}

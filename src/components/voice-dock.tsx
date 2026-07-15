@@ -4,10 +4,12 @@ import { toast } from "sonner";
 import { getVoiceClient } from "@/lib/voice";
 import { useNavigate } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Persistent voice-connection dock. Shown when connected to a voice channel.
  * Mute/deafen/leave/camera/share route through VoiceClient (stub or LiveKit).
+ * Compact on narrow screens so Composer + bottom dock stay usable.
  */
 export function VoiceDock({
   channelName,
@@ -21,6 +23,7 @@ export function VoiceDock({
   const voice = getVoiceClient();
   const navigate = useNavigate();
   const { t } = useT();
+  const compact = useIsMobile();
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -38,13 +41,17 @@ export function VoiceDock({
   }, [voice]);
 
   return (
-    <div className="border-t border-border-subtle bg-background/70 p-3 backdrop-blur-md">
-      <div className="flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+    <div
+      className={`border-t border-border-subtle bg-background/80 backdrop-blur-md ${
+        compact ? "px-2 py-1.5" : "p-3"
+      }`}
+    >
+      <div className={`flex items-center ${compact ? "gap-2" : "gap-3"}`}>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <div
-            className={`grid size-8 shrink-0 place-items-center rounded-lg ${
-              live ? "bg-online/15 text-online" : "bg-amber-500/15 text-amber-200"
-            }`}
+            className={`grid shrink-0 place-items-center rounded-lg ${
+              compact ? "size-7" : "size-8"
+            } ${live ? "bg-online/15 text-online" : "bg-amber-500/15 text-amber-200"}`}
           >
             <span
               className={`size-2 animate-pulse rounded-full ${
@@ -53,53 +60,64 @@ export function VoiceDock({
             />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-white">{channelName}</p>
-            <p
-              className={`truncate text-[10px] uppercase tracking-tight ${
-                live ? "text-online" : "text-amber-200/90"
-              }`}
-            >
-              {live
-                ? `${gameName} · LiveKit · ${participantCount || 1}`
-                : `${gameName} · ${t("voice.preview")}`}
+            <p className={`truncate font-bold text-white ${compact ? "text-[11px]" : "text-xs"}`}>
+              {channelName}
             </p>
+            {!compact && (
+              <p
+                className={`truncate text-[10px] uppercase tracking-tight ${
+                  live ? "text-online" : "text-amber-200/90"
+                }`}
+              >
+                {live
+                  ? `${gameName} · LiveKit · ${participantCount || 1}`
+                  : `${gameName} · ${t("voice.preview")}`}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <DockButton
-            active={sharing}
-            onClick={() => {
-              const next = !sharing;
-              setSharing(next);
-              void voice.setScreenShareEnabled(next).catch((e: Error) => {
-                setSharing(!next);
-                toast.error(e.message || "Screen share failed");
-              });
-              if (live) toast(next ? "Screen sharing started" : "Stopped screen share");
-              else toast(next ? "Screen share (mock)" : "Stopped screen share");
-            }}
-            label="Screen share"
-          >
-            <Monitor className="size-4" />
-          </DockButton>
-          <DockButton
-            active={video}
-            onClick={() => {
-              const next = !video;
-              setVideo(next);
-              void voice.setCameraEnabled(next).catch((e: Error) => {
-                setVideo(!next);
-                toast.error(e.message || "Camera failed");
-              });
-              if (!live) toast(next ? "Camera on (mock)" : "Camera off");
-            }}
-            label="Camera"
-          >
-            <Video className="size-4" />
-          </DockButton>
+        <div className={`flex shrink-0 items-center ${compact ? "gap-0.5" : "gap-1"}`}>
+          {!compact && (
+            <>
+              <DockButton
+                active={sharing}
+                compact={compact}
+                onClick={() => {
+                  const next = !sharing;
+                  setSharing(next);
+                  void voice.setScreenShareEnabled(next).catch((e: Error) => {
+                    setSharing(!next);
+                    toast.error(e.message || "Screen share failed");
+                  });
+                  if (live) toast(next ? "Screen sharing started" : "Stopped screen share");
+                  else toast(next ? "Screen share (mock)" : "Stopped screen share");
+                }}
+                label="Screen share"
+              >
+                <Monitor className="size-4" />
+              </DockButton>
+              <DockButton
+                active={video}
+                compact={compact}
+                onClick={() => {
+                  const next = !video;
+                  setVideo(next);
+                  void voice.setCameraEnabled(next).catch((e: Error) => {
+                    setVideo(!next);
+                    toast.error(e.message || "Camera failed");
+                  });
+                  if (!live) toast(next ? "Camera on (mock)" : "Camera off");
+                }}
+                label="Camera"
+              >
+                <Video className="size-4" />
+              </DockButton>
+            </>
+          )}
           <DockButton
             active={muted}
             danger={muted}
+            compact={compact}
             onClick={() => {
               const next = !muted;
               setMuted(next);
@@ -113,6 +131,7 @@ export function VoiceDock({
           <DockButton
             active={deafened}
             danger={deafened}
+            compact={compact}
             onClick={() => {
               const next = !deafened;
               setDeafened(next);
@@ -123,14 +142,17 @@ export function VoiceDock({
           >
             <Headphones className={`size-4 ${deafened ? "line-through" : ""}`} />
           </DockButton>
-          <DockButton
-            onClick={() => {
-              void navigate({ to: "/settings" });
-            }}
-            label="Voice settings"
-          >
-            <Settings2 className="size-4" />
-          </DockButton>
+          {!compact && (
+            <DockButton
+              compact={compact}
+              onClick={() => {
+                void navigate({ to: "/settings" });
+              }}
+              label="Voice settings"
+            >
+              <Settings2 className="size-4" />
+            </DockButton>
+          )}
           <button
             onClick={() => {
               void voice.leaveVoiceChannel();
@@ -139,7 +161,9 @@ export function VoiceDock({
             }}
             title="Disconnect"
             aria-label="Disconnect"
-            className="grid size-9 place-items-center rounded-lg bg-danger/15 text-danger transition-colors hover:bg-danger/25"
+            className={`grid place-items-center rounded-lg bg-danger/15 text-danger transition-colors hover:bg-danger/25 ${
+              compact ? "size-8" : "size-9"
+            }`}
           >
             <PhoneOff className="size-4" />
           </button>
@@ -155,19 +179,23 @@ function DockButton({
   danger,
   onClick,
   label,
+  compact,
 }: {
   children: React.ReactNode;
   active?: boolean;
   danger?: boolean;
   onClick: () => void;
   label: string;
+  compact?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`grid size-9 place-items-center rounded-lg transition-colors ${
+      className={`grid place-items-center rounded-lg transition-colors ${
+        compact ? "size-8" : "size-9"
+      } ${
         danger
           ? "bg-danger/15 text-danger hover:bg-danger/25"
           : active

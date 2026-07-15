@@ -347,6 +347,14 @@ function NexusApp() {
         )}
       </div>
 
+      {voiceChannel && (
+        <VoiceDock
+          channelName={voiceChannel.name}
+          gameName={game.name}
+          onDisconnect={() => setVoiceChannel(null)}
+        />
+      )}
+
       <Composer
         channelName={chat.activeChannel.name}
         gameId={chat.activeSlug}
@@ -362,14 +370,6 @@ function NexusApp() {
           return { ok: true };
         }}
       />
-
-      {voiceChannel && (
-        <VoiceDock
-          channelName={voiceChannel.name}
-          gameName={game.name}
-          onDisconnect={() => setVoiceChannel(null)}
-        />
-      )}
 
       <Sheet open={pinsOpen} onClose={() => setPinsOpen(false)} title={t("home.pinnedTitle")}>
         <div className="space-y-4 p-4">

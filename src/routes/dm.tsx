@@ -308,6 +308,16 @@ function DMPage() {
                 ))}
               </div>
 
+              {inVoice && (
+                <VoiceDock
+                  channelName={active.with.name}
+                  gameName="DM"
+                  onDisconnect={() => {
+                    void getVoiceClient().leaveVoiceChannel();
+                    setInVoice(false);
+                  }}
+                />
+              )}
               <Composer
                 channelName={active.with.name}
                 onSend={async (body, _replyToId, attachment) => {
@@ -319,16 +329,6 @@ function DMPage() {
                   return { ok: true };
                 }}
               />
-              {inVoice && (
-                <VoiceDock
-                  channelName={active.with.name}
-                  gameName="DM"
-                  onDisconnect={() => {
-                    void getVoiceClient().leaveVoiceChannel();
-                    setInVoice(false);
-                  }}
-                />
-              )}
             </>
           )}
         </main>

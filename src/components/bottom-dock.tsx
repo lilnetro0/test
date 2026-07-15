@@ -66,13 +66,13 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           type="button"
           onClick={openHubs}
           aria-label={t("nav.openHubs")}
-          className={`grid size-14 -translate-y-3 place-items-center rounded-2xl border transition-all ${
+          className={`grid size-12 place-items-center rounded-2xl border transition-all sm:size-14 sm:-translate-y-3 ${
             brandActive
               ? "border-accent bg-accent/15 shadow-[var(--shadow-glow-accent)]"
               : "border-accent/40 bg-accent/10 hover:border-accent hover:shadow-[var(--shadow-glow-accent)]"
           }`}
         >
-          <img src={logo} alt="" width={28} height={28} className="size-7 object-contain" />
+          <img src={logo} alt="" width={28} height={28} className="size-6 object-contain sm:size-7" />
         </button>
 
         <DockItem

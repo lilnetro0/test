@@ -11,6 +11,13 @@ export function isNativeApp(): boolean {
   }
 }
 
+/** Touch phones / Capacitor — hide desktop-only UX. */
+export function isPhoneLikeUi(): boolean {
+  if (typeof window === "undefined") return false;
+  if (isNativeApp()) return true;
+  return window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+}
+
 export function authRedirectTo(path = "/"): string {
   if (typeof window === "undefined") return path;
   if (isNativeApp()) return NATIVE_AUTH_REDIRECT;
@@ -26,10 +33,19 @@ export async function bootstrapNativeShell(): Promise<void> {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: "#0c0a09" });
-    // Draw under status bar; CSS pt-safe / html padding handles insets
     await StatusBar.setOverlaysWebView({ overlay: true });
   } catch {
     // Optional on web / missing plugin
+  }
+
+  try {
+    const { Keyboard, KeyboardResize, KeyboardStyle } = await import("@capacitor/keyboard");
+    await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+    await Keyboard.setStyle({ style: KeyboardStyle.Dark });
+    await Keyboard.setScroll({ isDisabled: false });
+    await Keyboard.setAccessoryBarVisible({ isVisible: true });
+  } catch {
+    // Optional until next native sync includes the plugin
   }
 
   try {

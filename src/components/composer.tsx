@@ -121,7 +121,7 @@ export const Composer = forwardRef<
   const canSend = Boolean(value.trim() || pendingFile) && !sending && !uploading;
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="shrink-0 border-t border-border-subtle/60 bg-background/40 p-3 md:p-6">
       <input
         ref={fileRef}
         type="file"

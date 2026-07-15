@@ -1,20 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sparkles, Gamepad2, MessageSquare, Mic, LayoutGrid, Keyboard, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { isPhoneLikeUi } from "@/lib/capacitor";
 
 const KEY = "nexus.onboarding.seen.v1";
 
 /**
  * First-visit onboarding sheet. Renders once per browser (localStorage flag).
  * Non-blocking: dismiss to skip. Reappears only if localStorage is cleared.
+ * Desktop ⌘K step is omitted on phone / Capacitor.
  */
 export function Onboarding() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+  const [phone, setPhone] = useState(false);
   const { t } = useT();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setPhone(isPhoneLikeUi());
     const seen = window.localStorage.getItem(KEY);
     if (!seen) setOpen(true);
   }, []);
@@ -28,23 +32,32 @@ export function Onboarding() {
     }
   };
 
+  const steps = useMemo(() => {
+    const all = [
+      { icon: Sparkles, title: t("onboarding.step1.title"), body: t("onboarding.step1.body") },
+      { icon: Gamepad2, title: t("onboarding.step2.title"), body: t("onboarding.step2.body") },
+      { icon: MessageSquare, title: t("onboarding.step3.title"), body: t("onboarding.step3.body") },
+      { icon: Mic, title: t("onboarding.step4.title"), body: t("onboarding.step4.body") },
+      { icon: LayoutGrid, title: t("onboarding.step5.title"), body: t("onboarding.step5.body") },
+      {
+        icon: Keyboard,
+        title: t("onboarding.step6.title"),
+        body: t("onboarding.step6.body"),
+        desktopOnly: true as const,
+      },
+    ];
+    return phone ? all.filter((s) => !s.desktopOnly) : all;
+  }, [t, phone]);
+
   if (!open) return null;
 
-  const steps = [
-    { icon: Sparkles, title: t("onboarding.step1.title"), body: t("onboarding.step1.body") },
-    { icon: Gamepad2, title: t("onboarding.step2.title"), body: t("onboarding.step2.body") },
-    { icon: MessageSquare, title: t("onboarding.step3.title"), body: t("onboarding.step3.body") },
-    { icon: Mic, title: t("onboarding.step4.title"), body: t("onboarding.step4.body") },
-    { icon: LayoutGrid, title: t("onboarding.step5.title"), body: t("onboarding.step5.body") },
-    { icon: Keyboard, title: t("onboarding.step6.title"), body: t("onboarding.step6.body") },
-  ];
-
-  const s = steps[step];
+  const s = steps[step] ?? steps[0];
+  if (!s) return null;
   const Icon = s.icon;
-  const isLast = step === steps.length - 1;
+  const isLast = step >= steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 pt-safe pb-safe">
       <button
         aria-label={t("onboarding.skip")}
         onClick={close}

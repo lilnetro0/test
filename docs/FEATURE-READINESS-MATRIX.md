@@ -33,7 +33,7 @@
 | Bans | Y (admin) | Y | Y (`banned_at`) | P | N | P | N | P | Client sign-out on banned profile |
 | Admin tools | Y | Y | Y (`08` + `platform_roles`) | Bypass via service role after gate | N | P | P (`parseAdminIds`) | P | DB roles + `admin_audit_log` (Phase 3); env bootstrap |
 | Account deletion | Y | Y | Y (P10 log) | N/A (Auth wipe) | N | P | N | P | Settings danger zone; hard CASCADE authored content |
-| Arabic RTL | Y | N/A | N/A | N/A | N/A | P | N | P | EN/AR + RTL bootstrap + AR font (Phase 13); admin/SEO deferred |
+| Arabic RTL | Y | N/A | N/A | N/A | N/A | P | P (normalize unit) | P | Arabic-first policy + glossary (2026-07); auth toggle + UGC `dir=auto` + search fold; MENA discovery/admin deferred |
 | Capacitor iOS | Y | N/A | N/A | N/A | N/A | Y (remote shell) | P (`cap:smoke` + `smoke:launch`) | P | Dual-mode + ASC checklist (P18); SSR not in www; 4.2 reduced not eliminated |
 | Cloudflare deployment | Docs/build target | Nitro CF | N/A | N/A | N/A | N/A | N | ? | Deploy/ops outside repo |
 | Ops / health | Y (admin chips) | Y | N/A | N/A | N/A | N/A | P (`ops:health`) | P | `GET /api/health` + CI probe + alert hooks (P16f); full APM deferred |

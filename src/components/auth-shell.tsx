@@ -2,6 +2,7 @@ import { GAMES } from "@/lib/mock-data";
 import logo from "@/assets/nexus-logo.png";
 import { Link } from "@tanstack/react-router";
 import { LegalLinks } from "@/components/legal-page";
+import { useT, type Lang, LANG_LABELS } from "@/lib/i18n";
 
 export function AuthShell({
   title,
@@ -14,18 +15,20 @@ export function AuthShell({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const { lang, setLang, t } = useT();
+
   return (
     <div className="relative flex min-h-dvh w-full items-center justify-center overflow-y-auto bg-background p-6 pt-safe pb-safe">
       {/* Ambient game-tile backdrop */}
       <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute -left-10 top-10 grid grid-cols-2 gap-4 blur-[1px]">
+        <div className="absolute -start-10 top-10 grid grid-cols-2 gap-4 blur-[1px]">
           {GAMES.slice(0, 4).map((g) => (
             <div key={g.id} className={`grid size-20 place-items-center rounded-2xl ${g.tint}`}>
               <span className={`font-display text-xs font-bold ${g.textTint}`}>{g.short}</span>
             </div>
           ))}
         </div>
-        <div className="absolute -right-6 bottom-10 grid grid-cols-2 gap-4 blur-[1px]">
+        <div className="absolute -end-6 bottom-10 grid grid-cols-2 gap-4 blur-[1px]">
           {GAMES.slice(4, 8).map((g) => (
             <div key={g.id} className={`grid size-20 place-items-center rounded-2xl ${g.tint}`}>
               <span className={`font-display text-xs font-bold ${g.textTint}`}>{g.short}</span>
@@ -33,6 +36,27 @@ export function AuthShell({
           ))}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/90 to-background" />
+      </div>
+
+      <div className="absolute inset-x-0 top-0 z-10 flex justify-end p-4 pt-safe">
+        <div
+          className="inline-flex rounded-full border border-border-subtle bg-surface-mid/90 p-0.5 text-[11px] font-semibold backdrop-blur"
+          role="group"
+          aria-label={t("settings.section.language")}
+        >
+          {(["ar", "en"] as Lang[]).map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setLang(code)}
+              className={`rounded-full px-3 py-1 transition-colors ${
+                lang === code ? "bg-accent/20 text-accent" : "text-stone-400 hover:text-white"
+              }`}
+            >
+              {LANG_LABELS[code].native}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="relative w-full max-w-md">

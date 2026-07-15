@@ -371,7 +371,10 @@ export async function fetchMessages(
 
   const query = opts?.query?.trim();
   if (query) {
-    q = q.ilike("body", `%${query}%`);
+    // Fold diacritics/tatweel for better Arabic recall; store still holds original text.
+    const { normalizeArabicForSearch } = await import("@/lib/arabic-normalize");
+    const folded = normalizeArabicForSearch(query);
+    q = q.ilike("body", `%${folded || query}%`);
   }
 
   const { data, error } = await q;

@@ -10,6 +10,27 @@ import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { fetchLiveHubs, joinHubBySlug } from "@/lib/chat/api";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import {
+  arabicSearchIncludes,
+  GAME_SEARCH_ALIASES,
+  normalizeArabicForSearch,
+} from "@/lib/arabic-normalize";
+
+function hubMatchesQuery(h: HubCard, query: string): boolean {
+  const q = query.trim();
+  if (!q) return true;
+  const fields = [h.name, h.hubName, h.id, catalogGameId(h)];
+  if (fields.some((f) => arabicSearchIncludes(f, q))) return true;
+  const nq = normalizeArabicForSearch(q);
+  for (const [canonical, aliases] of Object.entries(GAME_SEARCH_ALIASES)) {
+    const group = [canonical, ...aliases].map(normalizeArabicForSearch);
+    if (!group.some((a) => a.includes(nq) || nq.includes(a))) continue;
+    if (fields.some((f) => group.some((a) => normalizeArabicForSearch(f).includes(a)))) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export const Route = createFileRoute("/discover")({
   head: () => ({
@@ -62,13 +83,7 @@ function DiscoverPage() {
   const filtered = useMemo(() => {
     return catalog.filter((h) => {
       const catMatch = cat === "All" || h.category === cat.toLowerCase().replace(" ", "-");
-      const q = query.toLowerCase();
-      const qMatch =
-        h.name.toLowerCase().includes(q) ||
-        h.hubName.toLowerCase().includes(q) ||
-        h.id.toLowerCase().includes(q) ||
-        catalogGameId(h).toLowerCase().includes(q);
-      return catMatch && qMatch;
+      return catMatch && hubMatchesQuery(h, query);
     });
   }, [catalog, cat, query]);
 
@@ -152,7 +167,7 @@ function DiscoverPage() {
           </div>
 
           {hubsLoading && live ? (
-            <p className="mb-6 text-sm text-stone-500">Loading hubs…</p>
+            <p className="mb-6 text-sm text-stone-500">{t("discover.loading")}</p>
           ) : null}
 
           {cat === "All" && trending.length > 0 && (
@@ -174,7 +189,7 @@ function DiscoverPage() {
                       className="min-h-[140px]"
                     />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-5 pt-12">
-                      <h3 className="font-display text-lg font-bold uppercase text-white">
+                      <h3 className="font-display text-lg font-bold uppercase text-white" dir="auto">
                         {h.hubName}
                       </h3>
                       <p className="mt-1 text-xs text-stone-300">
@@ -196,7 +211,10 @@ function DiscoverPage() {
           )}
 
           <h2 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {cat === "All" ? t("discover.allHubs") : cat} — {filtered.length}
+            {cat === "All"
+              ? t("discover.allHubs")
+              : t(CATEGORIES.find((c) => c.id === cat)?.key ?? "discover.allHubs")}{" "}
+            — {filtered.length}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((h) => (
@@ -206,8 +224,12 @@ function DiscoverPage() {
               >
                 <HubHero gameId={catalogGameId(h)} short={h.short} imageUrl={h.imageUrl} className="h-24" />
                 <div className="p-4">
-                  <h3 className="truncate font-semibold text-white">{h.hubName}</h3>
-                  <p className="mt-1 truncate text-xs text-stone-500">{h.name}</p>
+                  <h3 className="truncate font-semibold text-white" dir="auto">
+                    {h.hubName}
+                  </h3>
+                  <p className="mt-1 truncate text-xs text-stone-500" dir="auto">
+                    {h.name}
+                  </p>
                   <div className="mt-3 flex items-center justify-between text-[10px] text-stone-400">
                     <span>
                       {h.members.toLocaleString()} {t("discover.members")}

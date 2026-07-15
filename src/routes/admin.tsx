@@ -27,7 +27,7 @@ import {
   checkIsAdmin,
 } from "@/lib/admin/api";
 import { Gamepad2, Hash, Mic, Shield, Flag, Users, Database } from "lucide-react";
-import { getAppHealth } from "@/server/health";
+import { getAppHealth } from "@/lib/ops/get-app-health";
 import type { AppHealthReport } from "@/lib/ops/health";
 
 export const Route = createFileRoute("/admin")({

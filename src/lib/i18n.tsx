@@ -214,6 +214,10 @@ const dict = {
     "settings.group.app": "App",
     "settings.logout": "Log out",
     "settings.section.account": "My Account",
+    "settings.adminModeration": "Admin moderation",
+    "settings.adminModerationDesc": "Ban / unban players",
+    "settings.adminOpen": "Open",
+    "settings.loadingHubs": "Loading hubs…",
     "settings.section.privacy": "Privacy & Safety",
     "settings.section.billing": "Billing",
     "settings.section.appearance": "Appearance",
@@ -346,6 +350,7 @@ const dict = {
     "discover.titleAccent": "squad",
     "discover.body": "Browse game hubs and jump into a community. Only platform admins can create new hubs.",
     "discover.search": "Search hubs, games, or communities",
+    "discover.loading": "Loading hubs…",
     "discover.trending": "Featured",
     "discover.allHubs": "All Hubs",
     "discover.join": "Join",
@@ -799,6 +804,10 @@ const dict = {
     "settings.group.app": "التطبيق",
     "settings.logout": "تسجيل الخروج",
     "settings.section.account": "حسابي",
+    "settings.adminModeration": "إدارة الإشراف",
+    "settings.adminModerationDesc": "حظر / إلغاء حظر اللاعبين",
+    "settings.adminOpen": "فتح",
+    "settings.loadingHubs": "جاري تحميل المراكز…",
     "settings.section.privacy": "الخصوصية والأمان",
     "settings.section.billing": "الفوترة",
     "settings.section.appearance": "المظهر",
@@ -931,6 +940,7 @@ const dict = {
     "discover.titleAccent": "فريقك",
     "discover.body": "تصفح مراكز الألعاب وادخل مجتمعًا. إنشاء المراكز متاح للمشرفين فقط.",
     "discover.search": "ابحث عن مراكز أو ألعاب أو مجتمعات",
+    "discover.loading": "جاري تحميل المراكز…",
     "discover.trending": "مميزة",
     "discover.allHubs": "كل المراكز",
     "discover.join": "انضمام",
@@ -1239,7 +1249,7 @@ function persistLang(l: Lang) {
   }
 }
 
-/** Resolve preferred lang: storage → cookie → browser (first visit) → en. */
+/** Resolve preferred lang: storage → cookie → browser (ar* first) → en. Region fallback TBD (Arabic-first guidelines). */
 export function resolveClientLang(): { lang: Lang; fromStored: boolean } {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);

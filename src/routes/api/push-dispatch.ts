@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { sendPushToUser } from "@/lib/push/api";
+import { sendPushToUser } from "@/lib/push/send";
 import { logEvent } from "@/lib/ops/log";
 
 /**

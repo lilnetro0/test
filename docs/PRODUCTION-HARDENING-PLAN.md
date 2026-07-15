@@ -2,6 +2,7 @@
 
 **Status:** Phases 0–18 complete (hardening plan finished).  
 **Created:** 2026-07-15  
+**Standing policy:** Arabic-first / MENA — see `docs/ARABIC-PRODUCT-GUIDELINES.md`. Future phases must include an **Arabic-first impact** section.  
 **Rule:** Execute one phase at a time; stop and wait for approval before the next phase.
 
 ---
@@ -1019,6 +1020,35 @@ Still deferred: CallKit/VoIP, FCM HTTP v1, Play signing secrets, screenshot bina
 - `docs/store/**`, `fastlane/**`, `docs/PUSH.md`, `docs/APP-STORE.md`, `docs/CAPACITOR.md`
 - `codemagic.yaml`, `.env.example`, `package.json`, `scripts/smoke-launch.cjs`
 - `docs/PRODUCTION-HARDENING-PLAN.md`, `docs/FEATURE-READINESS-MATRIX.md`, `docs/VOICE.md`
+
+---
+
+## Arabic-first impact (policy adoption)
+
+### Arabic UI changes
+
+- Auth language toggle (AR first in control order); discover/settings loading + admin row localized  
+- Message UGC `dir="auto"`; discover hub titles isolated  
+
+### RTL testing
+
+- Manual: auth shell lang flip; chat mixed strings — use `docs/RTL-TEST-CHECKLIST.md`  
+
+### Mixed-direction handling
+
+- Message author / body / reply previews use `dir="auto"`  
+
+### Arabic search impact
+
+- `src/lib/arabic-normalize.ts` + discover aliases; channel message search folds diacritics/tatweel  
+
+### Moderation impact
+
+- Docs only this pass (`MENA-MODERATION-GUIDE.md`); admin AR chrome still deferred  
+
+### Unresolved Arabic-specific issues
+
+- Region locale fallback; MENA discovery filters; hub templates; admin i18n; SSR EN string flash  
 
 ---
 

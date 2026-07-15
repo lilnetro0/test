@@ -47,10 +47,14 @@ export function MessageItem({
         <div className="size-10 shrink-0 rounded-xl bg-stone-800" />
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-baseline gap-2">
-            <span className="text-sm font-bold text-stone-400">{msg.author}</span>
+            <span className="text-sm font-bold text-stone-400" dir="auto">
+              {msg.author}
+            </span>
             <span className="text-[10px] font-medium uppercase text-stone-600">{t("msg.system")}</span>
           </div>
-          <p className="text-sm italic text-stone-500">{msg.body}</p>
+          <p className="text-sm italic text-stone-500" dir="auto">
+            {msg.body}
+          </p>
         </div>
       </div>
     );
@@ -62,13 +66,19 @@ export function MessageItem({
       <div className="min-w-0 flex-1">
         {msg.replyTo && (
           <div className="mb-1 flex items-center gap-2 text-xs text-stone-500">
-            <Reply className="size-3" />
-            <span className="font-semibold text-stone-400">{msg.replyTo.author}</span>
-            <span className="truncate">{msg.replyTo.body}</span>
+            <Reply className="size-3 shrink-0" />
+            <span className="font-semibold text-stone-400" dir="auto">
+              {msg.replyTo.author}
+            </span>
+            <span className="truncate" dir="auto">
+              {msg.replyTo.body}
+            </span>
           </div>
         )}
         <div className="mb-1 flex items-baseline gap-2">
-          <span className="text-sm font-bold text-white">{msg.author}</span>
+          <span className="text-sm font-bold text-white" dir="auto">
+            {msg.author}
+          </span>
           <span className="text-[10px] text-stone-600">{msg.time}</span>
           {msg.pinned && <Pin className="size-3 text-accent" />}
           {msg.edited && <span className="text-[10px] text-stone-600">{t("msg.edited")}</span>}
@@ -109,7 +119,7 @@ export function MessageItem({
             </div>
           </form>
         ) : (
-          <p className="text-pretty text-sm leading-relaxed text-stone-300">
+          <p className="text-pretty text-sm leading-relaxed text-stone-300" dir="auto">
             {msg.body.trim() ? highlightMentions(msg.body) : null}
           </p>
         )}

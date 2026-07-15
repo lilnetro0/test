@@ -302,15 +302,15 @@ function AccountSection() {
       {isAdmin && (
         <Card>
           <Row
-            label="Admin moderation"
-            desc="Ban / unban players"
+            label={t("settings.adminModeration")}
+            desc={t("settings.adminModerationDesc")}
             action={
               <button
                 type="button"
                 onClick={() => navigate({ to: "/admin" })}
                 className="text-xs font-semibold text-accent"
               >
-                Open
+                {t("settings.adminOpen")}
               </button>
             }
           />
@@ -1073,7 +1073,7 @@ function NotificationsSection() {
         <p className="mb-1 text-sm font-semibold text-white">{t("settings.notif.perHub")}</p>
         <p className="mb-4 text-xs text-stone-500">{t("settings.notif.perHubDesc")}</p>
         {hubsLoading ? (
-          <p className="text-xs text-stone-500">Loading hubs…</p>
+          <p className="text-xs text-stone-500">{t("settings.loadingHubs")}</p>
         ) : hubs.length === 0 ? (
           <p className="text-xs text-stone-500">
             {user ? "Join a hub to configure per-hub notifications." : "Sign in to manage hub notifications."}

@@ -52,7 +52,7 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
     <>
       <nav
         aria-label="Primary"
-        className="relative z-30 flex h-[68px] shrink-0 items-center justify-around gap-1 border-t border-border-subtle bg-surface-left/95 px-2 backdrop-blur-xl"
+        className="relative z-30 flex min-h-[68px] shrink-0 items-center justify-around gap-1 border-t border-border-subtle bg-surface-left/95 px-2 pb-safe pt-1 backdrop-blur-xl"
       >
         <DockItem to="/" icon={<Home className="size-5" />} label={t("nav.home")} active={isHome} />
         <DockItem
@@ -166,7 +166,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
-      <div className="absolute inset-x-2 bottom-[76px] rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 sm:inset-x-auto sm:w-80 ltr:sm:right-3 rtl:sm:left-3">
+      <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 sm:inset-x-auto sm:w-80 ltr:sm:right-3 rtl:sm:left-3">
         <Link
           to="/me"
           onClick={onClose}

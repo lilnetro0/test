@@ -26,7 +26,8 @@ const config: CapacitorConfig = {
       : {}),
   },
   ios: {
-    contentInset: "automatic",
+    // CSS env(safe-area-inset-*) handles notch / home indicator (see styles.css)
+    contentInset: "never",
     preferredContentMode: "mobile",
     scheme: "Nexus",
   },

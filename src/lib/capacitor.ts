@@ -25,6 +25,9 @@ export async function bootstrapNativeShell(): Promise<void> {
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setBackgroundColor({ color: "#0c0a09" });
+    // Draw under status bar; CSS pt-safe / html padding handles insets
+    await StatusBar.setOverlaysWebView({ overlay: true });
   } catch {
     // Optional on web / missing plugin
   }

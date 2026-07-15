@@ -20,7 +20,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (!configured) return <>{children}</>;
   if (loading) {
     return (
-      <div className="grid h-screen place-items-center bg-background text-stone-400">
+      <div className="grid h-dvh place-items-center bg-background text-stone-400">
         <p className="text-xs font-semibold uppercase tracking-widest">Connecting…</p>
       </div>
     );

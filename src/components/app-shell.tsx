@@ -19,7 +19,7 @@ export function AppShell({
 }) {
   return (
     <RequireAuth>
-      <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background pt-safe text-foreground">
         <DemoBanner />
         <div id="main-content" className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
@@ -60,7 +60,7 @@ export function Sheet({
 
   const panelBySide: Record<typeof side, string> = {
     bottom:
-      "absolute inset-x-0 bottom-0 max-h-[75vh] rounded-t-2xl border-t border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
+      "absolute inset-x-0 bottom-0 max-h-[75dvh] rounded-t-2xl border-t border-border-subtle pb-safe motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
     right:
       "absolute inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200 ltr:right-0 ltr:border-s rtl:left-0 rtl:border-s",
     left:

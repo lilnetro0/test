@@ -100,7 +100,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+      },
       { title: "Nexus — Voice & Chat for Gamers" },
       { name: "description", content: "A Discord-style app built for gamers. Every game is a hub with its own text and voice channels." },
       { name: "theme-color", content: "#0e1116" },
@@ -181,7 +185,11 @@ function LocalizedShell() {
       <CommandPalette />
       <Onboarding />
       <WhatsNew />
-      <Toaster theme="dark" position="bottom-right" />
+      <Toaster
+        theme="dark"
+        position="top-center"
+        offset={{ top: "max(12px, env(safe-area-inset-top))" }}
+      />
     </>
   );
 }

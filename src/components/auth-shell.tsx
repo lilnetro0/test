@@ -15,7 +15,7 @@ export function AuthShell({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-6">
+    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-y-auto bg-background p-6 pt-safe pb-safe">
       {/* Ambient game-tile backdrop */}
       <div className="pointer-events-none absolute inset-0 opacity-30">
         <div className="absolute -left-10 top-10 grid grid-cols-2 gap-4 blur-[1px]">

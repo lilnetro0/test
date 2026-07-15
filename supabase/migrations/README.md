@@ -38,6 +38,9 @@ Source of truth for Nexus schema. Filename order = apply order (`YYYYMMDDHHMMSS_
 | `20260715260000_af10_report_voice_channel.sql` | `reports.voice_channel_id` + has_target/policy |
 | `20260715270000_af13_catalog_search_norm.sql` | hubs/games `name_search_norm` + triggers |
 | `20260715280000_af15_profile_search_norm.sql` | profiles username/display_name search norms |
+| `20260715290000_af_repair_search_prereqs.sql` | Repair: `is_hub_mod` + `normalize_arabic_for_search` if AF4 rolled back |
+
+**Paste order tip:** If SQL Editor says `normalize_arabic_for_search` or `is_hub_mod` does not exist, run `20260715290000_af_repair_search_prereqs.sql` first, then re-run AF4 → AF13 → AF15. Prefer applying the full chain in filename order (`supabase db push`) instead of cherry-picking AF files.
 
 New changes: **add a new timestamped file**. Do not rewrite migrations already applied on shared projects.
 

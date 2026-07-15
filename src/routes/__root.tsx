@@ -152,23 +152,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 const LANG_BOOTSTRAP = `(function(){try{var k='nexus.lang';var l=localStorage.getItem(k);if(!l){var m=document.cookie.match(/(?:^|; )nexus\\.lang=([^;]*)/);l=m?decodeURIComponent(m[1]):null;}if(!l){var n=(navigator.language||'').toLowerCase();if(n.indexOf('ar')===0)l='ar';}if(!l){try{var r=localStorage.getItem('nexus.region');var tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';var menaTz={};['Asia/Riyadh','Asia/Dubai','Asia/Qatar','Asia/Kuwait','Asia/Bahrain','Asia/Muscat','Asia/Amman','Asia/Beirut','Asia/Baghdad','Africa/Cairo','Africa/Casablanca','Africa/Tunis','Africa/Algiers'].forEach(function(z){menaTz[z]=1;});if(r||menaTz[tz])l='ar';}catch(e2){}}if(l==='ar'||l==='en'){document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';}}catch(e){}})();`;
 
-/** AF16 — cookie / Accept-Language on SSR; client falls back to storage. */
+/** AF16/AF21 — isomorphic cookie / Accept-Language (see resolve-request-lang). */
 function resolveShellLang(): Lang {
-  if (typeof window === "undefined") {
-    try {
-      return resolveRequestLang();
-    } catch {
-      return "en";
-    }
-  }
   try {
-    const m = document.cookie.match(/(?:^|; )nexus\.lang=([^;]*)/);
-    const c = m ? decodeURIComponent(m[1]) : null;
-    if (c === "ar" || c === "en") return c;
+    return resolveRequestLang();
   } catch {
-    /* ignore */
+    return "en";
   }
-  return "en";
 }
 
 function RootShell({ children }: { children: ReactNode }) {

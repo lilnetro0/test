@@ -91,9 +91,13 @@ npx supabase db reset   # migrations/* then seed.sql
    - `20260715210000_phase11_push_devices.sql` (push_devices + push_enabled)
    - `20260715211000_phase11_followup_notif_prefs.sql` (sound / mentions / DND prefs)
    - `20260715221000_phase12_followup_voice_mint_limit.sql` (voice mint rate limit)
+   - `20260715230000_af2_region_discovery.sql` … through `20260715280000_af15_profile_search_norm.sql` (Arabic-first)
+   - If you see `normalize_arabic_for_search` / `is_hub_mod` missing: run `20260715290000_af_repair_search_prereqs.sql`, then re-run AF4 → AF13 → AF15
 4. Run `supabase/seed.sql` only if catalog tables are empty.
 5. Optional catch-up: `manual/01_backfill_profiles.sql` if auth users exist without profiles after a reset.
 6. Run `verify_schema.sql` and fix any `MISSING` rows.
+
+**Arabic search failure:** AF4’s message backfill used to fire `messages_audit_mod_pin`, which needs `is_hub_mod` (Phase 4). A failed AF4 transaction rolls back the fold function too, so AF13/AF15 then fail. Apply Phase 4 hub roles (or the repair migration) before AF4.
 
 Legacy files under `manual/` (`02`–`08`) are the same phases as the migrations above; use migrations when both exist.
 

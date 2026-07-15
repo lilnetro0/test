@@ -72,7 +72,9 @@ create trigger dm_messages_body_search_norm
   for each row
   execute function public.tg_set_body_search_norm();
 
--- Backfill (idempotent)
+-- Backfill (idempotent). Do not use session_replication_role — hosted Supabase
+-- SQL Editor denies that GUC. If pin triggers error on is_hub_mod, run
+-- 20260715290000_af_repair_search_prereqs.sql first.
 update public.messages
 set body_search_norm = public.normalize_arabic_for_search(body)
 where body_search_norm is distinct from public.normalize_arabic_for_search(body);

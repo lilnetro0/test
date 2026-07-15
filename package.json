@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "icons": "node scripts/generate-pwa-icons.mjs",
     "cap:prepare": "node scripts/prepare-capacitor-www.cjs",
-    "cap:sync": "npm run cap:prepare && npx cap sync",
+    "cap:inject-server": "node scripts/inject-capacitor-server-url.cjs",
+    "cap:sync": "npm run cap:prepare && npx cap sync && npm run cap:inject-server",
     "mobile:ios": "npm run build && npm run cap:sync"
   },
   "dependencies": {

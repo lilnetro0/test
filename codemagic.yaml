@@ -31,8 +31,12 @@ workflows:
       vars:
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        # Set CAPACITOR_SERVER_URL in Codemagic → Environment variables
-        # to your deployed HTTPS site before a usable iOS shell.
+        # REQUIRED — set in Codemagic UI as an Application or Workflow env var:
+        # CAPACITOR_SERVER_URL=https://your-worker.workers.dev
+      groups:
+        # Optional: put CAPACITOR_SERVER_URL in a group named "mobile_env"
+        # and uncomment the next line. Otherwise set it as an Application variable.
+        # - mobile_env
       node: 22
       xcode: latest
     scripts:
@@ -42,8 +46,15 @@ workflows:
         script: npm run build
       - name: Prepare Capacitor www and sync iOS
         script: |
+          if [ -z "$CAPACITOR_SERVER_URL" ]; then
+            echo "ERROR: CAPACITOR_SERVER_URL is not set in Codemagic Environment variables."
+            echo "Add Variable name=CAPACITOR_SERVER_URL value=https://your-live-site (no trailing slash)"
+            exit 1
+          fi
+          echo "CAPACITOR_SERVER_URL=$CAPACITOR_SERVER_URL"
           npm run cap:prepare
           npx cap sync ios
+          npm run cap:inject-server
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Set build number

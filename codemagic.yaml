@@ -31,12 +31,9 @@ workflows:
       vars:
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        # REQUIRED — set in Codemagic UI as an Application or Workflow env var:
-        # CAPACITOR_SERVER_URL=https://your-worker.workers.dev
+      # Env group must contain CAPACITOR_SERVER_URL=https://your-live-site
       groups:
-        # Optional: put CAPACITOR_SERVER_URL in a group named "mobile_env"
-        # and uncomment the next line. Otherwise set it as an Application variable.
-        # - mobile_env
+        - test
       node: 22
       xcode: latest
     scripts:

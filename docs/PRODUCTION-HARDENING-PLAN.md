@@ -1,6 +1,6 @@
 # Production Hardening Plan — Nexus / Game Hub Connect
 
-**Status:** Phases 0–18 complete (hardening plan finished).  
+**Status:** Hardening Phases 0–18 Done. Arabic-first **AF1–AF22 Done** (deferred Arabic-first backlog closed).
 **Created:** 2026-07-15  
 **Standing policy:** Arabic-first / MENA — see `docs/ARABIC-PRODUCT-GUIDELINES.md`. Future phases must include an **Arabic-first impact** section.  
 **Rule:** Execute one phase at a time; stop and wait for approval before the next phase.
@@ -11,13 +11,15 @@
 
 Track incremental production hardening across database safety, authorization, messaging reliability, trust & safety, mobile packaging, observability, tests, and App Store launch readiness — without rewriting the TanStack Start + Supabase + LiveKit + Capacitor stack.
 
+**Arabic-first / MENA** is standing product policy. Phase **0** (repository audit) must evaluate Arabic-first UX, RTL, mixed-direction text, Arabic search, MENA moderation, regional discovery, and mobile performance — see [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md). Implementation of those gaps is **not** part of Phase 0; open a numbered phase after approval.
+
 ---
 
 ## Phase status board
 
 | Phase | Title | Status | Notes |
 |------:|-------|--------|-------|
-| 0 | Repository audit and baseline | **Done** | See `ARCHITECTURE-AUDIT.md`, `FEATURE-READINESS-MATRIX.md` |
+| 0 | Repository audit and baseline | **Done** (+ Arabic-first re-audit) | `ARCHITECTURE-AUDIT.md`, `FEATURE-READINESS-MATRIX.md`, **`ARABIC-FIRST-AUDIT.md`** |
 | 1 | Database migration safety and environments | **Done** | See Phase 1 summary + `DATABASE-OPERATIONS.md` |
 | 2 | Domain model clarification (games vs hub) | **Done** | See Phase 2 summary + `DOMAIN-MODEL.md` |
 | 3 | Platform roles and admin security | **Done** | See Phase 3 summary + `ADMIN-SECURITY.md` |
@@ -36,10 +38,51 @@ Track incremental production hardening across database safety, authorization, me
 | 16 | Observability and operations | **Done** | See Phase 16 summary + `OPS.md` (+ follow-up) |
 | 17 | Testing and security verification | **Done** | See Phase 17 summary + `TESTING-SECURITY.md` (+ follow-up) |
 | 18 | App Store and launch readiness | **Done** | See Phase 18 summary + `APP-STORE.md` (+ follow-up) |
+| **AF1** | **Arabic-first UX foundations** | **Done** | Bidi UGC + rate-limit AR + message search aliases — [`ARABIC-FIRST-PHASE1.md`](ARABIC-FIRST-PHASE1.md) |
+| **AF2** | **Regional discovery foundations** | **Done** | Prefs/hubs region + Discover filters + locale region hint — [`ARABIC-FIRST-PHASE2.md`](ARABIC-FIRST-PHASE2.md) |
+| **AF3** | **Hub templates + MENA moderation assist** | **Done** | Channel templates, hub region editor, assist chips, appeals — [`ARABIC-FIRST-PHASE3.md`](ARABIC-FIRST-PHASE3.md) |
+| **AF4** | **DB-normalized Arabic search** | **Done** | `body_search_norm` + fold FN + trigram — [`ARABIC-FIRST-PHASE4.md`](ARABIC-FIRST-PHASE4.md) |
+| **AF5** | **Admin chrome i18n + bilingual titles** | **Done** | Admin shell + `meta.page.*` — [`ARABIC-FIRST-PHASE5.md`](ARABIC-FIRST-PHASE5.md) |
+| **AF6** | **Discover LFG filter** | **Done** | `hubs.has_lfg` + Discover chip — [`ARABIC-FIRST-PHASE6.md`](ARABIC-FIRST-PHASE6.md) |
+| **AF7** | **Games admin i18n + in-hub LFG + fonts** | **Done** | [`ARABIC-FIRST-PHASE7.md`](ARABIC-FIRST-PHASE7.md) |
+| **AF8** | **Voice report + lang hydrate** | **Done** | [`ARABIC-FIRST-PHASE8.md`](ARABIC-FIRST-PHASE8.md) |
+| **AF9** | **Admin confirm dialogs i18n** | **Done** | [`ARABIC-FIRST-PHASE9.md`](ARABIC-FIRST-PHASE9.md) |
+| **AF10** | **reports.voice_channel_id** | **Done** | [`ARABIC-FIRST-PHASE10.md`](ARABIC-FIRST-PHASE10.md) |
+| **AF11** | **In-hub LFG post helper** | **Done** | [`ARABIC-FIRST-PHASE11.md`](ARABIC-FIRST-PHASE11.md) |
+| **AF12** | **Voice report participant picker** | **Done** | [`ARABIC-FIRST-PHASE12.md`](ARABIC-FIRST-PHASE12.md) |
+| **AF13** | **Catalog name_search_norm** | **Done** | [`ARABIC-FIRST-PHASE13.md`](ARABIC-FIRST-PHASE13.md) |
+| **AF14** | **ui/* logical CSS** | **Done** | [`ARABIC-FIRST-PHASE14.md`](ARABIC-FIRST-PHASE14.md) |
+| **AF15** | **Profile search norms** | **Done** | [`ARABIC-FIRST-PHASE15.md`](ARABIC-FIRST-PHASE15.md) |
+| **AF16** | **Cookie SSR lang/dir shell** | **Done** | [`ARABIC-FIRST-PHASE16.md`](ARABIC-FIRST-PHASE16.md) |
+| **AF17** | **Route/shell logical CSS** | **Done** | [`ARABIC-FIRST-PHASE17.md`](ARABIC-FIRST-PHASE17.md) |
+| **AF18** | **Self-hosted Noto Arabic** | **Done** | [`ARABIC-FIRST-PHASE18.md`](ARABIC-FIRST-PHASE18.md) |
+| **AF19** | **Thin in-hub LFG board** | **Done** | [`ARABIC-FIRST-PHASE19.md`](ARABIC-FIRST-PHASE19.md) |
+| **AF20** | **Self-hosted Latin fonts** | **Done** | [`ARABIC-FIRST-PHASE20.md`](ARABIC-FIRST-PHASE20.md) |
+| **AF21** | **React SSR lang hydrate** | **Done** | [`ARABIC-FIRST-PHASE21.md`](ARABIC-FIRST-PHASE21.md) |
+| **AF22** | **Physical CSS mop-up** | **Done** | [`ARABIC-FIRST-PHASE22.md`](ARABIC-FIRST-PHASE22.md) |
 
 ---
 
 ## Phase 0 summary (2026-07-15)
+
+### Phase 0 scope (canonical audit checklist)
+
+Phase 0 is the **repository audit and baseline**. It must cover:
+
+1. **Architecture / stack** — TanStack Start, Supabase, LiveKit, Capacitor, deploy targets  
+2. **Feature readiness** — matrix of UI / backend / DB / RLS / mobile / tests  
+3. **Tooling baseline** — typecheck, lint, tests, production build  
+4. **Ops / env risks** — migrations, secrets, mock mode, Cap remote shell  
+5. **Arabic-first / MENA product fit** (required axes — see `ARABIC-FIRST-AUDIT.md`):  
+   - Arabic-first UX (default language, auth, hardcoded EN)  
+   - RTL (html dir, logical CSS, chrome mirroring)  
+   - Mixed-direction (bidi) text on UGC  
+   - Arabic search (normalize, aliases, DB recall)  
+   - MENA moderation (reporter UX, admin bidi, AR assist, appeals)  
+   - Regional discovery (country/region, hub templates, LFG)  
+   - Mobile performance for AR/MENA (fonts, keyboard, mid-range)
+
+**Phase 0 produces planning + audit artifacts only.** It does **not** implement product gaps for axes above. Later phases (or a new Arabic-first numbered phase) implement after approval.
 
 ### Decisions
 
@@ -48,19 +91,21 @@ Track incremental production hardening across database safety, authorization, me
 - Admin authorization: DB `platform_roles` + env `ADMIN_USER_IDS` bootstrap (Phase 3).
 - Manual cloud SQL scripts (`supabase/manual/01`–`08`) coexist with `supabase/migrations/`; Phase 1 reconciled them (canonical = migrations; verify via `verify_schema.sql`).
 - No destructive `db reset` against production.
+- **Arabic is primary product language** (standing policy). English is supported. Audit→incremental fixes; no mega-redesign in Phase 0.
 
 ### Risks identified
 
-1. **Typecheck currently fails** (large volume of Supabase client `never` typing + router search-param typing). Production JS build still ran historically via Codemagic; TS gate is not CI-green.
-2. **No automated unit/integration/e2e suite** in repo (no `*.test.*` / `*.spec.*` found; no `test` script).
-3. **LAUNCH.md is stale** relative to later work (claims Storage/admin deferred while `07`/`08` and admin console exist).
+1. **Typecheck currently fails** (large volume of Supabase client `never` typing + router search-param typing). Production JS build still ran historically via Codemagic; TS gate is not CI-green. *(Later phases closed much of this — see Phase 17.)*
+2. **No automated unit/integration/e2e suite** in repo (no `*.test.*` / `*.spec.*` found; no `test` script). *(Phase 17 added Vitest + smokes.)*
+3. **LAUNCH.md is stale** relative to later work (claims Storage/admin deferred while `07`/`08` and admin console exist). *(Phase 18 rewrote launch docs.)*
 4. **Destructive reset** (`00_reset_nexus.sql`) is easy to paste in SQL Editor — production footgun.
-5. **Admin = env UUID list** only; no audit log, no granular platform roles.
+5. **Admin = env UUID list** only; no audit log, no granular platform roles. *(Phase 3 added DB roles + audit.)*
 6. **Hub/mod permissions** are coarse (`admin|mod|member`) with many god-mode actions via service role.
 7. **Remote WebView** App Store Guideline 4.2 risk until bundled Cap build.
 8. **Mock mode** is easy to leave on accidentally if `VITE_USE_MOCK=1` or keys missing.
 9. **Env validation** is soft (returns null / mock) rather than failing closed in production.
 10. **Manual SQL apply order** on cloud is operator-dependent; “applied” state cannot be verified from this repo alone.
+11. **Arabic-first product gaps** (re-audit): MENA regional discovery **Missing**; Arabic moderation assist **Missing**; search/bidi/RTL/admin chrome **Partial** — see ranked list in `ARABIC-FIRST-AUDIT.md`.
 
 ### Unresolved after Phase 0
 
@@ -69,8 +114,9 @@ Track incremental production hardening across database safety, authorization, me
 - Codemagic group `test` contents (must include `CAPACITOR_SERVER_URL`).
 - Real-device verification matrix for latest safe-area/keyboard builds.
 - Lint duration / full eslint report under Windows (run was slow/hung in audit environment — see baseline report).
+- **Arabic-first backlog** (not implemented in Phase 0): regional discovery schema/filters, Arabic T&S assist + admin bidi/i18n, DB-normalized search, full UGC `dir="auto"`, region locale fallback, appeal UX, font subset / mid-range perf budget.
 
-### Baseline command results (this machine)
+### Baseline command results (this machine — original Phase 0)
 
 | Check | Result |
 |-------|--------|
@@ -79,11 +125,55 @@ Track incremental production hardening across database safety, authorization, me
 | Unit tests | **NONE** (no `test` script; no `*.test.*` / `*.spec.*` files). |
 | `npm run build` | **PASS** (exit 0). Nitro Cloudflare artifact generated (`.output/`, wrangler config). |
 
+*(Snapshot updated by Phases 17–18: `typecheck` / Vitest / `smoke:*` / build green relative to later work — see those summaries.)*
+
 ### Deliverables created
 
 - `docs/PRODUCTION-HARDENING-PLAN.md` (this file)
 - `docs/FEATURE-READINESS-MATRIX.md`
 - `docs/ARCHITECTURE-AUDIT.md`
+
+### Phase 0 Arabic-first re-audit (2026-07-15)
+
+**Goal:** Fold Arabic-first policy into Phase 0 audit scope; measure current code; **do not implement** beyond documentation.
+
+**Done**
+
+1. Expanded Phase 0 checklist with seven Arabic/MENA axes (above).  
+2. Full code audit → [`docs/ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md).  
+3. Matrix + architecture audit updated with Arabic-first rows/notes.  
+4. Standing guidelines already in tree (`ARABIC-PRODUCT-GUIDELINES.md`, terminology, RTL checklist, MENA moderation).
+
+**Axis verdicts (abbrev.)**
+
+| Axis | Verdict |
+|------|---------|
+| Arabic-first UX | Partial |
+| RTL | Partial |
+| Mixed-direction text | Partial |
+| Arabic search | Partial |
+| MENA moderation | Partial (assist Missing) |
+| Regional discovery | Missing |
+| Mobile AR/MENA performance | Partial |
+
+**Top unresolved (implementation backlog — await next-phase approval)**
+
+1. Regional / MENA discovery (country filters, profile region, hub templates)  
+2. Arabic moderation assist + admin bidi/i18n + appeals  
+3. DB-normalized Arabic search recall  
+4. Complete UGC bidi (`composer`, notifications, reports, admin)  
+5. Remaining EN user-path leftovers + region locale fallback  
+
+**Explicitly not done this pass:** UI/feature implementation for the backlog above.
+
+### Arabic-first impact (Phase 0 re-audit)
+
+- **Arabic UI:** No new chrome; documented Partial vs guidelines.  
+- **RTL testing:** Checklist referenced; physical CSS debt listed.  
+- **Mixed-direction:** Gaps named with file paths in audit.  
+- **Arabic search:** Helpers present; DB index gap recorded.  
+- **Moderation:** Reporter AR OK; MENA assist Missing.  
+- **Unresolved:** Ranked backlog in `ARABIC-FIRST-AUDIT.md`.
 
 ---
 
@@ -1023,7 +1113,7 @@ Still deferred: CallKit/VoIP, FCM HTTP v1, Play signing secrets, screenshot bina
 
 ---
 
-## Arabic-first impact (policy adoption)
+## Arabic-first impact (policy adoption — incremental pass pre–Phase 0 re-audit)
 
 ### Arabic UI changes
 
@@ -1050,8 +1140,336 @@ Still deferred: CallKit/VoIP, FCM HTTP v1, Play signing secrets, screenshot bina
 
 - Region locale fallback; MENA discovery filters; hub templates; admin i18n; SSR EN string flash  
 
+**Superseded for gap tracking by:** [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md) (Phase 0 Arabic-first re-audit).
+
+---
+
+## Arabic-first Phase 1 summary (AF1 — 2026-07-15)
+
+### Goals
+
+Incremental foundations from the Phase 0 Arabic-first audit: complete high-traffic UGC bidi, bilingual rate-limit errors, stronger message search aliases — **not** MENA discovery or moderation assist.
+
+### Done
+
+1. `dir="auto"` on composer (input, reply author, mentions, typing, attachment), notifications title/body, report preview + details, admin report details/usernames/notes.  
+2. Rate-limit user copy EN+AR via `html[lang]` in `withMappedDbError`.  
+3. `expandArabicSearchTerms` + channel message search OR-ilike + client fold filter.  
+4. Docs: `ARABIC-FIRST-PHASE1.md`; audit pointers updated.
+
+### Migrations
+
+None.
+
+### Tests
+
+`npm test -- --run src/lib/rate-limit.test.ts src/lib/arabic-normalize.test.ts` — pass.
+
+### Unresolved after AF1
+
+- Regional discovery, MENA assist, DB normalize column, admin i18n, region locale fallback, SSR EN flash, full `ui/*` logical CSS (see audit).
+
+### Arabic-first impact
+
+- **UI:** Rate-limit AR when language is Arabic.  
+- **RTL:** No new layout chrome; checklist still applies.  
+- **Bidi:** Composer / notifs / report / admin report UGC.  
+- **Search:** Message aliases + haystack fold filter; DB index still open.  
+- **Moderation:** Admin can read Arabic report text with isolation; assist Missing.  
+- **Unresolved:** Audit gaps #1–2, region, SSR, etc.
+
+### Changed files (AF1)
+
+- `src/components/composer.tsx`, `report-dialog.tsx`  
+- `src/routes/notifications.tsx`, `admin.tsx`  
+- `src/lib/rate-limit.ts`, `rate-limit.test.ts`  
+- `src/lib/arabic-normalize.ts`, `arabic-normalize.test.ts`, `chat/api.ts`  
+- `docs/ARABIC-FIRST-PHASE1.md`, `ARABIC-FIRST-AUDIT.md`, `PRODUCTION-HARDENING-PLAN.md`, `I18N-RTL.md`, `FEATURE-READINESS-MATRIX.md`
+
+---
+
+## Arabic-first Phase 2 summary (AF2 — 2026-07-15)
+
+### Goals
+
+Regional / MENA discovery foundations from the Phase 0 audit (player region prefs, hub region tags, Discover filters, locale region fallback) — not hub templates or LFG.
+
+### Done
+
+1. Migration `user_prefs.region` + `hubs.region` + soft seed tags.  
+2. `src/lib/regions.ts` + tests; Settings home region; Discover region chips + badges.  
+3. Locale: storage → cookie → browser `ar*` → MENA region/timezone hint → EN; bootstrap script matches.  
+4. Docs: `ARABIC-FIRST-PHASE2.md`.
+
+### Migrations
+
+- `supabase/migrations/20260715230000_af2_region_discovery.sql`
+
+### Tests
+
+`npm test -- --run src/lib/regions.test.ts` (+ prior AF1 suites).
+
+### Unresolved after AF2
+
+- Hub channel templates, regional LFG/events, admin region editor UI, Arabic T&S assist, DB normalize search column.
+
+### Arabic-first impact
+
+- **UI:** Region picker + Discover filters bilingual.  
+- **RTL:** Filter chips wrap in RTL.  
+- **Bidi:** Discover search isolated.  
+- **Search:** Unchanged.  
+- **Moderation:** Unchanged.  
+- **Unresolved:** Audit gaps on templates / assist / DB search.
+
+### Changed files (AF2)
+
+- `supabase/migrations/20260715230000_af2_region_discovery.sql`, `verify_schema.sql`  
+- `src/lib/regions.ts`, `regions.test.ts`, `i18n.tsx`, `mock-data.ts`, `supabase/types.ts`, `profile.ts`, `chat/api.ts`  
+- `src/routes/discover.tsx`, `settings.tsx`, `__root.tsx`  
+- `docs/ARABIC-FIRST-PHASE2.md`, `ARABIC-FIRST-AUDIT.md`, `PRODUCTION-HARDENING-PLAN.md`, `FEATURE-READINESS-MATRIX.md`, `AGENTS.md`
+
+---
+
+## Arabic-first Phase 3 summary (AF3 — 2026-07-15)
+
+### Goals
+
+MENA hub channel templates + admin region tagging; assistive Arabic/Arabizi report signals; moderator response templates; appeal copy — not auto-ban or full admin i18n.
+
+### Done
+
+1. `hub-templates.ts` + `adminApplyMenaChannelTemplate` + create-hub seed checkbox.  
+2. Hub `region` in admin upsert/list UI.  
+3. `arabic-assist.ts` chips + AR/EN note templates on Reports; Reports strings localized.  
+4. `/help` appeal → `safety@nexus.app`.  
+5. Docs: `ARABIC-FIRST-PHASE3.md`; MENA guide updated.
+
+### Migrations
+
+None (uses AF2 `region` columns).
+
+### Tests
+
+`npm test -- --run src/lib/moderation/arabic-assist.test.ts`
+
+### Unresolved after AF3
+
+- Full admin i18n; richer T&S playbooks; voice report context; DB search normalize; LFG product UX.
+
+### Arabic-first impact
+
+- **UI:** Arabic default channels; Reports AR chrome.  
+- **RTL:** Admin follows document dir.  
+- **Bidi:** Report UGC already isolated; notes `dir=auto`.  
+- **Search:** Unchanged.  
+- **Moderation:** Assist + templates; human decision remains.  
+- **Unresolved:** Matrix gaps above.
+
+### Changed files (AF3)
+
+- `src/lib/hub-templates.ts`, `src/lib/moderation/arabic-assist.ts` (+ test)  
+- `src/lib/admin/api.ts`, `src/routes/admin.tsx`, `help.tsx`, `i18n.tsx`  
+- `docs/ARABIC-FIRST-PHASE3.md`, `MENA-MODERATION-GUIDE.md`, `PRODUCTION-HARDENING-PLAN.md`, `AGENTS.md`
+
+---
+
+## Arabic-first Phase 4 summary (AF4 — 2026-07-15)
+
+### Goals
+
+DB-normalized Arabic search for channel/DM messages so folded queries match diacritic/tatweel bodies — display `body` unchanged.
+
+### Done
+
+1. Migration `20260715240000_af4_arabic_search_norm.sql` — `normalize_arabic_for_search`, columns, triggers, backfill, `pg_trgm` indexes.  
+2. Channel search uses `body_search_norm` + `expandArabicSearchNormTerms`.  
+3. Types, `verify_schema`, unit test for norm term expand.  
+4. Docs: `ARABIC-FIRST-PHASE4.md`.
+
+### Migrations
+
+- `supabase/migrations/20260715240000_af4_arabic_search_norm.sql` — **apply on each env**
+
+### Tests
+
+`npm test -- --run src/lib/arabic-normalize.test.ts`
+
+### Unresolved after AF4
+
+- Full admin i18n; LFG product UX; voice report attach; SSR/head hydrate; hub catalog search_norm; font subset.
+
+### Arabic-first impact
+
+- **UI:** Unchanged.  
+- **RTL / bidi:** Unchanged.  
+- **Arabic search:** DB fold + trigram; aliases via expand.  
+- **Moderation:** Original body preserved.  
+- **Unresolved:** Deferred list above.
+
+### Changed files (AF4)
+
+- `supabase/migrations/20260715240000_af4_arabic_search_norm.sql`, `migrations/README.md`, `verify_schema.sql`  
+- `src/lib/arabic-normalize.ts` (+ test), `chat/api.ts`, `supabase/types.ts`  
+- `docs/ARABIC-FIRST-PHASE4.md`, `ARABIC-FIRST-AUDIT.md`, `PRODUCTION-HARDENING-PLAN.md`, `FEATURE-READINESS-MATRIX.md`, `AGENTS.md`
+
+---
+
+## Arabic-first Phase 5 summary (AF5 — 2026-07-15)
+
+Admin chrome i18n + bilingual document titles. See [`ARABIC-FIRST-PHASE5.md`](ARABIC-FIRST-PHASE5.md).
+
+### Done
+
+Admin shell/tabs/health/hub fields/template CTA; `meta.page.*` + `translateStatic` + LocalizedShell path title sync.
+
+### Unresolved after AF5
+
+Residual admin Games toasts/fields; deep SSR hydrate.
+
+---
+
+## Arabic-first Phase 6 summary (AF6 — 2026-07-15)
+
+Discover LFG filter via `hubs.has_lfg`. See [`ARABIC-FIRST-PHASE6.md`](ARABIC-FIRST-PHASE6.md).
+
+### Migrations
+
+`20260715250000_af6_hub_has_lfg.sql` — apply per env.
+
+### Unresolved after AF6
+
+In-hub LFG board; voice report attach; font/perf; remaining admin EN.
+
+---
+
+## Arabic-first Phase 7 summary (AF7 — 2026-07-15)
+
+Games admin i18n, in-hub LFG jump/badge, font weight trim. See [`ARABIC-FIRST-PHASE7.md`](ARABIC-FIRST-PHASE7.md).
+
+---
+
+## Arabic-first Phase 8 summary (AF8 — 2026-07-15)
+
+Voice dock report with channel stamp + client lang hydrate. See [`ARABIC-FIRST-PHASE8.md`](ARABIC-FIRST-PHASE8.md).
+
+### Unresolved after AF8
+
+Voice report DB column; full LFG board; self-hosted fonts; remaining admin confirms EN.
+
+---
+
+## Arabic-first Phase 9 summary (AF9 — 2026-07-15)
+
+Admin delete confirms localized. See [`ARABIC-FIRST-PHASE9.md`](ARABIC-FIRST-PHASE9.md).
+
+---
+
+## Arabic-first Phase 10 summary (AF10 — 2026-07-15)
+
+`reports.voice_channel_id` + client/admin wiring. See [`ARABIC-FIRST-PHASE10.md`](ARABIC-FIRST-PHASE10.md).
+
+### Migrations
+
+`20260715260000_af10_report_voice_channel.sql` — apply per env.
+
+### Unresolved after AF10
+
+LFG events board; self-hosted fonts; voice participant picker; deeper SSR HTML strings.
+
+---
+
+## Arabic-first Phase 11 summary (AF11 — 2026-07-15)
+
+In-hub LFG composer templates. See [`ARABIC-FIRST-PHASE11.md`](ARABIC-FIRST-PHASE11.md).
+
+---
+
+## Arabic-first Phase 12 summary (AF12 — 2026-07-15)
+
+Voice report participant picker. See [`ARABIC-FIRST-PHASE12.md`](ARABIC-FIRST-PHASE12.md).
+
+### Unresolved after AF12
+
+Full LFG board; self-hosted fonts; deeper SSR shell strings; hubs/games `search_norm`; exhaustive logical CSS.
+
+---
+
+## Arabic-first Phase 13 summary (AF13 — 2026-07-15)
+
+Catalog `name_search_norm` for hubs/games. See [`ARABIC-FIRST-PHASE13.md`](ARABIC-FIRST-PHASE13.md).
+
+### Migrations
+
+`20260715270000_af13_catalog_search_norm.sql` — apply per env.
+
+---
+
+## Arabic-first Phase 14 summary (AF14 — 2026-07-15)
+
+High-traffic `ui/*` physical→logical CSS. See [`ARABIC-FIRST-PHASE14.md`](ARABIC-FIRST-PHASE14.md).
+
+### Unresolved after AF14
+
+Full LFG board; self-hosted fonts; deeper SSR shell strings; username search_norm; remaining route-level physical CSS.
+
+---
+
+## Arabic-first Phase 15 summary (AF15 — 2026-07-15)
+
+Profile `username_search_norm` / `display_name_search_norm`. See [`ARABIC-FIRST-PHASE15.md`](ARABIC-FIRST-PHASE15.md).
+
+### Migrations
+
+`20260715280000_af15_profile_search_norm.sql` — apply per env.
+
+---
+
+## Arabic-first Phase 16 summary (AF16 — 2026-07-15)
+
+Cookie / Accept-Language SSR for `<html lang dir>` + root meta. See [`ARABIC-FIRST-PHASE16.md`](ARABIC-FIRST-PHASE16.md).
+
+### Unresolved after AF16
+
+Full LFG board; self-hosted fonts; full React SSR of Arabic chrome strings; remaining route-level physical CSS.
+
+---
+
+## Arabic-first Phase 17 summary (AF17 — 2026-07-15)
+
+Route/shell logical CSS. See [`ARABIC-FIRST-PHASE17.md`](ARABIC-FIRST-PHASE17.md).
+
+---
+
+## Arabic-first Phase 18 summary (AF18 — 2026-07-15)
+
+Self-hosted Noto Sans Arabic via `@fontsource`. See [`ARABIC-FIRST-PHASE18.md`](ARABIC-FIRST-PHASE18.md).
+
+### Unresolved after AF18
+
+Full LFG board; self-host Latin fonts; full React SSR of Arabic chrome; remaining calendar/carousel/switch physics.
+
+---
+
+## Arabic-first Phase 19–22 (2026-07-15) — deferred mop-up
+
+| Phase | Summary |
+|-------|---------|
+| AF19 | Thin LFG board from `#lfg` messages — [`ARABIC-FIRST-PHASE19.md`](ARABIC-FIRST-PHASE19.md) |
+| AF20 | Self-host Inter + Space Grotesk; remove Google Fonts — [`ARABIC-FIRST-PHASE20.md`](ARABIC-FIRST-PHASE20.md) |
+| AF21 | `LanguageProvider initialLang` + Accept-Language cookie set — [`ARABIC-FIRST-PHASE21.md`](ARABIC-FIRST-PHASE21.md) |
+| AF22 | switch/calendar/carousel/settings logical CSS — [`ARABIC-FIRST-PHASE22.md`](ARABIC-FIRST-PHASE22.md) |
+
+### Unresolved after AF22 (optional product, not Arabic-first blockers)
+
+- Dedicated LFG events table / RSVP  
+- Sidebar structural `data-side` physics (intentional)  
+- Non–Arabic-first ops items from hardening phase summaries  
+
 ---
 
 ## Plan complete
 
-Phases **0–18** are marked Done. Remaining work is deferred product/ops follow-ups listed in each phase summary — not a new numbered phase unless you open one.
+Hardening Phases **0–18** are Done. Arabic-first **AF1–AF22** are Done; the Arabic-first deferred backlog from AF18 is closed. Remaining work: optional product follow-ups above + non–Arabic-first ops deferred items in each hardening summary. Open **AF23+** only with explicit approval.
+
+Remaining work otherwise: deferred product/ops follow-ups listed in each hardening phase summary.

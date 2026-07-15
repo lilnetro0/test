@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   arabicSearchIncludes,
+  expandArabicSearchNormTerms,
+  expandArabicSearchTerms,
   normalizeArabicForSearch,
 } from "@/lib/arabic-normalize";
 
@@ -26,5 +28,22 @@ describe("arabicSearchIncludes", () => {
     expect(arabicSearchIncludes("Valorant جدة", "valorant")).toBe(true);
     expect(arabicSearchIncludes("فالورانت", "Valorant")).toBe(false); // different scripts without alias
     expect(arabicSearchIncludes("نحتاج Support", "support")).toBe(true);
+  });
+});
+
+describe("expandArabicSearchTerms", () => {
+  it("includes aliases for Arabic game names", () => {
+    const terms = expandArabicSearchTerms("ببجي");
+    expect(terms.some((t) => /pubg/i.test(t))).toBe(true);
+    expect(terms).toContain("ببجي");
+  });
+});
+
+describe("expandArabicSearchNormTerms", () => {
+  it("returns folded terms for body_search_norm queries", () => {
+    const terms = expandArabicSearchNormTerms("مَرْحَبًا");
+    expect(terms).toContain(normalizeArabicForSearch("مرحبا"));
+    const pubg = expandArabicSearchNormTerms("ببجي");
+    expect(pubg.some((t) => t.includes("pubg"))).toBe(true);
   });
 });

@@ -25,6 +25,9 @@ type HubJoinRow = {
   member_count: number;
   active_count: string;
   image_url?: string | null;
+  region?: string | null;
+  has_lfg?: boolean | null;
+  name_search_norm?: string | null;
   game?:
     | {
         id: string;
@@ -34,6 +37,7 @@ type HubJoinRow = {
         tint: string;
         text_tint: string;
         image_url?: string | null;
+        name_search_norm?: string | null;
       }
     | {
         id: string;
@@ -43,6 +47,7 @@ type HubJoinRow = {
         tint: string;
         text_tint: string;
         image_url?: string | null;
+        name_search_norm?: string | null;
       }[]
     | null;
 };
@@ -68,6 +73,10 @@ export function mapHubRowToLiveHub(h: HubJoinRow): LiveHub {
       category: (game?.category as HubCard["category"]) ?? "sandbox",
       members: h.member_count,
       imageUrl: h.image_url || game?.image_url || null,
+      region: h.region ?? null,
+      hasLfg: Boolean(h.has_lfg),
+      nameSearchNorm: h.name_search_norm ?? null,
+      gameNameSearchNorm: game?.name_search_norm ?? null,
     },
   };
 }
@@ -197,7 +206,9 @@ export async function fetchLiveHubs(): Promise<{ hubs: LiveHub[]; error?: string
 
   const { data, error } = await client
     .from("hubs")
-    .select("id, slug, name, member_count, active_count, image_url, game:games(*)")
+    .select(
+      "id, slug, name, member_count, active_count, image_url, region, has_lfg, name_search_norm, game:games(*)",
+    )
     .order("name");
 
   if (error) return { hubs: [], error: error.message };
@@ -215,7 +226,9 @@ export async function fetchUserHubs(
 
   const { data, error } = await client
     .from("hub_members")
-    .select("hub:hubs(id, slug, name, member_count, active_count, image_url, game:games(*))")
+    .select(
+      "hub:hubs(id, slug, name, member_count, active_count, image_url, region, has_lfg, name_search_norm, game:games(*))",
+    )
     .eq("user_id", userId);
 
   if (error) return { hubs: [], error: error.message };
@@ -284,7 +297,7 @@ export async function fetchChannels(hubUuid: string): Promise<{
   const [textRes, voiceRes] = await Promise.all([
     client
       .from("text_channels")
-      .select("id, name, topic, position")
+      .select("id, name, slug, topic, position")
       .eq("hub_id", hubUuid)
       .order("position"),
     client
@@ -309,6 +322,7 @@ export async function fetchChannels(hubUuid: string): Promise<{
       return {
         id: c.id,
         name: c.name,
+        slug: c.slug ?? undefined,
         topic: c.topic ?? undefined,
         unread: n > 0 ? Math.min(n, 99) : undefined,
       };
@@ -371,10 +385,36 @@ export async function fetchMessages(
 
   const query = opts?.query?.trim();
   if (query) {
-    // Fold diacritics/tatweel for better Arabic recall; store still holds original text.
-    const { normalizeArabicForSearch } = await import("@/lib/arabic-normalize");
-    const folded = normalizeArabicForSearch(query);
-    q = q.ilike("body", `%${folded || query}%`);
+    // AF4: search `body_search_norm` (DB fold) + alias expand; client filter as safety net.
+    const {
+      expandArabicSearchNormTerms,
+      expandArabicSearchTerms,
+      arabicSearchIncludes,
+    } = await import("@/lib/arabic-normalize");
+    const normTerms = expandArabicSearchNormTerms(query);
+    const terms = expandArabicSearchTerms(query);
+    const orFilter = normTerms
+      .map((term) => `body_search_norm.ilike.%${term}%`)
+      .join(",");
+    if (orFilter) q = q.or(orFilter);
+
+    const { data, error } = await q;
+    if (error) return { messages: [], error: error.message };
+    const rows = ((data ?? []) as unknown as MessageRow[])
+      .filter((r) => {
+        const body = r.body ?? "";
+        return terms.some((term) => arabicSearchIncludes(body, term));
+      })
+      .slice()
+      .reverse();
+    const reactions = await fetchReactionsForMessages(
+      rows.map((r) => r.id),
+      opts?.viewerId,
+    );
+    return {
+      messages: rows.map((m) => messageRowToChat(m, reactions.get(m.id))),
+      hasMore: ((data ?? []) as unknown as MessageRow[]).length >= limit,
+    };
   }
 
   const { data, error } = await q;

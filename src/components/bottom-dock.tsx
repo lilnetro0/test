@@ -104,7 +104,7 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           <span className="relative">
             <User className="size-5" />
             {unreadCount > 0 ? (
-              <span className="absolute -top-1 size-2 rounded-full bg-danger ring-2 ring-surface-left ltr:-right-1 rtl:-left-1" />
+              <span className="absolute -top-1 -end-1 size-2 rounded-full bg-danger ring-2 ring-surface-left" />
             ) : null}
           </span>
           <span className="text-[10px] font-semibold uppercase tracking-wide">{t("nav.you")}</span>
@@ -140,7 +140,7 @@ function DockItem({
       <span className="relative">
         {icon}
         {badge && badge > 0 ? (
-          <span className="absolute -top-1.5 min-w-[1rem] rounded-full bg-danger px-1 text-center text-[9px] font-bold leading-4 text-white ring-2 ring-surface-left ltr:-right-2 rtl:-left-2">
+          <span className="absolute -top-1.5 -end-2 min-w-[1rem] rounded-full bg-danger px-1 text-center text-[9px] font-bold leading-4 text-white ring-2 ring-surface-left">
             {badge > 99 ? "99+" : badge}
           </span>
         ) : null}
@@ -193,7 +193,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
-      <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 md:inset-x-auto md:w-80 ltr:md:right-3 rtl:md:left-3">
+      <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 md:inset-x-auto md:end-3 md:w-80">
         <Link
           to="/me"
           onClick={onClose}

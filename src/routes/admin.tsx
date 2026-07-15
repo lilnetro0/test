@@ -24,16 +24,23 @@ import {
   adminUpsertHub,
   adminUpsertTextChannel,
   adminUpsertVoiceChannel,
+  adminApplyMenaChannelTemplate,
   checkIsAdmin,
 } from "@/lib/admin/api";
 import { Gamepad2, Hash, Mic, Shield, Flag, Users, Database } from "lucide-react";
 import { getAppHealth } from "@/lib/ops/get-app-health";
 import type { AppHealthReport } from "@/lib/ops/health";
+import { useT, translateStatic } from "@/lib/i18n";
+import { REGION_OPTIONS, normalizeRegionCode, type RegionCode } from "@/lib/regions";
+import {
+  MOD_RESPONSE_TEMPLATES,
+  scanArabicAssistSignals,
+} from "@/lib/moderation/arabic-assist";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — Nexus" },
+      { title: translateStatic("meta.page.admin") },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -60,10 +67,12 @@ type HubRow = {
   member_count: number;
   active_count: string;
   image_url: string | null;
+  region?: string | null;
 };
 
 function AdminPage() {
   const { user, accessToken, loading } = useAuth();
+  const { t } = useT();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("hubs");
   const [health, setHealth] = useState<AppHealthReport | null>(null);
@@ -86,7 +95,7 @@ function AdminPage() {
     return (
       <AppShell>
         <main className="grid flex-1 place-items-center p-8 text-sm text-stone-500">
-          Admin access required. Use platform_roles or ADMIN_USER_IDS (see docs/ADMIN-SECURITY.md).
+          {t("admin.denied")}
         </main>
       </AppShell>
     );
@@ -95,17 +104,19 @@ function AdminPage() {
   if (allowed === null || !accessToken) {
     return (
       <AppShell>
-        <main className="grid flex-1 place-items-center p-8 text-sm text-stone-500">Checking…</main>
+        <main className="grid flex-1 place-items-center p-8 text-sm text-stone-500">
+          {t("admin.checking")}
+        </main>
       </AppShell>
     );
   }
 
-  const tabs: { id: Tab; label: string; icon: typeof Shield }[] = [
-    { id: "hubs", label: "Hubs", icon: Gamepad2 },
-    { id: "games", label: "Games", icon: Gamepad2 },
-    { id: "channels", label: "Channels", icon: Hash },
-    { id: "users", label: "Users", icon: Users },
-    { id: "reports", label: "Reports", icon: Flag },
+  const tabs: { id: Tab; labelKey: "admin.tab.hubs" | "admin.tab.games" | "admin.tab.channels" | "admin.tab.users" | "admin.tab.reports"; icon: typeof Shield }[] = [
+    { id: "hubs", labelKey: "admin.tab.hubs", icon: Gamepad2 },
+    { id: "games", labelKey: "admin.tab.games", icon: Gamepad2 },
+    { id: "channels", labelKey: "admin.tab.channels", icon: Hash },
+    { id: "users", labelKey: "admin.tab.users", icon: Users },
+    { id: "reports", labelKey: "admin.tab.reports", icon: Flag },
   ];
 
   return (
@@ -114,45 +125,45 @@ function AdminPage() {
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border-subtle px-4 md:px-6">
           <Shield className="size-5 text-accent" />
           <h1 className="font-display text-base font-bold uppercase tracking-tight text-white">
-            Admin console
+            {t("admin.title")}
           </h1>
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+          <div className="ms-auto flex flex-wrap items-center justify-end gap-2 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
             <span className="inline-flex items-center gap-1">
               <Database className="size-3.5" />
               {health == null
                 ? "…"
                 : health.supabase.ok
-                  ? `DB · ${health.supabase.games ?? 0} games`
-                  : "DB · down"}
+                  ? t("admin.health.dbOk", { n: String(health.supabase.games ?? 0) })
+                  : t("admin.health.dbDown")}
             </span>
             <span className="inline-flex items-center gap-1">
               <Mic className="size-3.5" />
               {health == null
                 ? "…"
                 : !health.livekit.configured
-                  ? "LiveKit · stub"
+                  ? t("admin.health.lkStub")
                   : health.livekit.reachable === false
-                    ? `LiveKit · unreachable`
-                    : `LiveKit · ${health.livekit.urlHost ?? "ok"}`}
+                    ? t("admin.health.lkDown")
+                    : t("admin.health.lkOk", { host: health.livekit.urlHost ?? "ok" })}
             </span>
           </div>
         </header>
         <div className="flex gap-1 overflow-x-auto border-b border-border-subtle px-3 py-2 no-scrollbar">
-          {tabs.map((t) => {
-            const Icon = t.icon;
+          {tabs.map((tabItem) => {
+            const Icon = tabItem.icon;
             return (
               <button
-                key={t.id}
+                key={tabItem.id}
                 type="button"
-                onClick={() => setTab(t.id)}
+                onClick={() => setTab(tabItem.id)}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                  tab === t.id
+                  tab === tabItem.id
                     ? "border-accent bg-accent/10 text-accent"
                     : "border-border-subtle text-stone-400"
                 }`}
               >
                 <Icon className="size-3.5" />
-                {t.label}
+                {t(tabItem.labelKey)}
               </button>
             );
           })}
@@ -178,15 +189,27 @@ async function fileToBase64(file: File): Promise<{ base64: string; contentType: 
 }
 
 function HubsTab({ accessToken }: { accessToken: string }) {
+  const { t } = useT();
   const [hubs, setHubs] = useState<HubRow[]>([]);
   const [games, setGames] = useState<GameRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const [applyTemplate, setApplyTemplate] = useState(true);
   const [form, setForm] = useState({
     id: "",
     game_id: "",
     name: "",
     slug: "",
     image_url: "",
+    region: "" as RegionCode,
+  });
+
+  const emptyForm = (gameId: string) => ({
+    id: "",
+    game_id: gameId,
+    name: "",
+    slug: "",
+    image_url: "",
+    region: "" as RegionCode,
   });
 
   const refresh = useCallback(async () => {
@@ -219,7 +242,9 @@ function HubsTab({ accessToken }: { accessToken: string }) {
           name: form.name,
           slug: form.slug || undefined,
           image_url: form.image_url || null,
+          region: form.region || null,
         },
+        applyMenaChannelTemplate: !form.id && applyTemplate,
       },
     });
     setBusy(false);
@@ -227,11 +252,14 @@ function HubsTab({ accessToken }: { accessToken: string }) {
       toast.error(result.error);
       return;
     }
-    toast.success(form.id ? "Hub updated" : "Hub created");
+    toast.success(form.id ? t("admin.toast.hubSaved") : t("admin.toast.hubCreated"));
+    if ("channelsSeeded" in result && result.channelsSeeded) {
+      toast.message(`Seeded ${result.channelsSeeded} MENA Arabic channels`);
+    }
     if ("slugDiffersFromGame" in result && result.slugDiffersFromGame) {
       toast.message("Slug differs from game id — URLs use the hub slug; hero art uses the game id.");
     }
-    setForm({ id: "", game_id: games[0]?.id ?? "", name: "", slug: "", image_url: "" });
+    setForm(emptyForm(games[0]?.id ?? ""));
     void refresh();
   };
 
@@ -263,16 +291,17 @@ function HubsTab({ accessToken }: { accessToken: string }) {
 
   return (
     <div className="space-y-6">
-      <Panel title={form.id ? "Edit hub" : "Create hub"}>
+      <Panel title={form.id ? t("admin.action.edit") : t("admin.action.create")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Name">
+          <Field label={t("admin.field.name")}>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={inputCls}
+              dir="auto"
             />
           </Field>
-          <Field label="Slug (optional)">
+          <Field label={t("admin.field.slug")}>
             <input
               value={form.slug}
               onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
@@ -280,7 +309,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
               placeholder="defaults to game id"
             />
           </Field>
-          <Field label="Game">
+          <Field label={t("admin.field.game")}>
             <select
               value={form.game_id}
               onChange={(e) => setForm((f) => ({ ...f, game_id: e.target.value }))}
@@ -293,6 +322,22 @@ function HubsTab({ accessToken }: { accessToken: string }) {
               ))}
             </select>
           </Field>
+          <Field label={t("admin.field.region")}>
+            <select
+              value={form.region}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, region: normalizeRegionCode(e.target.value) }))
+              }
+              className={inputCls}
+            >
+              <option value="">Global</option>
+              {REGION_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {o.en} — {o.ar}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Image URL">
             <input
               value={form.image_url}
@@ -301,6 +346,17 @@ function HubsTab({ accessToken }: { accessToken: string }) {
             />
           </Field>
         </div>
+        {!form.id ? (
+          <label className="mt-3 flex items-center gap-2 text-xs text-stone-400">
+            <input
+              type="checkbox"
+              checked={applyTemplate}
+              onChange={(e) => setApplyTemplate(e.target.checked)}
+              className="accent-[hsl(var(--accent))]"
+            />
+            {t("admin.hubs.seedTemplate")}
+          </label>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <label className="cursor-pointer rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-stone-300">
             Upload image
@@ -317,14 +373,12 @@ function HubsTab({ accessToken }: { accessToken: string }) {
             onClick={() => void save()}
             className="rounded-lg bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground disabled:opacity-40"
           >
-            {form.id ? "Save" : "Create"}
+            {form.id ? t("admin.action.save") : t("admin.action.create")}
           </button>
           {form.id ? (
             <button
               type="button"
-              onClick={() =>
-                setForm({ id: "", game_id: games[0]?.id ?? "", name: "", slug: "", image_url: "" })
-              }
+              onClick={() => setForm(emptyForm(games[0]?.id ?? ""))}
               className="rounded-lg border border-border-subtle px-3 py-2 text-xs text-stone-400"
             >
               Cancel edit
@@ -345,9 +399,12 @@ function HubsTab({ accessToken }: { accessToken: string }) {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{h.name}</p>
+                <p className="truncate text-sm font-bold text-white" dir="auto">
+                  {h.name}
+                </p>
                 <p className="truncate text-[11px] text-stone-500">
                   {h.slug} · {h.game_id}
+                  {h.region ? ` · ${h.region}` : " · global"}
                 </p>
               </div>
               <button
@@ -359,6 +416,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
                     name: h.name,
                     slug: h.slug,
                     image_url: h.image_url ?? "",
+                    region: normalizeRegionCode(h.region),
                   })
                 }
                 className="text-xs font-semibold text-accent"
@@ -378,7 +436,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
                 type="button"
                 disabled={busy}
                 onClick={async () => {
-                  if (!confirm(`Delete hub ${h.name}?`)) return;
+                  if (!confirm(t("admin.confirm.deleteHub", { name: h.name }))) return;
                   setBusy(true);
                   const r = await adminDeleteHub({ data: { accessToken, hubId: h.id } });
                   setBusy(false);
@@ -401,6 +459,7 @@ function HubsTab({ accessToken }: { accessToken: string }) {
 }
 
 function GamesTab({ accessToken }: { accessToken: string }) {
+  const { t } = useT();
   const [games, setGames] = useState<GameRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
@@ -444,15 +503,15 @@ function GamesTab({ accessToken }: { accessToken: string }) {
       toast.error(result.error);
       return;
     }
-    toast.success("Game saved");
+    toast.success(t("admin.games.saved"));
     void refresh();
   };
 
   return (
     <div className="space-y-6">
-      <Panel title="Create / update game">
+      <Panel title={t("admin.games.create")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Id (slug)">
+          <Field label={t("admin.games.id")}>
             <input
               value={form.id}
               onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))}
@@ -460,14 +519,15 @@ function GamesTab({ accessToken }: { accessToken: string }) {
               placeholder="valorant"
             />
           </Field>
-          <Field label="Name">
+          <Field label={t("admin.field.name")}>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={inputCls}
+              dir="auto"
             />
           </Field>
-          <Field label="Short">
+          <Field label={t("admin.games.short")}>
             <input
               value={form.short}
               onChange={(e) => setForm((f) => ({ ...f, short: e.target.value }))}
@@ -475,7 +535,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
               placeholder="VAL"
             />
           </Field>
-          <Field label="Category">
+          <Field label={t("admin.field.category")}>
             <select
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -488,7 +548,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
               ))}
             </select>
           </Field>
-          <Field label="Image URL">
+          <Field label={t("admin.field.image")}>
             <input
               value={form.image_url}
               onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
@@ -498,7 +558,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <label className="cursor-pointer rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-stone-300">
-            Upload image
+            {t("admin.action.upload")}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
@@ -506,7 +566,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file || !form.id) {
-                  toast.error("Set game id first");
+                  toast.error(t("admin.games.needId"));
                   return;
                 }
                 setBusy(true);
@@ -523,7 +583,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
                 if (!r.ok) toast.error(r.error);
                 else {
                   setForm((f) => ({ ...f, image_url: r.url }));
-                  toast.success("Image set");
+                  toast.success(t("admin.games.imageSet"));
                   void refresh();
                 }
               }}
@@ -535,12 +595,12 @@ function GamesTab({ accessToken }: { accessToken: string }) {
             onClick={() => void save()}
             className="rounded-lg bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground disabled:opacity-40"
           >
-            Save game
+            {t("admin.games.save")}
           </button>
         </div>
       </Panel>
 
-      <Panel title={`Games (${games.length})`}>
+      <Panel title={t("admin.games.list", { n: String(games.length) })}>
         <ul className="divide-y divide-border-subtle">
           {games.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-3 py-3">
@@ -572,25 +632,25 @@ function GamesTab({ accessToken }: { accessToken: string }) {
                 }
                 className="text-xs font-semibold text-accent"
               >
-                Edit
+                {t("admin.action.edit")}
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={async () => {
-                  if (!confirm(`Delete game ${g.id}? Cascades hubs.`)) return;
+                  if (!confirm(t("admin.confirm.deleteGame", { id: g.id }))) return;
                   setBusy(true);
                   const r = await adminDeleteGame({ data: { accessToken, gameId: g.id } });
                   setBusy(false);
                   if (!r.ok) toast.error(r.error);
                   else {
-                    toast.success("Game deleted");
+                    toast.success(t("admin.games.deleted"));
                     void refresh();
                   }
                 }}
                 className="text-xs font-semibold text-danger"
               >
-                Delete
+                {t("admin.action.delete")}
               </button>
             </li>
           ))}
@@ -601,6 +661,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
 }
 
 function ChannelsTab({ accessToken }: { accessToken: string }) {
+  const { t } = useT();
   const [hubs, setHubs] = useState<HubRow[]>([]);
   const [hubId, setHubId] = useState("");
   const [text, setText] = useState<
@@ -656,10 +717,34 @@ function ChannelsTab({ accessToken }: { accessToken: string }) {
 
       <Panel title="Text channels">
         <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy || !hubId}
+            onClick={async () => {
+              setBusy(true);
+              const r = await adminApplyMenaChannelTemplate({
+                data: { accessToken, hubId },
+              });
+              setBusy(false);
+              if (!r.ok) toast.error(r.error);
+              else {
+                toast.success(
+                  `MENA template: +${r.created} channels (${r.skipped} already present)`,
+                );
+                void refreshChannels();
+              }
+            }}
+            className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent disabled:opacity-40"
+          >
+            {t("admin.channels.applyTemplate")}
+          </button>
+        </div>
+        <div className="mb-3 flex flex-wrap gap-2">
           <input
             value={textName}
             onChange={(e) => setTextName(e.target.value)}
             placeholder="Channel name"
+            dir="auto"
             className={`${inputCls} max-w-xs`}
           />
           <input
@@ -703,7 +788,7 @@ function ChannelsTab({ accessToken }: { accessToken: string }) {
                 type="button"
                 className="text-xs text-danger"
                 onClick={async () => {
-                  if (!confirm(`Delete #${c.name}?`)) return;
+                  if (!confirm(t("admin.confirm.deleteText", { name: c.name }))) return;
                   const r = await adminDeleteTextChannel({
                     data: { accessToken, channelId: c.id },
                   });
@@ -759,7 +844,7 @@ function ChannelsTab({ accessToken }: { accessToken: string }) {
                 type="button"
                 className="text-xs text-danger"
                 onClick={async () => {
-                  if (!confirm(`Delete voice ${c.name}?`)) return;
+                  if (!confirm(t("admin.confirm.deleteVoice", { name: c.name }))) return;
                   const r = await adminDeleteVoiceChannel({
                     data: { accessToken, channelId: c.id },
                   });
@@ -778,6 +863,7 @@ function ChannelsTab({ accessToken }: { accessToken: string }) {
 }
 
 function UsersTab({ accessToken, selfUserId }: { accessToken: string; selfUserId: string }) {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -889,7 +975,7 @@ function UsersTab({ accessToken, selfUserId }: { accessToken: string; selfUserId
 
   return (
     <div className="space-y-6">
-      <Panel title="Platform admins">
+      <Panel title={t("admin.users.platformAdmins")}>
         <p className="mb-3 text-xs text-stone-500">
           Durable access via <span className="font-mono text-stone-400">platform_roles</span>. Env{" "}
           <span className="font-mono text-stone-400">ADMIN_USER_IDS</span> is bootstrap only.
@@ -1032,6 +1118,7 @@ function UsersTab({ accessToken, selfUserId }: { accessToken: string; selfUserId
 }
 
 function ReportsTab({ accessToken }: { accessToken: string }) {
+  const { lang, t } = useT();
   const [filter, setFilter] = useState<"open" | "reviewing" | "resolved" | "dismissed" | "all">(
     "open",
   );
@@ -1045,6 +1132,7 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
       created_at: string;
       message_id: string | null;
       dm_message_id: string | null;
+      voice_channel_id: string | null;
       resolution_note: string;
       target_user_id: string | null;
       reporter?: { username: string; tag: string } | { username: string; tag: string }[] | null;
@@ -1089,13 +1177,14 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
     });
     if (!res.ok) toast.error(res.error);
     else {
-      toast.success(`Marked ${status}`);
+      toast.success(t("admin.reports.marked", { status }));
       void refresh();
     }
   };
 
   return (
-    <Panel title="Reports">
+    <Panel title={t("admin.reports.title")}>
+      <p className="mb-3 text-[11px] text-stone-500">{t("admin.reports.assistNote")}</p>
       <div className="mb-3 flex flex-wrap gap-2">
         {(["open", "reviewing", "resolved", "dismissed", "all"] as const).map((s) => (
           <button
@@ -1108,98 +1197,134 @@ function ReportsTab({ accessToken }: { accessToken: string }) {
                 : "bg-white/5 text-stone-400 hover:text-white"
             }`}
           >
-            {s}
+            {t(`admin.reports.filter.${s}` as "admin.reports.filter.open")}
           </button>
         ))}
       </div>
       <ul className="divide-y divide-border-subtle">
-        {reports.map((r) => (
-          <li key={r.id} className="space-y-2 py-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-bold text-white">
-                {r.reason}{" "}
-                <span className="ms-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                  {r.status}
+        {reports.map((r) => {
+          const signals = scanArabicAssistSignals(r.details);
+          return (
+            <li key={r.id} className="space-y-2 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-bold text-white">
+                  {r.reason}{" "}
+                  <span className="ms-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                    {r.status}
+                  </span>
+                </p>
+                <span className="text-[10px] uppercase tracking-widest text-stone-500">
+                  {new Date(r.created_at).toLocaleString()}
                 </span>
+              </div>
+              <p className="text-xs text-stone-400" dir="auto">
+                {r.details || t("admin.reports.noDetails")}
               </p>
-              <span className="text-[10px] uppercase tracking-widest text-stone-500">
-                {new Date(r.created_at).toLocaleString()}
-              </span>
-            </div>
-            <p className="text-xs text-stone-400">{r.details || "No details"}</p>
-            <p className="text-[11px] text-stone-500">
-              Reporter {pickUser(r.reporter)} → Target {pickUser(r.target)}
-              {r.message_id ? ` · msg ${r.message_id.slice(0, 8)}` : ""}
-              {r.dm_message_id ? ` · dm ${r.dm_message_id.slice(0, 8)}` : ""}
-            </p>
-            <input
-              value={noteDrafts[r.id] ?? r.resolution_note ?? ""}
-              onChange={(e) =>
-                setNoteDrafts((prev) => ({ ...prev, [r.id]: e.target.value.slice(0, 500) }))
-              }
-              placeholder="Resolution note (optional)"
-              className="w-full rounded-md border border-border-subtle bg-background px-2 py-1.5 text-xs text-white outline-none focus:border-accent/50"
-            />
-            <div className="flex flex-wrap gap-2">
-              {r.status === "open" ? (
-                <button
-                  type="button"
-                  className="rounded-md bg-accent/15 px-2 py-1 text-[10px] font-bold uppercase text-accent"
-                  onClick={() => void setStatus(r.id, "reviewing")}
-                >
-                  Reviewing
-                </button>
+              {signals.length > 0 ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {signals.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200"
+                      title={s.sample}
+                    >
+                      {lang === "ar" ? s.labelAr : s.labelEn}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
-              <button
-                type="button"
-                className="rounded-md bg-online/15 px-2 py-1 text-[10px] font-bold uppercase text-online"
-                onClick={() => void setStatus(r.id, "resolved")}
-              >
-                Resolve
-              </button>
-              <button
-                type="button"
-                className="rounded-md bg-white/5 px-2 py-1 text-[10px] font-bold uppercase text-stone-300"
-                onClick={() => void setStatus(r.id, "dismissed")}
-              >
-                Dismiss
-              </button>
-              {r.target_user_id ? (
-                <button
-                  type="button"
-                  className="rounded-md bg-danger/15 px-2 py-1 text-[10px] font-bold uppercase text-danger"
-                  onClick={async () => {
-                    const res = await adminBanUser({
-                      data: {
-                        accessToken,
-                        targetUserId: r.target_user_id!,
-                        ban: true,
-                        reason: `Report: ${r.reason}`,
-                      },
-                    });
-                    if (!res.ok) toast.error(res.error);
-                    else {
-                      await adminSetReportStatus({
-                        data: {
-                          accessToken,
-                          reportId: r.id,
-                          status: "resolved",
-                          resolutionNote: noteDrafts[r.id] || `Banned for ${r.reason}`,
-                        },
-                      });
-                      toast.success("Banned + resolved");
-                      void refresh();
-                    }
+              <p className="text-[11px] text-stone-500">
+                {t("admin.reports.reporter")}{" "}
+                <span dir="auto">{pickUser(r.reporter)}</span>
+                {" → "}
+                {t("admin.reports.target")}{" "}
+                <span dir="auto">{pickUser(r.target)}</span>
+                {r.message_id ? ` · msg ${r.message_id.slice(0, 8)}` : ""}
+                {r.dm_message_id ? ` · dm ${r.dm_message_id.slice(0, 8)}` : ""}
+                {r.voice_channel_id
+                  ? ` · ${t("admin.reports.voice")} ${r.voice_channel_id.slice(0, 8)}`
+                  : ""}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  className={`${inputCls} max-w-xs`}
+                  defaultValue=""
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const tpl = MOD_RESPONSE_TEMPLATES.find((x) => x.id === id);
+                    if (!tpl) return;
+                    const note = lang === "ar" ? tpl.ar : tpl.en;
+                    setNoteDrafts((prev) => ({ ...prev, [r.id]: note }));
+                    e.target.value = "";
                   }}
                 >
-                  Ban target
+                  <option value="">{t("admin.reports.template")}</option>
+                  {MOD_RESPONSE_TEMPLATES.map((tpl) => (
+                    <option key={tpl.id} value={tpl.id}>
+                      {lang === "ar" ? tpl.ar.slice(0, 48) : tpl.en.slice(0, 48)}…
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <input
+                value={noteDrafts[r.id] ?? r.resolution_note ?? ""}
+                onChange={(e) =>
+                  setNoteDrafts((prev) => ({ ...prev, [r.id]: e.target.value.slice(0, 500) }))
+                }
+                placeholder={t("admin.reports.notePlaceholder")}
+                dir="auto"
+                className="w-full rounded-md border border-border-subtle bg-background px-2 py-1.5 text-xs text-white outline-none focus:border-accent/50"
+              />
+              <div className="flex flex-wrap gap-2">
+                {r.status === "open" ? (
+                  <button
+                    type="button"
+                    className="rounded-md bg-accent/15 px-2 py-1 text-[10px] font-bold uppercase text-accent"
+                    onClick={() => void setStatus(r.id, "reviewing")}
+                  >
+                    {t("admin.reports.reviewing")}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="rounded-md bg-online/15 px-2 py-1 text-[10px] font-bold uppercase text-online"
+                  onClick={() => void setStatus(r.id, "resolved")}
+                >
+                  {t("admin.reports.resolve")}
                 </button>
-              ) : null}
-            </div>
-          </li>
-        ))}
+                <button
+                  type="button"
+                  className="rounded-md bg-white/5 px-2 py-1 text-[10px] font-bold uppercase text-stone-300"
+                  onClick={() => void setStatus(r.id, "dismissed")}
+                >
+                  {t("admin.reports.dismiss")}
+                </button>
+                {r.target_user_id ? (
+                  <button
+                    type="button"
+                    className="rounded-md bg-danger/15 px-2 py-1 text-[10px] font-bold uppercase text-danger"
+                    onClick={async () => {
+                      const res = await adminBanUser({
+                        data: {
+                          accessToken,
+                          targetUserId: r.target_user_id!,
+                          ban: true,
+                          reason: `Report: ${r.reason}`,
+                        },
+                      });
+                      if (!res.ok) toast.error(res.error);
+                      else toast.success(t("admin.reports.banned"));
+                    }}
+                  >
+                    {t("admin.reports.ban")}
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
         {reports.length === 0 ? (
-          <li className="py-8 text-center text-xs text-stone-500">No reports in this filter</li>
+          <li className="py-8 text-center text-xs text-stone-500">{t("admin.reports.empty")}</li>
         ) : null}
       </ul>
     </Panel>

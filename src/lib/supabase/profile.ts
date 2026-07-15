@@ -8,6 +8,7 @@ import {
   setHubOrder,
   setReduceMotion,
 } from "@/lib/prefs";
+import { normalizeRegionCode, persistRegion } from "@/lib/regions";
 
 export type Profile = Tables<"profiles">;
 export type UserPrefs = Tables<"user_prefs">;
@@ -24,6 +25,8 @@ export type ProfileUpdate = {
 
 export type PrefsUpdate = {
   lang?: "en" | "ar";
+  /** ISO country or MENA; empty string clears */
+  region?: string | null;
   reduce_motion?: boolean;
   high_contrast?: boolean;
   hub_order?: string[];
@@ -208,6 +211,10 @@ export async function updateUserPrefs(userId: string, patch: PrefsUpdate): Promi
 
   const row: Database["public"]["Tables"]["user_prefs"]["Insert"] = { user_id: userId };
   if (patch.lang !== undefined) row.lang = patch.lang;
+  if (patch.region !== undefined) {
+    const n = normalizeRegionCode(patch.region ?? "");
+    row.region = n || null;
+  }
   if (patch.reduce_motion !== undefined) row.reduce_motion = patch.reduce_motion;
   if (patch.high_contrast !== undefined) row.high_contrast = patch.high_contrast;
   if (patch.hub_order !== undefined) row.hub_order = patch.hub_order as Database["public"]["Tables"]["user_prefs"]["Insert"]["hub_order"];
@@ -250,6 +257,7 @@ export function applyPrefsToLocal(prefs: UserPrefs) {
     if (prefs.lang === "en" || prefs.lang === "ar") {
       window.localStorage.setItem("nexus.lang", prefs.lang);
     }
+    persistRegion(normalizeRegionCode(prefs.region));
   } catch {
     /* ignore */
   }

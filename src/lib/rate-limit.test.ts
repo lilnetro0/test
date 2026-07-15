@@ -22,7 +22,8 @@ describe("mapRateLimitError", () => {
 
 describe("withMappedDbError", () => {
   it("prefers mapped rate limit copy", () => {
-    expect(withMappedDbError("rate_limited:channel", "fallback")).toMatch(/sending/i);
+    expect(withMappedDbError("rate_limited:channel", "fallback", "en")).toMatch(/sending/i);
+    expect(withMappedDbError("rate_limited:channel", "fallback", "ar")).toMatch(/ترسل/);
   });
   it("falls back to message then fallback", () => {
     expect(withMappedDbError(" boom ", "fallback")).toBe("boom");

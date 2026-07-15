@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,7 +16,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalHotkeys } from "@/components/global-hotkeys";
 import { Onboarding } from "@/components/onboarding";
-import { LanguageProvider, useT } from "@/lib/i18n";
+import { LanguageProvider, useT, ROUTE_TITLE_KEYS, translateStatic, LANG_LABELS, type Lang } from "@/lib/i18n";
+import { resolveRequestLang } from "@/lib/resolve-request-lang";
 import { AuthProvider } from "@/lib/auth-provider";
 import { NotificationsProvider } from "@/lib/notifications-provider";
 import { WhatsNew } from "@/components/whats-new";
@@ -69,7 +71,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   // errorComponent renders outside RootComponent's LanguageProvider.
   return (
-    <LanguageProvider>
+    <LanguageProvider initialLang={resolveShellLang()}>
       <ErrorBody
         onRetry={() => {
           router.invalidate();
@@ -111,48 +113,69 @@ function ErrorBody({ onRetry }: { onRetry: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      {
-        name: "viewport",
-        content:
-          "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
-      },
-      { title: "Nexus — Voice & Chat for Gamers" },
-      { name: "description", content: "A Discord-style app built for gamers. Every game is a hub with its own text and voice channels." },
-      { name: "theme-color", content: "#0e1116" },
-      { property: "og:title", content: "Nexus — Voice & Chat for Gamers" },
-      { property: "og:description", content: "Every game is a hub. Text channels, voice nodes, live squads." },
-      { property: "og:type", content: "website" },
-      { property: "og:image", content: "/icons/icon-512.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/icons/icon-512.png" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "apple-touch-icon", href: "/icons/icon-192.png" },
-      { rel: "manifest", href: "/site.webmanifest" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap",
-      },
-    ],
-  }),
+  head: () => {
+    const lang = resolveShellLang();
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        {
+          name: "viewport",
+          content:
+            "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+        },
+        { title: translateStatic("meta.title", undefined, lang) },
+        { name: "description", content: translateStatic("meta.description", undefined, lang) },
+        { name: "theme-color", content: "#0e1116" },
+        { property: "og:title", content: translateStatic("meta.title", undefined, lang) },
+        {
+          property: "og:description",
+          content: translateStatic("meta.description", undefined, lang),
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: "/icons/icon-512.png" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: "/icons/icon-512.png" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+        { rel: "apple-touch-icon", href: "/icons/icon-192.png" },
+        { rel: "manifest", href: "/site.webmanifest" },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
 
-const LANG_BOOTSTRAP = `(function(){try{var k='nexus.lang';var l=localStorage.getItem(k);if(!l){var m=document.cookie.match(/(?:^|; )nexus\\.lang=([^;]*)/);l=m?decodeURIComponent(m[1]):null;}if(!l){var n=(navigator.language||'').toLowerCase();if(n.indexOf('ar')===0)l='ar';}if(l==='ar'){document.documentElement.lang='ar';document.documentElement.dir='rtl';}}catch(e){}})();`;
+const LANG_BOOTSTRAP = `(function(){try{var k='nexus.lang';var l=localStorage.getItem(k);if(!l){var m=document.cookie.match(/(?:^|; )nexus\\.lang=([^;]*)/);l=m?decodeURIComponent(m[1]):null;}if(!l){var n=(navigator.language||'').toLowerCase();if(n.indexOf('ar')===0)l='ar';}if(!l){try{var r=localStorage.getItem('nexus.region');var tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';var menaTz={};['Asia/Riyadh','Asia/Dubai','Asia/Qatar','Asia/Kuwait','Asia/Bahrain','Asia/Muscat','Asia/Amman','Asia/Beirut','Asia/Baghdad','Africa/Cairo','Africa/Casablanca','Africa/Tunis','Africa/Algiers'].forEach(function(z){menaTz[z]=1;});if(r||menaTz[tz])l='ar';}catch(e2){}}if(l==='ar'||l==='en'){document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';}}catch(e){}})();`;
+
+/** AF16 — cookie / Accept-Language on SSR; client falls back to storage. */
+function resolveShellLang(): Lang {
+  if (typeof window === "undefined") {
+    try {
+      return resolveRequestLang();
+    } catch {
+      return "en";
+    }
+  }
+  try {
+    const m = document.cookie.match(/(?:^|; )nexus\.lang=([^;]*)/);
+    const c = m ? decodeURIComponent(m[1]) : null;
+    if (c === "ar" || c === "en") return c;
+  } catch {
+    /* ignore */
+  }
+  return "en";
+}
 
 function RootShell({ children }: { children: ReactNode }) {
+  const lang = resolveShellLang();
+  const dir = LANG_LABELS[lang].dir;
   return (
-    <html lang="en">
+    <html lang={lang} dir={dir} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOTSTRAP }} />
         <HeadContent />
@@ -167,10 +190,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const bootLang = resolveShellLang();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
+      <LanguageProvider initialLang={bootLang}>
         <AuthProvider>
           <NotificationsProvider>
             <LocalizedShell />
@@ -183,6 +207,7 @@ function RootComponent() {
 
 function LocalizedShell() {
   const { t, lang } = useT();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   useKeyboardInset();
   useEffect(() => {
     assertProductionClientEnv();
@@ -191,15 +216,28 @@ function LocalizedShell() {
     void bootstrapNativeShell();
   }, []);
   useEffect(() => {
-    document.title = t("meta.title");
+    const key = ROUTE_TITLE_KEYS[pathname];
+    if (key) {
+      document.title = t(key);
+    } else if (pathname.startsWith("/profile/")) {
+      const username = decodeURIComponent(pathname.split("/")[2] ?? "");
+      document.title = t("meta.page.profile", { username });
+    } else {
+      document.title = t("meta.title");
+    }
     const desc = document.querySelector('meta[name="description"]');
-    if (desc) desc.setAttribute("content", t("meta.description"));
-  }, [lang, t]);
+    if (desc) {
+      desc.setAttribute(
+        "content",
+        pathname === "/discover" ? t("meta.page.discoverDesc") : t("meta.description"),
+      );
+    }
+  }, [lang, t, pathname]);
   return (
     <>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-accent-foreground ltr:focus:left-4 rtl:focus:right-4"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-accent-foreground"
       >
         {t("nav.skip")}
       </a>

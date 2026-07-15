@@ -5,7 +5,7 @@ import { useState } from "react";
 import { MessageSquare, Phone, X, UserPlus, Search, Users, Ban, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
-import { useT, type TKey } from "@/lib/i18n";
+import { useT, type TKey, translateStatic } from "@/lib/i18n";
 import { useFriends } from "@/hooks/use-friends";
 import type { PendingRequest } from "@/lib/social/api";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export const Route = createFileRoute("/friends")({
   head: () => ({
     meta: [
-      { title: "Friends — Nexus" },
+      { title: translateStatic("meta.page.friends") },
       { name: "description", content: "Manage your gaming friends on Nexus." },
     ],
   }),
@@ -252,7 +252,7 @@ function FriendsList({
                 <div className="relative shrink-0">
                   <div className="size-10 rounded-full bg-stone-800" />
                   <div
-                    className={`absolute bottom-0 size-3 rounded-full border-2 border-background ltr:right-0 rtl:left-0 ${
+                    className={`absolute bottom-0 end-0 size-3 rounded-full border-2 border-background ${
                       f.status === "online"
                         ? "bg-online"
                         : f.status === "idle"

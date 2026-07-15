@@ -50,14 +50,14 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(self), microphone=(self), display-capture=(self)",
   "Cross-Origin-Opener-Policy": "same-origin",
-  // Allow Supabase + LiveKit + Google Fonts while blocking most defaults.
+  // Self-hosted fonts (AF18/AF20); Supabase + LiveKit only for network.
   "Content-Security-Policy": [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.livekit.cloud wss://*.livekit.cloud https://fonts.googleapis.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.livekit.cloud wss://*.livekit.cloud",
     "media-src 'self' blob:",
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",

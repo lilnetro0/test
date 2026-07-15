@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { normalizeArabicForSearch } from "@/lib/arabic-normalize";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { HubRole } from "@/lib/supabase/types";
 import { requireAdmin, writeAdminAudit } from "@/lib/admin/authz";
@@ -11,6 +12,59 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
   return s || "item";
+}
+
+async function seedMenaChannels(
+  admin: NonNullable<ReturnType<typeof getSupabaseAdminClient>>,
+  hubId: string,
+): Promise<{ created: number; skipped: number }> {
+  const { MENA_HUB_TEXT_TEMPLATE, MENA_HUB_VOICE_TEMPLATE } = await import("@/lib/hub-templates");
+  let created = 0;
+  let skipped = 0;
+
+  const { data: existingText } = await admin
+    .from("text_channels")
+    .select("slug")
+    .eq("hub_id", hubId);
+  const textSlugs = new Set((existingText ?? []).map((r) => r.slug));
+
+  for (const ch of MENA_HUB_TEXT_TEMPLATE) {
+    if (textSlugs.has(ch.slug)) {
+      skipped += 1;
+      continue;
+    }
+    const { error } = await admin.from("text_channels").insert({
+      hub_id: hubId,
+      name: ch.name,
+      slug: ch.slug,
+      topic: ch.topic,
+      position: ch.position,
+    });
+    if (!error) created += 1;
+  }
+
+  const { data: existingVoice } = await admin
+    .from("voice_channels")
+    .select("slug")
+    .eq("hub_id", hubId);
+  const voiceSlugs = new Set((existingVoice ?? []).map((r) => r.slug));
+
+  for (const ch of MENA_HUB_VOICE_TEMPLATE) {
+    if (voiceSlugs.has(ch.slug)) {
+      skipped += 1;
+      continue;
+    }
+    const { error } = await admin.from("voice_channels").insert({
+      hub_id: hubId,
+      name: ch.name,
+      slug: ch.slug,
+      position: ch.position,
+      livekit_room_name: `nexus-hub-${hubId}-${ch.slug}`,
+    });
+    if (!error) created += 1;
+  }
+
+  return { created, skipped };
 }
 
 type Fail = { ok: false; error: string };
@@ -96,7 +150,7 @@ export const adminLookupUser = createServerFn({ method: "POST" })
       const { data: row, error } = await admin
         .from("profiles")
         .select("id, username, tag, banned_at, ban_reason")
-        .ilike("username", m[1])
+        .eq("username_search_norm", normalizeArabicForSearch(m[1]))
         .eq("tag", m[2])
         .maybeSingle();
 
@@ -225,7 +279,9 @@ export const adminListHubs = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await admin
       .from("hubs")
-      .select("id, game_id, slug, name, member_count, active_count, image_url, game:games(id, name, short, image_url)")
+      .select(
+        "id, game_id, slug, name, member_count, active_count, image_url, region, game:games(id, name, short, image_url)",
+      )
       .order("name");
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, hubs: rows ?? [] };
@@ -242,7 +298,10 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
         name: string;
         image_url?: string | null;
         active_count?: string;
+        region?: string | null;
       };
+      /** When creating: seed MENA Arabic channel template (skip existing slugs). */
+      applyMenaChannelTemplate?: boolean;
     }) => data,
   )
   .handler(async ({ data }) => {
@@ -257,6 +316,8 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
     if (!gameId) return { ok: false as const, error: "game_id required" };
     // Default slug = catalog game id (official hub). Explicit slug may differ (regional hubs).
     const slug = (data.hub.slug?.trim() || gameId).toLowerCase();
+    const { normalizeRegionCode } = await import("@/lib/regions");
+    const region = normalizeRegionCode(data.hub.region ?? "") || null;
 
     if (data.hub.id) {
       const { error } = await admin
@@ -267,6 +328,7 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
           name,
           image_url: data.hub.image_url ?? null,
           active_count: data.hub.active_count ?? "0",
+          region,
         })
         .eq("id", data.hub.id);
       if (error) return { ok: false as const, error: error.message };
@@ -275,7 +337,7 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
         action: "hub.update",
         targetType: "hub",
         targetId: data.hub.id,
-        meta: { slug, game_id: gameId },
+        meta: { slug, game_id: gameId, region },
       });
       return { ok: true as const, hubId: data.hub.id, slugDiffersFromGame: slug !== gameId };
     }
@@ -288,6 +350,7 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
         name,
         image_url: data.hub.image_url ?? null,
         active_count: data.hub.active_count ?? "0",
+        region,
       })
       .select("id")
       .single();
@@ -306,14 +369,25 @@ export const adminUpsertHub = createServerFn({ method: "POST" })
       console.warn("[admin] hub founder membership failed:", memberError.message);
     }
 
+    let channelsSeeded = 0;
+    if (data.applyMenaChannelTemplate) {
+      const seeded = await seedMenaChannels(admin, row.id);
+      channelsSeeded = seeded.created;
+    }
+
     await writeAdminAudit({
       actorId: auth.userId,
       action: "hub.create",
       targetType: "hub",
       targetId: row.id,
-      meta: { slug, game_id: gameId, founder: auth.userId },
+      meta: { slug, game_id: gameId, founder: auth.userId, region, channelsSeeded },
     });
-    return { ok: true as const, hubId: row.id, slugDiffersFromGame: slug !== gameId };
+    return {
+      ok: true as const,
+      hubId: row.id,
+      slugDiffersFromGame: slug !== gameId,
+      channelsSeeded,
+    };
   });
 
 export const adminDeleteHub = createServerFn({ method: "POST" })
@@ -362,6 +436,26 @@ export const adminListChannels = createServerFn({ method: "POST" })
       text: text.data ?? [],
       voice: voice.data ?? [],
     };
+  });
+
+/** Seed Arabic/MENA default channels on an existing hub (idempotent by slug). */
+export const adminApplyMenaChannelTemplate = createServerFn({ method: "POST" })
+  .validator((data: { accessToken: string; hubId: string }) => data)
+  .handler(async ({ data }) => {
+    const auth = await requireAdmin(data.accessToken);
+    if (!auth.ok) return { ok: false as const, error: auth.error };
+    const admin = getSupabaseAdminClient();
+    if (!admin) return { ok: false as const, error: "Service role not configured" };
+
+    const result = await seedMenaChannels(admin, data.hubId);
+    await writeAdminAudit({
+      actorId: auth.userId,
+      action: "hub.apply_mena_channel_template",
+      targetType: "hub",
+      targetId: data.hubId,
+      meta: result,
+    });
+    return { ok: true as const, ...result };
   });
 
 export const adminUpsertTextChannel = createServerFn({ method: "POST" })
@@ -675,7 +769,7 @@ export const adminListReports = createServerFn({ method: "POST" })
     let q = admin
       .from("reports")
       .select(
-        "id, reporter_id, target_user_id, message_id, dm_message_id, reason, details, status, resolution_note, reviewed_at, reviewed_by, created_at, reporter:profiles!reporter_id(username, tag), target:profiles!target_user_id(username, tag)",
+        "id, reporter_id, target_user_id, message_id, dm_message_id, voice_channel_id, reason, details, status, resolution_note, reviewed_at, reviewed_by, created_at, reporter:profiles!reporter_id(username, tag), target:profiles!target_user_id(username, tag)",
       )
       .order("created_at", { ascending: false })
       .limit(100);

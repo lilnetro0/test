@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { REPORT_REASONS, type ReportReason } from "@/lib/trust-safety";
 import { useT, type TKey } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-provider";
 
 const REASON_LABEL_KEYS: Record<ReportReason, TKey> = {
   abuse: "report.reason.abuse",
@@ -18,11 +19,21 @@ const REASON_LABEL_KEYS: Record<ReportReason, TKey> = {
   other: "report.reason.other",
 };
 
+export type ReportVoiceParticipant = {
+  id: string;
+  name: string;
+};
+
 export type ReportDialogTarget = {
   targetUserId?: string;
   messageId?: string;
   dmMessageId?: string;
   preview?: string;
+  /** AF8 — stamp into details for voice-session reports */
+  voiceChannelId?: string;
+  voiceChannelName?: string;
+  /** AF12 — optional LiveKit roster for picking a target */
+  voiceParticipants?: ReportVoiceParticipant[];
 };
 
 export function ReportDialog({
@@ -37,17 +48,29 @@ export function ReportDialog({
   onSubmit: (input: {
     reason: ReportReason;
     details: string;
+    targetUserId?: string;
   }) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const { t } = useT();
+  const { user } = useAuth();
   const [reason, setReason] = useState<ReportReason>("abuse");
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pickedUserId, setPickedUserId] = useState("");
+
+  const voiceOptions =
+    target?.voiceParticipants?.filter((p) => p.id && p.id !== user?.id) ?? [];
+
+  useEffect(() => {
+    if (!open || !target) return;
+    setPickedUserId(target.targetUserId ?? "");
+  }, [open, target]);
 
   const reset = () => {
     setReason("abuse");
     setDetails("");
     setBusy(false);
+    setPickedUserId("");
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -68,9 +91,32 @@ export function ReportDialog({
         </DialogHeader>
 
         {target?.preview ? (
-          <p className="line-clamp-3 rounded-md border border-border-subtle bg-background/50 p-2 text-xs text-stone-400">
+          <p
+            className="line-clamp-3 rounded-md border border-border-subtle bg-background/50 p-2 text-xs text-stone-400"
+            dir="auto"
+          >
             {target.preview}
           </p>
+        ) : null}
+
+        {target?.voiceChannelId && voiceOptions.length > 0 ? (
+          <label className="block space-y-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+              {t("report.voicePickLabel")}
+            </span>
+            <select
+              value={pickedUserId}
+              onChange={(e) => setPickedUserId(e.target.value)}
+              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+            >
+              <option value="">{t("report.voicePickNone")}</option>
+              {voiceOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name || p.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
 
         <fieldset className="space-y-2">
@@ -109,6 +155,7 @@ export function ReportDialog({
             onChange={(e) => setDetails(e.target.value.slice(0, 500))}
             rows={3}
             placeholder={t("report.detailsPlaceholder")}
+            dir="auto"
             className="w-full resize-none rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
           />
         </label>
@@ -129,7 +176,17 @@ export function ReportDialog({
             onClick={async () => {
               if (!target) return;
               setBusy(true);
-              const res = await onSubmit({ reason, details: details.trim() });
+              const voiceStamp =
+                target.voiceChannelId != null
+                  ? `[voice:${target.voiceChannelId}|${target.voiceChannelName ?? ""}]\n`
+                  : "";
+              const chosen =
+                pickedUserId || target.targetUserId || undefined;
+              const res = await onSubmit({
+                reason,
+                details: `${voiceStamp}${details.trim()}`.trim(),
+                targetUserId: chosen,
+              });
               setBusy(false);
               if (res.ok) handleOpenChange(false);
             }}

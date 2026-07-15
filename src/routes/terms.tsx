@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms of Service — Nexus" },
+      { title: translateStatic("meta.page.terms") },
       { name: "description", content: "Terms of Service for the Nexus gaming chat and voice app." },
       { name: "robots", content: "index,follow" },
     ],

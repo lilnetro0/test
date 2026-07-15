@@ -82,7 +82,7 @@ Decision test: *“How does this help an Arabic-speaking gamer find the right co
 
 See product bullets in the phase brief. **Incremental:** ship templates and filters over time — do not hardcode every channel name for every game.
 
-Current gaps (audit): no region filters yet; search normalization partial; profiles lack country/play-style fields. Track in phase “Arabic-first impact” sections.
+Current gaps (audit): region prefs + Discover filters shipped (AF2); hub channel templates and LFG still open; search normalization Partial; profiles lack play-style fields. Full audit: [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md).
 
 ## 14–15. Moderation & 13+ trust
 

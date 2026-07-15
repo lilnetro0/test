@@ -4,7 +4,7 @@ import { FRIENDS, GAMES, type HubCard } from "@/lib/mock-data";
 import { ArrowLeft, MessageSquare, UserPlus, Gamepad2, Flag, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import {
@@ -21,7 +21,11 @@ import { ReportDialog, type ReportDialogTarget } from "@/components/report-dialo
 export const Route = createFileRoute("/profile/$username")({
   head: ({ params }) => ({
     meta: [
-      { title: `${decodeURIComponent(params.username)} — Nexus profile` },
+      {
+        title: translateStatic("meta.page.profile", {
+          username: decodeURIComponent(params.username),
+        }),
+      },
       {
         name: "description",
         content: `${decodeURIComponent(params.username)}'s Nexus profile — games, status, and shared hubs.`,
@@ -277,14 +281,14 @@ function ProfilePage() {
           if (!open) setReportTarget(null);
         }}
         target={reportTarget}
-        onSubmit={async ({ reason, details }) => {
+        onSubmit={async ({ reason, details, targetUserId }) => {
           if (!live || !user?.id || !profile) {
             toast.success(t("report.thanks"));
             return { ok: true };
           }
           const result = await submitReport({
             reporterId: user.id,
-            targetUserId: profile.id,
+            targetUserId: targetUserId ?? profile.id,
             reason,
             details,
           });

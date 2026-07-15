@@ -5,12 +5,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set new password — Nexus" },
+      { title: translateStatic("meta.page.reset") },
       { name: "description", content: "Set a new password for your Nexus account." },
     ],
   }),

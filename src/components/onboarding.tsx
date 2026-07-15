@@ -67,7 +67,7 @@ export function Onboarding() {
         <button
           onClick={close}
           aria-label={t("onboarding.close")}
-          className="absolute top-3 grid size-8 place-items-center rounded-lg text-stone-500 hover:bg-white/5 hover:text-white ltr:right-3 rtl:left-3"
+          className="absolute end-3 top-3 grid size-8 place-items-center rounded-lg text-stone-500 hover:bg-white/5 hover:text-white"
         >
           <X className="size-4" />
         </button>

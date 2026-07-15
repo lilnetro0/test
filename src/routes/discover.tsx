@@ -5,38 +5,26 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { HubHero } from "@/components/hub-hero";
-import { useT, type TKey } from "@/lib/i18n";
+import { useT, type TKey, translateStatic } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { fetchLiveHubs, joinHubBySlug } from "@/lib/chat/api";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { hubMatchesQuery } from "@/lib/hub-search";
 import {
-  arabicSearchIncludes,
-  GAME_SEARCH_ALIASES,
-  normalizeArabicForSearch,
-} from "@/lib/arabic-normalize";
-
-function hubMatchesQuery(h: HubCard, query: string): boolean {
-  const q = query.trim();
-  if (!q) return true;
-  const fields = [h.name, h.hubName, h.id, catalogGameId(h)];
-  if (fields.some((f) => arabicSearchIncludes(f, q))) return true;
-  const nq = normalizeArabicForSearch(q);
-  for (const [canonical, aliases] of Object.entries(GAME_SEARCH_ALIASES)) {
-    const group = [canonical, ...aliases].map(normalizeArabicForSearch);
-    if (!group.some((a) => a.includes(nq) || nq.includes(a))) continue;
-    if (fields.some((f) => group.some((a) => normalizeArabicForSearch(f).includes(a)))) {
-      return true;
-    }
-  }
-  return false;
-}
+  hubMatchesRegionFilter,
+  normalizeRegionCode,
+  readStoredRegion,
+  REGION_OPTIONS,
+  regionLabel,
+  type RegionCode,
+} from "@/lib/regions";
 
 export const Route = createFileRoute("/discover")({
   head: () => ({
     meta: [
-      { title: "Discover hubs — Nexus" },
-      { name: "description", content: "Discover new game hubs and communities on Nexus." },
+      { title: translateStatic("meta.page.discover") },
+      { name: "description", content: translateStatic("meta.page.discoverDesc") },
     ],
   }),
   component: DiscoverPage,
@@ -53,15 +41,19 @@ const CATEGORIES: { id: string; key: TKey }[] = [
 
 function DiscoverPage() {
   const [cat, setCat] = useState("All");
+  const [regionFilter, setRegionFilter] = useState<RegionCode | "">("");
+  const [lfgOnly, setLfgOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [joining, setJoining] = useState<string | null>(null);
   const [liveHubs, setLiveHubs] = useState<HubCard[]>([]);
   const [hubsLoading, setHubsLoading] = useState(false);
-  const { t } = useT();
-  const { user } = useAuth();
+  const { t, lang } = useT();
+  const { user, prefs } = useAuth();
   const navigate = useNavigate();
   const isAdmin = useIsAdmin();
   const live = !shouldUseMockData();
+
+  const myRegion = normalizeRegionCode(prefs?.region ?? readStoredRegion());
 
   useEffect(() => {
     if (!live) return;
@@ -83,9 +75,11 @@ function DiscoverPage() {
   const filtered = useMemo(() => {
     return catalog.filter((h) => {
       const catMatch = cat === "All" || h.category === cat.toLowerCase().replace(" ", "-");
-      return catMatch && hubMatchesQuery(h, query);
+      const regionMatch = hubMatchesRegionFilter(h.region, regionFilter);
+      const lfgMatch = !lfgOnly || Boolean(h.hasLfg);
+      return catMatch && regionMatch && lfgMatch && hubMatchesQuery(h, query);
     });
-  }, [catalog, cat, query]);
+  }, [catalog, cat, query, regionFilter, lfgOnly]);
 
   const trending = catalog.slice(0, 2);
 
@@ -118,6 +112,17 @@ function DiscoverPage() {
     }
   };
 
+  const regionChips: { id: RegionCode | ""; label: string }[] = [
+    { id: "", label: t("discover.region.all") },
+    { id: "MENA", label: t("discover.region.mena") },
+    ...(myRegion && myRegion !== "MENA"
+      ? [{ id: myRegion as RegionCode, label: t("discover.region.mine") }]
+      : []),
+    ...REGION_OPTIONS.filter((o) => o.code === "SA" || o.code === "AE" || o.code === "EG").map(
+      (o) => ({ id: o.code as RegionCode, label: regionLabel(o.code, lang) }),
+    ),
+  ];
+
   return (
     <AppShell>
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
@@ -144,12 +149,33 @@ function DiscoverPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("discover.search")}
+              dir="auto"
               className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-stone-600"
             />
           </div>
         </section>
 
         <div className="px-6 py-6 md:px-12">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+              {t("discover.region.label")}
+            </span>
+            {regionChips.map((c) => (
+              <button
+                key={`r-${c.id || "all"}`}
+                type="button"
+                onClick={() => setRegionFilter(c.id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                  regionFilter === c.id
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border-subtle bg-surface-mid text-stone-400 hover:text-white"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
           <div className="mb-6 flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -164,10 +190,25 @@ function DiscoverPage() {
                 {t(c.key)}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setLfgOnly((v) => !v)}
+              className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
+                lfgOnly
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border-subtle bg-surface-mid text-stone-400 hover:text-white"
+              }`}
+            >
+              {t("discover.lfg")}
+            </button>
           </div>
 
           {hubsLoading && live ? (
             <p className="mb-6 text-sm text-stone-500">{t("discover.loading")}</p>
+          ) : null}
+
+          {!hubsLoading && lfgOnly && filtered.length === 0 ? (
+            <p className="mb-6 text-sm text-stone-400">{t("discover.lfg.empty")}</p>
           ) : null}
 
           {cat === "All" && trending.length > 0 && (
@@ -229,6 +270,11 @@ function DiscoverPage() {
                   </h3>
                   <p className="mt-1 truncate text-xs text-stone-500" dir="auto">
                     {h.name}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                    {h.region
+                      ? regionLabel(normalizeRegionCode(h.region), lang)
+                      : t("discover.region.globalBadge")}
                   </p>
                   <div className="mt-3 flex items-center justify-between text-[10px] text-stone-400">
                     <span>

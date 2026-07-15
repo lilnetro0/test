@@ -159,7 +159,13 @@ No fail-closed production env validator: missing keys → mock or null clients.
 - Phone dock clearance tokens + modal sheets above dock (Phase 14); Cap dual-mode remote shell + allowNavigation (Phase 15); true bundled SSR still impossible in webDir.
 - Ops: public `GET /api/health`, structured `logEvent`, Admin dual chips, `docs/OPS.md` (Phase 16); CI `ops:health`, LiveKit HTTPS reachability, Slack/PD alert hooks (P16f).
 - Launch: `docs/APP-STORE.md` + `smoke:launch` + rewritten `LAUNCH.md` (Phase 18).
+- **Arabic-first / MENA (Phase 0 re-audit):** standing policy docs + glossary; full axis audit in [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md). Verdicts: UX/RTL/bidi/search/mobile **Partial**; MENA moderation assist **Missing**; regional discovery **Missing**. No gap implementation in Phase 0.
 
+---
+
+## 9a. Arabic-first audit pointer
+
+Phase 0 now **requires** evaluating Arabic-first UX, RTL, mixed-direction text, Arabic search, MENA moderation, regional discovery, and mobile performance. Deliverable: [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md). Do not treat Phase 13 “Done” as Arabic-first product completeness.
 ---
 
 ## 10. Dead code / dependency smell (do not remove yet)
@@ -200,7 +206,8 @@ Hand-written `Database` types include `Relationships` for common embeds + friend
 2. Cap native push send + VoIP/CallKit if product-critical.  
 3. E2E / live RLS tests when staging credentials exist.  
 4. Cap bundled client when WebView risk becomes a submit blocker.  
-5. Android / Play when expanding platforms.
+5. Android / Play when expanding platforms.  
+6. **After Phase 0 Arabic-first re-audit:** open a scoped phase for ranked MENA gaps in [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md) (discovery → moderation assist → search/bidi) — only with explicit approval.
 
 ---
 
@@ -213,4 +220,5 @@ Phase 0 does **not** claim that:
 - TestFlight build uses current safe-area code;
 - LiveKit is configured;
 - OAuth providers are enabled;
-- the app is App Store review-ready.
+- the app is App Store review-ready;
+- Arabic-first / MENA product requirements are fully met (see [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md)).

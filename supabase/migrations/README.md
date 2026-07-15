@@ -32,6 +32,12 @@ Source of truth for Nexus schema. Filename order = apply order (`YYYYMMDDHHMMSS_
 | `20260715210000_phase11_push_devices.sql` | `push_devices` + `user_prefs.push_enabled` |
 | `20260715211000_phase11_followup_notif_prefs.sql` | Sound / mentions-only / match DND prefs |
 | `20260715221000_phase12_followup_voice_mint_limit.sql` | Cross-worker voice mint rate limit |
+| `20260715230000_af2_region_discovery.sql` | `user_prefs.region` + `hubs.region` |
+| `20260715240000_af4_arabic_search_norm.sql` | `body_search_norm` + Arabic fold FN + trigram indexes |
+| `20260715250000_af6_hub_has_lfg.sql` | `hubs.has_lfg` + sync trigger for Discover LFG filter |
+| `20260715260000_af10_report_voice_channel.sql` | `reports.voice_channel_id` + has_target/policy |
+| `20260715270000_af13_catalog_search_norm.sql` | hubs/games `name_search_norm` + triggers |
+| `20260715280000_af15_profile_search_norm.sql` | profiles username/display_name search norms |
 
 New changes: **add a new timestamped file**. Do not rewrite migrations already applied on shared projects.
 

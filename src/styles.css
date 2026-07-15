@@ -1,6 +1,13 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+/* AF18 — self-hosted Arabic; AF20 — self-hosted Latin display/UI */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/space-grotesk/latin-500.css";
+@import "@fontsource/space-grotesk/latin-700.css";
+@import "@fontsource/noto-sans-arabic/arabic-400.css";
+@import "@fontsource/noto-sans-arabic/arabic-600.css";
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));

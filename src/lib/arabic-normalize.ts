@@ -1,6 +1,8 @@
 /**
  * Arabic search normalization — MENA / Arabic-first.
  * For search indexes only. Do not use to rewrite stored usernames or report text.
+ * SQL twin: `public.normalize_arabic_for_search` in
+ * `supabase/migrations/20260715240000_af4_arabic_search_norm.sql` — keep fold rules aligned.
  */
 
 /** Strip tatweel/diacritics and unify common alef / yeh / teh-marbuta forms. */
@@ -38,3 +40,44 @@ export const GAME_SEARCH_ALIASES: Record<string, string[]> = {
   fifa: ["فيفا", "fc", "fifa", "ea fc"],
   "whiteout survival": ["وايت اوت", "وايتآوت", "whiteout"],
 };
+
+/**
+ * Expand a user query with folded form + game aliases (discover / message search).
+ * Returns unique terms suitable for `ilike` OR-filters; always includes the original query.
+ */
+export function expandArabicSearchTerms(query: string): string[] {
+  const raw = query.trim();
+  if (!raw) return [];
+  const folded = normalizeArabicForSearch(raw);
+  const terms = new Set<string>([raw]);
+  if (folded && folded !== raw.toLowerCase()) terms.add(folded);
+
+  for (const [canonical, aliases] of Object.entries(GAME_SEARCH_ALIASES)) {
+    const group = [canonical, ...aliases];
+    const groupFolded = group.map(normalizeArabicForSearch);
+    const hit = groupFolded.some(
+      (a) => a === folded || (folded.length >= 2 && (a.includes(folded) || folded.includes(a))),
+    );
+    if (hit) {
+      for (const g of group) terms.add(g);
+    }
+  }
+
+  return [...terms].filter((t) => t.length > 0).slice(0, 8);
+}
+
+/**
+ * Terms already folded for querying `body_search_norm` (AF4 DB column).
+ * Prefer this over raw expand when searching the normalized index.
+ */
+export function expandArabicSearchNormTerms(query: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const term of expandArabicSearchTerms(query)) {
+    const n = normalizeArabicForSearch(term).replace(/[%_]/g, "");
+    if (n.length < 1 || seen.has(n)) continue;
+    seen.add(n);
+    out.push(n);
+  }
+  return out.slice(0, 8);
+}

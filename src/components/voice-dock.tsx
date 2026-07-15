@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Headphones, PhoneOff, Monitor, Video, Settings2 } from "lucide-react";
+import { Mic, MicOff, Headphones, PhoneOff, Monitor, Video, Settings2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { getVoiceClient } from "@/lib/voice";
+import type { VoiceParticipant } from "@/lib/voice/types";
 import { useNavigate } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,10 +16,13 @@ export function VoiceDock({
   channelName,
   gameName,
   onDisconnect,
+  onReport,
 }: {
   channelName: string;
   gameName: string;
   onDisconnect: () => void;
+  /** AF12 — receives current LiveKit roster (may be empty in stub mode) */
+  onReport?: (participants: VoiceParticipant[]) => void;
 }) {
   const voice = getVoiceClient();
   const navigate = useNavigate();
@@ -176,6 +180,17 @@ export function VoiceDock({
           >
             <Headphones className={`size-4 ${deafened ? "line-through" : ""}`} />
           </DockButton>
+          {onReport ? (
+            <DockButton
+              compact={compact}
+              onClick={() =>
+                onReport(voice.getSession()?.participants ?? [])
+              }
+              label={t("report.voiceAria")}
+            >
+              <Flag className="size-4" />
+            </DockButton>
+          ) : null}
           {!compact && (
             <DockButton
               compact={compact}

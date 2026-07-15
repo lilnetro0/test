@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — Nexus" },
+      { title: translateStatic("meta.page.privacy") },
       { name: "description", content: "How Nexus collects, uses, and protects your data." },
       { name: "robots", content: "index,follow" },
     ],

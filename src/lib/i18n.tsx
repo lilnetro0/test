@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { detectMenaRegionHint } from "@/lib/regions";
 
 /**
  * Ultra-light i18n for the Nexus frontend.
@@ -119,6 +120,89 @@ const dict = {
     "nav.me": "My profile",
     "meta.title": "Nexus — Voice & Chat for Gamers",
     "meta.description": "A Discord-style app built for gamers. Every game is a hub with its own text and voice channels.",
+    "meta.page.home": "Nexus — Voice & Chat for Gamers",
+    "meta.page.discover": "Discover hubs — Nexus",
+    "meta.page.discoverDesc": "Discover new game hubs and communities on Nexus.",
+    "meta.page.friends": "Friends — Nexus",
+    "meta.page.dm": "Direct Messages — Nexus",
+    "meta.page.notifications": "Notifications — Nexus",
+    "meta.page.settings": "Settings — Nexus",
+    "meta.page.me": "My profile — Nexus",
+    "meta.page.help": "Help & Shortcuts — Nexus",
+    "meta.page.admin": "Admin — Nexus",
+    "meta.page.login": "Log in — Nexus",
+    "meta.page.register": "Create account — Nexus",
+    "meta.page.forgot": "Forgot password — Nexus",
+    "meta.page.reset": "Set new password — Nexus",
+    "meta.page.guidelines": "Community Guidelines — Nexus",
+    "meta.page.terms": "Terms of Service — Nexus",
+    "meta.page.privacy": "Privacy Policy — Nexus",
+    "meta.page.cookies": "Cookie Policy — Nexus",
+    "meta.page.profile": "{username} — Nexus profile",
+    "discover.lfg": "Looking for group",
+    "discover.lfg.empty": "No hubs with an LFG channel yet. Join a MENA hub or ask an admin to apply the Arabic channel template.",
+    "admin.title": "Admin console",
+    "admin.denied": "Admin access required. Use platform_roles or ADMIN_USER_IDS (see docs/ADMIN-SECURITY.md).",
+    "admin.checking": "Checking…",
+    "admin.tab.hubs": "Hubs",
+    "admin.tab.games": "Games",
+    "admin.tab.channels": "Channels",
+    "admin.tab.users": "Users",
+    "admin.tab.reports": "Reports",
+    "admin.health.dbOk": "DB · {n} games",
+    "admin.health.dbDown": "DB · down",
+    "admin.health.lkStub": "LiveKit · stub",
+    "admin.health.lkDown": "LiveKit · unreachable",
+    "admin.health.lkOk": "LiveKit · {host}",
+    "admin.field.name": "Name",
+    "admin.field.slug": "Slug",
+    "admin.field.game": "Game",
+    "admin.field.region": "Region",
+    "admin.field.image": "Image URL",
+    "admin.field.category": "Category",
+    "admin.action.save": "Save",
+    "admin.action.create": "Create",
+    "admin.action.delete": "Delete",
+    "admin.action.edit": "Edit",
+    "admin.action.upload": "Upload",
+    "admin.hubs.seedTemplate": "Seed MENA Arabic channels on create",
+    "admin.hubs.panel": "Hubs",
+    "admin.games.panel": "Games catalog",
+    "admin.channels.panel": "Channels",
+    "admin.channels.applyTemplate": "Apply Arabic / MENA channel template",
+    "admin.channels.text": "Text channels",
+    "admin.channels.voice": "Voice channels",
+    "admin.users.panel": "Users",
+    "admin.users.platformAdmins": "Platform admins",
+    "admin.users.lookup": "Lookup user",
+    "admin.users.banned": "Banned users",
+    "admin.users.ban": "Ban",
+    "admin.users.unban": "Unban",
+    "admin.users.grant": "Grant admin",
+    "admin.games.create": "Create / update game",
+    "admin.games.id": "Id (slug)",
+    "admin.games.short": "Short",
+    "admin.games.list": "Games ({n})",
+    "admin.games.save": "Save game",
+    "admin.games.needId": "Set game id first",
+    "admin.games.saved": "Game saved",
+    "admin.games.imageSet": "Image set",
+    "admin.games.deleted": "Game deleted",
+    "admin.toast.hubSaved": "Hub updated",
+    "admin.toast.hubCreated": "Hub created",
+    "admin.toast.hubDeleted": "Hub deleted",
+    "admin.toast.channelCreated": "Channel created",
+    "admin.toast.channelDeleted": "Channel deleted",
+    "home.lfgJump": "Open LFG channel",
+    "home.lfgBadge": "LFG",
+    "home.lfgBoard.title": "Open LFG posts",
+    "home.lfgBoard.empty": "No open posts yet — use a quick template below to post.",
+    "home.lfgBoard.reply": "Reply",
+    "report.voicePreview": "Voice channel: {name} ({id})",
+    "report.voiceAria": "Report voice session",
+    "report.voicePickLabel": "Who in voice? (optional)",
+    "report.voicePickNone": "Channel only — no specific user",
+    "voice.report": "Report",
     "cap.offline": "You're offline — Nexus needs a connection.",
     "cap.retry": "Retry",
 
@@ -153,6 +237,11 @@ const dict = {
     "home.admin": "Admin",
 
     "composer.placeholder": "Message #{channel}",
+    "composer.placeholderLfg": "Looking for teammates in #{channel}…",
+    "composer.lfg.hint": "Quick LFG posts",
+    "composer.lfg.tpl.ranked": "LFG ranked — need 1· mic preferred",
+    "composer.lfg.tpl.casual": "Casual squad — chill vibes",
+    "composer.lfg.tpl.open": "Open spot — any role",
     "composer.replying": "Replying to",
     "composer.cancelReply": "Cancel reply",
     "composer.mentions": "Members matching",
@@ -290,6 +379,35 @@ const dict = {
     "settings.language.title": "Language",
     "settings.language.row": "Interface Language",
     "settings.language.rtlNote": "Arabic switches the whole app to right-to-left layout.",
+    "settings.region.row": "Home region",
+    "settings.region.note": "Helps Discover highlight MENA hubs. Does not change language by itself when you already picked one.",
+    "settings.region.unset": "Not set",
+    "admin.reports.title": "Reports",
+    "admin.reports.assistNote": "Assist chips flag possible Arabic/Arabizi signals — review context; never ban from chips alone.",
+    "admin.reports.filter.open": "open",
+    "admin.reports.filter.reviewing": "reviewing",
+    "admin.reports.filter.resolved": "resolved",
+    "admin.reports.filter.dismissed": "dismissed",
+    "admin.reports.filter.all": "all",
+    "admin.reports.noDetails": "No details",
+    "admin.reports.reporter": "Reporter",
+    "admin.reports.target": "Target",
+    "admin.reports.template": "Paste AR/EN response template…",
+    "admin.reports.notePlaceholder": "Resolution note (optional)",
+    "admin.reports.reviewing": "Reviewing",
+    "admin.reports.resolve": "Resolve",
+    "admin.reports.dismiss": "Dismiss",
+    "admin.reports.ban": "Ban target",
+    "admin.reports.banned": "User banned",
+    "admin.reports.empty": "No reports in this filter",
+    "admin.reports.marked": "Marked {status}",
+    "admin.reports.voice": "Voice",
+    "admin.confirm.deleteHub": "Delete hub {name}?",
+    "admin.confirm.deleteGame": "Delete game {id}? Cascades hubs.",
+    "admin.confirm.deleteText": "Delete #{name}?",
+    "admin.confirm.deleteVoice": "Delete voice {name}?",
+    "help.appeal": "Appeals & safety",
+    "help.appeal.body": "Email safety@nexus.app with your username, report id if any, and why you believe the action was wrong. Reply in Arabic or English.",
 
     "cmd.placeholder": "Jump to a page, hub, channel, or friend…",
     "cmd.empty": "No matches. Try a different name.",
@@ -368,6 +486,11 @@ const dict = {
     "discover.cat.br": "Battle Royale",
     "discover.cat.sandbox": "Sandbox",
     "discover.cat.sports": "Sports",
+    "discover.region.label": "Region",
+    "discover.region.all": "All regions",
+    "discover.region.mena": "MENA",
+    "discover.region.mine": "My region",
+    "discover.region.globalBadge": "Global",
 
     "me.title": "Profile",
     "me.about": "About",
@@ -709,6 +832,89 @@ const dict = {
 
     "meta.title": "Nexus — صوت ودردشة للاعبين",
     "meta.description": "تطبيق بأسلوب Discord مخصص للألعاب. كل لعبة مركز بقنوات نصية وصوتية.",
+    "meta.page.home": "Nexus — صوت ودردشة للاعبين",
+    "meta.page.discover": "اكتشف المراكز — Nexus",
+    "meta.page.discoverDesc": "اكتشف مراكز الألعاب والمجتمعات على Nexus.",
+    "meta.page.friends": "الأصدقاء — Nexus",
+    "meta.page.dm": "الرسائل المباشرة — Nexus",
+    "meta.page.notifications": "الإشعارات — Nexus",
+    "meta.page.settings": "الإعدادات — Nexus",
+    "meta.page.me": "ملفي الشخصي — Nexus",
+    "meta.page.help": "المساعدة والاختصارات — Nexus",
+    "meta.page.admin": "الإدارة — Nexus",
+    "meta.page.login": "تسجيل الدخول — Nexus",
+    "meta.page.register": "إنشاء حساب — Nexus",
+    "meta.page.forgot": "نسيت كلمة المرور — Nexus",
+    "meta.page.reset": "تعيين كلمة مرور جديدة — Nexus",
+    "meta.page.guidelines": "إرشادات المجتمع — Nexus",
+    "meta.page.terms": "شروط الخدمة — Nexus",
+    "meta.page.privacy": "سياسة الخصوصية — Nexus",
+    "meta.page.cookies": "سياسة ملفات الارتباط — Nexus",
+    "meta.page.profile": "{username} — ملف Nexus",
+    "discover.lfg": "البحث عن فريق",
+    "discover.lfg.empty": "لا مراكز بقناة LFG بعد. انضم إلى مركز MENA أو اطلب من المشرف تطبيق قالب القنوات العربية.",
+    "admin.title": "لوحة الإدارة",
+    "admin.denied": "يتطلب صلاحية مشرف. استخدم platform_roles أو ADMIN_USER_IDS (راجع docs/ADMIN-SECURITY.md).",
+    "admin.checking": "جارٍ التحقق…",
+    "admin.tab.hubs": "المراكز",
+    "admin.tab.games": "الألعاب",
+    "admin.tab.channels": "القنوات",
+    "admin.tab.users": "المستخدمون",
+    "admin.tab.reports": "البلاغات",
+    "admin.health.dbOk": "قاعدة البيانات · {n} ألعاب",
+    "admin.health.dbDown": "قاعدة البيانات · متوقفة",
+    "admin.health.lkStub": "LiveKit · تجريبي",
+    "admin.health.lkDown": "LiveKit · غير متصل",
+    "admin.health.lkOk": "LiveKit · {host}",
+    "admin.field.name": "الاسم",
+    "admin.field.slug": "المعرّف",
+    "admin.field.game": "اللعبة",
+    "admin.field.region": "المنطقة",
+    "admin.field.image": "رابط الصورة",
+    "admin.field.category": "التصنيف",
+    "admin.action.save": "حفظ",
+    "admin.action.create": "إنشاء",
+    "admin.action.delete": "حذف",
+    "admin.action.edit": "تعديل",
+    "admin.action.upload": "رفع",
+    "admin.hubs.seedTemplate": "زرع قنوات عربية/MENA عند الإنشاء",
+    "admin.hubs.panel": "المراكز",
+    "admin.games.panel": "كتالوج الألعاب",
+    "admin.channels.panel": "القنوات",
+    "admin.channels.applyTemplate": "تطبيق قالب القنوات العربية / MENA",
+    "admin.channels.text": "القنوات النصية",
+    "admin.channels.voice": "القنوات الصوتية",
+    "admin.users.panel": "المستخدمون",
+    "admin.users.platformAdmins": "مشرفو المنصة",
+    "admin.users.lookup": "بحث عن مستخدم",
+    "admin.users.banned": "المحظورون",
+    "admin.users.ban": "حظر",
+    "admin.users.unban": "رفع الحظر",
+    "admin.users.grant": "منح مشرف",
+    "admin.games.create": "إنشاء / تحديث لعبة",
+    "admin.games.id": "المعرّف (slug)",
+    "admin.games.short": "اختصار",
+    "admin.games.list": "الألعاب ({n})",
+    "admin.games.save": "حفظ اللعبة",
+    "admin.games.needId": "عيّن معرّف اللعبة أولًا",
+    "admin.games.saved": "تم حفظ اللعبة",
+    "admin.games.imageSet": "تم تعيين الصورة",
+    "admin.games.deleted": "تم حذف اللعبة",
+    "admin.toast.hubSaved": "تم تحديث المركز",
+    "admin.toast.hubCreated": "تم إنشاء المركز",
+    "admin.toast.hubDeleted": "تم حذف المركز",
+    "admin.toast.channelCreated": "تم إنشاء القناة",
+    "admin.toast.channelDeleted": "تم حذف القناة",
+    "home.lfgJump": "فتح قناة البحث عن فريق",
+    "home.lfgBadge": "LFG",
+    "home.lfgBoard.title": "منشورات البحث عن فريق",
+    "home.lfgBoard.empty": "لا منشورات مفتوحة بعد — استخدم قالبًا سريعًا بالأسفل للنشر.",
+    "home.lfgBoard.reply": "رد",
+    "report.voicePreview": "قناة صوتية: {name} ({id})",
+    "report.voiceAria": "الإبلاغ عن جلسة صوتية",
+    "report.voicePickLabel": "من في الصوت؟ (اختياري)",
+    "report.voicePickNone": "القناة فقط — بدون مستخدم محدد",
+    "voice.report": "بلاغ",
     "cap.offline": "أنت دون اتصال — يحتاج Nexus إلى شبكة.",
     "cap.retry": "إعادة المحاولة",
 
@@ -743,6 +949,11 @@ const dict = {
     "home.admin": "مشرف",
 
     "composer.placeholder": "راسل #{channel}",
+    "composer.placeholderLfg": "أبحث عن زملاء في #{channel}…",
+    "composer.lfg.hint": "منشورات سريعة للبحث عن فريق",
+    "composer.lfg.tpl.ranked": "أبحث عن فريق رانكد — نحتاج لاعب · يفضّل مايك",
+    "composer.lfg.tpl.casual": "سكواد كاجوال — جو هادي",
+    "composer.lfg.tpl.open": "مقعد شاغر — أي رول",
     "composer.replying": "الرد على",
     "composer.cancelReply": "إلغاء الرد",
     "composer.mentions": "أعضاء يطابقون",
@@ -880,6 +1091,35 @@ const dict = {
     "settings.language.title": "اللغة",
     "settings.language.row": "لغة الواجهة",
     "settings.language.rtlNote": "العربية تحوّل التطبيق بأكمله إلى تخطيط من اليمين إلى اليسار.",
+    "settings.region.row": "المنطقة",
+    "settings.region.note": "تساعد الاكتشاف على إبراز مجتمعات المنطقة. لا تغيّر اللغة إذا كنت قد اخترتها مسبقًا.",
+    "settings.region.unset": "غير محدد",
+    "admin.reports.title": "البلاغات",
+    "admin.reports.assistNote": "شارات المساعدة تشير لإشارات عربية/عربيزي محتملة — راجع السياق؛ لا تحظر بناءً على الشارة وحدها.",
+    "admin.reports.filter.open": "مفتوح",
+    "admin.reports.filter.reviewing": "قيد المراجعة",
+    "admin.reports.filter.resolved": "محلول",
+    "admin.reports.filter.dismissed": "مرفوض",
+    "admin.reports.filter.all": "الكل",
+    "admin.reports.noDetails": "بدون تفاصيل",
+    "admin.reports.reporter": "المُبلِّغ",
+    "admin.reports.target": "المستهدف",
+    "admin.reports.template": "لصق قالب رد عربي/إنجليزي…",
+    "admin.reports.notePlaceholder": "ملاحظة القرار (اختياري)",
+    "admin.reports.reviewing": "مراجعة",
+    "admin.reports.resolve": "حلّ",
+    "admin.reports.dismiss": "رفض",
+    "admin.reports.ban": "حظر المستهدف",
+    "admin.reports.banned": "تم حظر المستخدم",
+    "admin.reports.empty": "لا بلاغات في هذا التصفية",
+    "admin.reports.marked": "تم التعيين: {status}",
+    "admin.reports.voice": "صوت",
+    "admin.confirm.deleteHub": "حذف المركز {name}؟",
+    "admin.confirm.deleteGame": "حذف اللعبة {id}؟ سيُحذف ما يتبعها من مراكز.",
+    "admin.confirm.deleteText": "حذف #{name}؟",
+    "admin.confirm.deleteVoice": "حذف القناة الصوتية {name}؟",
+    "help.appeal": "الاستئناف والسلامة",
+    "help.appeal.body": "راسل safety@nexus.app باسم المستخدم ورقم البلاغ إن وجد وسبب الاعتراض. بالعربية أو الإنجليزية.",
 
     "cmd.placeholder": "انتقل إلى صفحة، مركز، قناة، أو صديق…",
     "cmd.empty": "لا نتائج. جرّب اسمًا آخر.",
@@ -958,6 +1198,11 @@ const dict = {
     "discover.cat.br": "باتل رويال",
     "discover.cat.sandbox": "عالم مفتوح",
     "discover.cat.sports": "رياضة",
+    "discover.region.label": "المنطقة",
+    "discover.region.all": "كل المناطق",
+    "discover.region.mena": "الشرق الأوسط",
+    "discover.region.mine": "منطقتي",
+    "discover.region.globalBadge": "عالمي",
 
     "me.title": "الملف الشخصي",
     "me.about": "نبذة",
@@ -1249,7 +1494,7 @@ function persistLang(l: Lang) {
   }
 }
 
-/** Resolve preferred lang: storage → cookie → browser (ar* first) → en. Region fallback TBD (Arabic-first guidelines). */
+/** Resolve preferred lang: storage → cookie → browser (ar*) → MENA region hint → en. */
 export function resolveClientLang(): { lang: Lang; fromStored: boolean } {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -1259,17 +1504,40 @@ export function resolveClientLang(): { lang: Lang; fromStored: boolean } {
   }
   const cookie = readCookieLang();
   if (cookie) return { lang: cookie, fromStored: true };
-  return { lang: detectBrowserLang(), fromStored: false };
+  const browser = detectBrowserLang();
+  if (browser === "ar") return { lang: "ar", fromStored: false };
+  if (detectMenaRegionHint()) return { lang: "ar", fromStored: false };
+  return { lang: "en", fromStored: false };
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+export function LanguageProvider({
+  children,
+  initialLang,
+}: {
+  children: ReactNode;
+  /** AF21 — SSR/cookie shell lang so first React chrome matches <html> */
+  initialLang?: Lang;
+}) {
+  const [lang, setLangState] = useState<Lang>(() => {
+    if (initialLang === "ar" || initialLang === "en") return initialLang;
+    if (typeof window === "undefined") return "en";
+    try {
+      return resolveClientLang().lang;
+    } catch {
+      return "en";
+    }
+  });
 
-  // Hydrate after mount (SSR snapshot stays "en"); persist auto-detect on first visit.
+  // Persist auto-detect on first visit when nothing was stored yet.
   useEffect(() => {
     const { lang: next, fromStored } = resolveClientLang();
-    setLangState(next);
-    if (!fromStored) persistLang(next);
+    if (!fromStored) {
+      setLangState(next);
+      persistLang(next);
+    } else if (next !== lang) {
+      setLangState(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hydrate
   }, []);
 
   // Reflect language + direction onto the root <html> element.
@@ -1300,3 +1568,47 @@ export function useT(): Ctx {
   if (!ctx) throw new Error("useT must be used within <LanguageProvider>");
   return ctx;
 }
+
+/** Lang for route `head` / document title (cookie + html; SSR defaults to en). */
+export function resolveHeadLang(): Lang {
+  if (typeof document !== "undefined") {
+    const htmlLang = document.documentElement.lang;
+    if (htmlLang === "ar" || htmlLang === "en") return htmlLang;
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === "en" || stored === "ar") return stored;
+    } catch {
+      /* ignore */
+    }
+    const cookie = readCookieLang();
+    if (cookie) return cookie;
+  }
+  return "en";
+}
+
+/** Static translate for route head() without React. */
+export function translateStatic(key: TKey, vars?: Record<string, string>, lang?: Lang): string {
+  const l = lang ?? resolveHeadLang();
+  return interpolate(dict[l][key] ?? dict.en[key] ?? key, vars);
+}
+
+/** Pathname → title key (AF5 bilingual document titles). */
+export const ROUTE_TITLE_KEYS: Record<string, TKey> = {
+  "/": "meta.page.home",
+  "/discover": "meta.page.discover",
+  "/friends": "meta.page.friends",
+  "/dm": "meta.page.dm",
+  "/notifications": "meta.page.notifications",
+  "/settings": "meta.page.settings",
+  "/me": "meta.page.me",
+  "/help": "meta.page.help",
+  "/admin": "meta.page.admin",
+  "/login": "meta.page.login",
+  "/register": "meta.page.register",
+  "/forgot-password": "meta.page.forgot",
+  "/reset-password": "meta.page.reset",
+  "/guidelines": "meta.page.guidelines",
+  "/terms": "meta.page.terms",
+  "/privacy": "meta.page.privacy",
+  "/cookies": "meta.page.cookies",
+};

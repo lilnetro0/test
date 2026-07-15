@@ -26,6 +26,8 @@ export type Database = {
           last_seen_at: string | null;
           banned_at: string | null;
           ban_reason: string | null;
+          username_search_norm: string | null;
+          display_name_search_norm: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -41,6 +43,8 @@ export type Database = {
           last_seen_at?: string | null;
           banned_at?: string | null;
           ban_reason?: string | null;
+          username_search_norm?: string | null;
+          display_name_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
@@ -52,6 +56,7 @@ export type Database = {
           target_user_id: string | null;
           message_id: string | null;
           dm_message_id: string | null;
+          voice_channel_id: string | null;
           reason: string;
           details: string;
           status: string;
@@ -65,6 +70,7 @@ export type Database = {
           target_user_id?: string | null;
           message_id?: string | null;
           dm_message_id?: string | null;
+          voice_channel_id?: string | null;
           reason: string;
           details?: string;
           status?: string;
@@ -101,6 +107,7 @@ export type Database = {
           tint: string;
           text_tint: string;
           image_url: string | null;
+          name_search_norm: string | null;
           created_at: string;
         };
         Insert: {
@@ -111,6 +118,7 @@ export type Database = {
           tint?: string;
           text_tint?: string;
           image_url?: string | null;
+          name_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;
         Relationships: [];
@@ -124,6 +132,9 @@ export type Database = {
           member_count: number;
           active_count: string;
           image_url: string | null;
+          region: string | null;
+          has_lfg: boolean;
+          name_search_norm: string | null;
           created_at: string;
         };
         Insert: {
@@ -134,6 +145,9 @@ export type Database = {
           member_count?: number;
           active_count?: string;
           image_url?: string | null;
+          region?: string | null;
+          has_lfg?: boolean;
+          name_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["hubs"]["Insert"]>;
         Relationships: [
@@ -246,6 +260,7 @@ export type Database = {
           attachment_url: string | null;
           attachment_name: string | null;
           attachment_mime: string | null;
+          body_search_norm: string | null;
         };
         Insert: {
           id?: string;
@@ -259,6 +274,7 @@ export type Database = {
           attachment_url?: string | null;
           attachment_name?: string | null;
           attachment_mime?: string | null;
+          body_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Insert"]>;
         Relationships: [
@@ -407,6 +423,7 @@ export type Database = {
           attachment_url: string | null;
           attachment_name: string | null;
           attachment_mime: string | null;
+          body_search_norm: string | null;
         };
         Insert: {
           id?: string;
@@ -417,6 +434,7 @@ export type Database = {
           attachment_url?: string | null;
           attachment_name?: string | null;
           attachment_mime?: string | null;
+          body_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["dm_messages"]["Insert"]>;
         Relationships: [
@@ -456,6 +474,7 @@ export type Database = {
         Row: {
           user_id: string;
           lang: "en" | "ar";
+          region: string | null;
           reduce_motion: boolean;
           high_contrast: boolean;
           hub_order: Json;
@@ -469,6 +488,7 @@ export type Database = {
         Insert: {
           user_id: string;
           lang?: "en" | "ar";
+          region?: string | null;
           reduce_motion?: boolean;
           high_contrast?: boolean;
           hub_order?: Json;
@@ -602,6 +622,7 @@ export type Database = {
       };
       soft_delete_message: { Args: { p_message_id: string }; Returns: undefined };
       soft_delete_dm_message: { Args: { p_message_id: string }; Returns: undefined };
+      normalize_arabic_for_search: { Args: { p_input: string }; Returns: string };
       mark_channel_read: { Args: { p_channel_id: string }; Returns: undefined };
       mark_dm_read: { Args: { p_thread_id: string }; Returns: undefined };
       accept_friend_request: { Args: { p_request_id: string }; Returns: undefined };

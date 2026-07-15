@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage, LegalSection } from "@/components/legal-page";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/guidelines")({
   head: () => ({
     meta: [
-      { title: "Community Guidelines — Nexus" },
+      { title: translateStatic("meta.page.guidelines") },
       {
         name: "description",
         content: "Community Guidelines for respectful gaming chat and voice on Nexus.",

@@ -6,7 +6,7 @@ import { MessageItem } from "@/components/message-item";
 import { Composer } from "@/components/composer";
 import { EmptyState } from "@/components/empty-state";
 import { VoiceDock } from "@/components/voice-dock";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 import { useDms } from "@/hooks/use-dms";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { bumpMessageUnreadRefresh } from "@/hooks/use-message-unread-totals";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/dm")({
   }),
   head: () => ({
     meta: [
-      { title: "Direct Messages — Nexus" },
+      { title: translateStatic("meta.page.dm") },
       { name: "description", content: "Your direct conversations on Nexus." },
     ],
   }),
@@ -176,7 +176,7 @@ function DMPage() {
                     <div className="relative shrink-0">
                       <div className="size-9 rounded-full bg-stone-800" />
                       <div
-                        className={`absolute bottom-0 size-2.5 rounded-full border-2 border-surface-mid ltr:right-0 rtl:left-0 ${
+                        className={`absolute bottom-0 end-0 size-2.5 rounded-full border-2 border-surface-mid ${
                           c.with.status === "online"
                             ? "bg-online"
                             : c.with.status === "dnd"
@@ -279,7 +279,7 @@ function DMPage() {
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative shrink-0">
                     <div className="size-8 rounded-full bg-stone-800" />
-                    <div className="absolute bottom-0 size-2.5 rounded-full border-2 border-background bg-online ltr:right-0 rtl:left-0" />
+                    <div className="absolute bottom-0 end-0 size-2.5 rounded-full border-2 border-background bg-online" />
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-white">{active.with.name}</p>
@@ -392,7 +392,7 @@ function DMPage() {
           if (!open) setReportTarget(null);
         }}
         target={reportTarget}
-        onSubmit={async ({ reason, details }) => {
+        onSubmit={async ({ reason, details, targetUserId }) => {
           if (!dms.live || !user?.id || !reportTarget) {
             toast.success(t("report.thanks"));
             return { ok: true };
@@ -400,7 +400,7 @@ function DMPage() {
           const result = await submitReport({
             reporterId: user.id,
             dmMessageId: reportTarget.dmMessageId,
-            targetUserId: reportTarget.targetUserId,
+            targetUserId: targetUserId ?? reportTarget.targetUserId,
             reason,
             details: details || reportTarget.preview,
           });

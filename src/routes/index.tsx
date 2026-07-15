@@ -6,8 +6,9 @@ import { AppShell, Sheet } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { MessageItem } from "@/components/message-item";
 import { VoiceDock } from "@/components/voice-dock";
+import { LfgBoard } from "@/components/lfg-board";
 import { UserHoverCard } from "@/components/user-hover-card";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 import { getHubOrder, setHubOrder } from "@/lib/prefs";
 import { getVoiceClient } from "@/lib/voice";
 import { useAuth } from "@/lib/auth-provider";
@@ -20,6 +21,7 @@ import { ReportDialog, type ReportDialogTarget } from "@/components/report-dialo
 import { adminKickFromHub, adminSetHubRole } from "@/lib/admin/api";
 import { kickHubMember, setHubMemberRole } from "@/lib/chat/api";
 import { canDeleteMessage, canKickTarget, hubCaps } from "@/lib/hub/permissions";
+import { isLfgChannel } from "@/lib/lfg";
 import type { HubRole } from "@/lib/supabase/types";
 import { toast } from "sonner";
 
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Nexus — Voice & Chat for Gamers" },
+      { title: translateStatic("meta.page.home") },
       {
         name: "description",
         content:
@@ -205,7 +207,7 @@ function NexusApp() {
               <span className="truncate">{chat.activeChannel.name}</span>
             </span>
           </span>
-          <ChevronDown className="size-4 shrink-0 text-stone-500 ltr:ms-1 rtl:me-1" />
+          <ChevronDown className="ms-1 size-4 shrink-0 text-stone-500" />
         </button>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -257,7 +259,7 @@ function NexusApp() {
           >
             <Pin className="size-4" />
             {chat.pinnedCount > 0 ? (
-              <span className="absolute -top-0.5 grid size-4 place-items-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground ltr:-right-0.5 rtl:-left-0.5">
+              <span className="absolute -top-0.5 -end-0.5 grid size-4 place-items-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
                 {chat.pinnedCount > 9 ? "9+" : chat.pinnedCount}
               </span>
             ) : null}
@@ -302,6 +304,15 @@ function NexusApp() {
           <p className="truncate text-xs text-stone-500">{chat.activeChannel.topic}</p>
         </div>
       )}
+
+      {!searchOpen && isLfgChannel(chat.activeChannel) ? (
+        <LfgBoard
+          messages={chat.messages}
+          onReply={(msg) =>
+            setReplyTo({ id: msg.id, author: msg.author, body: msg.body })
+          }
+        />
+      ) : null}
 
       {chat.loading && chat.live && (
         <div className="border-b border-border-subtle px-4 py-2 text-center text-xs text-stone-500 md:px-6">
@@ -405,12 +416,27 @@ function NexusApp() {
           channelName={voiceChannel.name}
           gameName={game.name}
           onDisconnect={() => setVoiceChannel(null)}
+          onReport={(participants) =>
+            setReportTarget({
+              voiceChannelId: voiceChannel.id,
+              voiceChannelName: voiceChannel.name,
+              voiceParticipants: participants.map((p) => ({
+                id: p.identity,
+                name: p.name,
+              })),
+              preview: t("report.voicePreview", {
+                name: voiceChannel.name,
+                id: voiceChannel.id,
+              }),
+            })
+          }
         />
       )}
 
       <Composer
         channelName={chat.activeChannel.name}
         gameId={chat.activeSlug}
+        lfgMode={isLfgChannel(chat.activeChannel)}
         mentionMembers={chat.members.online}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(undefined)}
@@ -489,9 +515,30 @@ function NexusApp() {
             <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
               {t("home.text")} — {game.name}
             </h4>
+            {(() => {
+              const lfg = chat.textChannels.find((c) => isLfgChannel(c));
+              if (!lfg || lfg.id === chat.activeChannelId) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    chat.selectChannel(lfg.id);
+                    setHubSheetOpen(false);
+                  }}
+                  className="mb-2 flex w-full items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent"
+                >
+                  <Hash className="size-3.5" />
+                  {t("home.lfgJump")}
+                  <span className="ms-auto rounded bg-accent/20 px-1.5 py-0.5 text-[10px] uppercase">
+                    {t("home.lfgBadge")}
+                  </span>
+                </button>
+              );
+            })()}
             <div className="mb-4 space-y-0.5">
               {chat.textChannels.map((c) => {
                 const active = c.id === chat.activeChannelId;
+                const isLfg = isLfgChannel(c);
                 return (
                   <button
                     key={c.id}
@@ -508,7 +555,14 @@ function NexusApp() {
                     }`}
                   >
                     <Hash className={`size-3.5 ${active ? "text-accent" : "text-stone-600"}`} />
-                    <span className="truncate">{c.name}</span>
+                    <span className="truncate" dir="auto">
+                      {c.name}
+                    </span>
+                    {isLfg ? (
+                      <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
+                        {t("home.lfgBadge")}
+                      </span>
+                    ) : null}
                     {c.unread ? (
                       <span className="ms-auto grid size-5 place-items-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
                         {c.unread}
@@ -599,7 +653,7 @@ function NexusApp() {
                     <button className="flex w-full items-center gap-3 rounded-md px-2 py-1 text-start transition-colors hover:bg-white/5">
                       <div className="relative shrink-0">
                         <div className="size-9 rounded-full bg-stone-800" />
-                        <div className="absolute bottom-0 size-2.5 rounded-full border-2 border-surface-mid bg-online ltr:right-0 rtl:left-0" />
+                        <div className="absolute bottom-0 end-0 size-2.5 rounded-full border-2 border-surface-mid bg-online" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -715,7 +769,7 @@ function NexusApp() {
           if (!open) setReportTarget(null);
         }}
         target={reportTarget}
-        onSubmit={async ({ reason, details }) => {
+        onSubmit={async ({ reason, details, targetUserId }) => {
           if (!chat.live || !reporterId || !reportTarget) {
             toast.success(t("report.thanks"));
             return { ok: true };
@@ -723,7 +777,9 @@ function NexusApp() {
           const result = await submitReport({
             reporterId,
             messageId: reportTarget.messageId,
-            targetUserId: reportTarget.targetUserId,
+            targetUserId: targetUserId ?? reportTarget.targetUserId,
+            dmMessageId: reportTarget.dmMessageId,
+            voiceChannelId: reportTarget.voiceChannelId,
             reason,
             details: details || reportTarget.preview,
           });

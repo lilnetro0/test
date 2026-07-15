@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { useEffect, useState } from "react";
 import { GAMES, type HubCard } from "@/lib/mock-data";
 import { toast } from "sonner";
-import { useT, LANG_LABELS, type Lang, type TKey } from "@/lib/i18n";
+import { useT, LANG_LABELS, type Lang, type TKey, translateStatic } from "@/lib/i18n";
 import {
   User,
   Palette,
@@ -30,11 +30,18 @@ import { shouldUseMockData } from "@/lib/supabase/env";
 import { fetchLiveHubs, fetchUserHubs } from "@/lib/chat/api";
 import { getVoiceHealth } from "@/lib/voice/create-voice-token";
 import { deleteMyAccount, exportMyData } from "@/lib/account/api";
+import {
+  normalizeRegionCode,
+  persistRegion,
+  readStoredRegion,
+  REGION_OPTIONS,
+  type RegionCode,
+} from "@/lib/regions";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Nexus" },
+      { title: translateStatic("meta.page.settings") },
       {
         name: "description",
         content: "Manage your Nexus account, appearance, voice, notifications, and more.",
@@ -267,8 +274,8 @@ function Toggle({
         <span
           className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
             value
-              ? "ltr:translate-x-[22px] rtl:-translate-x-[22px]"
-              : "ltr:translate-x-0.5 rtl:-translate-x-0.5"
+              ? "translate-x-[22px] rtl:-translate-x-[22px]"
+              : "translate-x-0.5 rtl:-translate-x-0.5"
           }`}
         />
       </button>
@@ -1154,7 +1161,15 @@ function KeybindsSection() {
 
 function LanguageSection() {
   const { lang, setLang, t } = useT();
-  const { configured, savePrefs } = useAuth();
+  const { configured, savePrefs, prefs } = useAuth();
+  const [region, setRegion] = useState<RegionCode>(() =>
+    normalizeRegionCode(prefs?.region ?? readStoredRegion()),
+  );
+
+  useEffect(() => {
+    setRegion(normalizeRegionCode(prefs?.region ?? readStoredRegion()));
+  }, [prefs?.region]);
+
   return (
     <>
       <SettingsHeader title={t("settings.language.title")} />
@@ -1183,8 +1198,35 @@ function LanguageSection() {
             </select>
           }
         />
+        <Row
+          label={t("settings.region.row")}
+          action={
+            <select
+              value={region}
+              onChange={(e) => {
+                const next = normalizeRegionCode(e.target.value);
+                setRegion(next);
+                persistRegion(next);
+                if (configured) {
+                  void savePrefs({ region: next || null }).then((r) => {
+                    if (!r.ok) toast.error(r.error);
+                  });
+                }
+              }}
+              className="max-w-[14rem] rounded-md border border-border-subtle bg-background px-3 py-1.5 text-xs text-white"
+            >
+              <option value="">{t("settings.region.unset")}</option>
+              {REGION_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {lang === "ar" ? o.ar : o.en}
+                </option>
+              ))}
+            </select>
+          }
+        />
       </Card>
       <p className="mt-3 px-1 text-xs text-stone-500">{t("settings.language.rtlNote")}</p>
+      <p className="mt-1 px-1 text-xs text-stone-500">{t("settings.region.note")}</p>
     </>
   );
 }

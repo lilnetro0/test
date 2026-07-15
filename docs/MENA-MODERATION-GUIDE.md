@@ -33,12 +33,12 @@ Moderators must eventually be able to:
 - Use predefined Arabic response templates  
 - See original + optional normalized text  
 
-**Today:** report reasons + guidelines are localized; admin console copy is still largely English (known gap — track as Arabic-first work, do not regress report UX).
+**Today:** report reasons + guidelines are localized; admin Reports queue has AR chrome + assist chips + response templates (AF3); voice session reports store `voice_channel_id` (AF10) plus details stamp (AF8). Remaining: participant picker, richer playbooks.
 
 ## Escalation
 
 - Ban / unban via admin tools + `profiles.banned_at`  
-- Appeal / support copy should be available in Arabic (`/help`, guidelines)  
+- Appeal / support copy in Arabic: `/help` (`help.appeal`) → `safety@nexus.app`  
 
 ## Build order (incremental)
 

@@ -5,12 +5,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { checkAuthCooldown, markAuthCooldown } from "@/lib/rate-limit";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Create account — Nexus" },
+      { title: translateStatic("meta.page.register") },
       { name: "description", content: "Create your Nexus account and find your squad." },
     ],
   }),

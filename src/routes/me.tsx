@@ -4,7 +4,7 @@ import { GAMES, ME, type HubCard } from "@/lib/mock-data";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Gamepad2, Pencil, Trophy, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 import { getProfile, setProfile, type ProfileDraft } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth-provider";
 import { uploadAvatar, AVATAR_ACCEPT } from "@/lib/supabase/storage";
@@ -14,7 +14,7 @@ import { shouldUseMockData } from "@/lib/supabase/env";
 export const Route = createFileRoute("/me")({
   head: () => ({
     meta: [
-      { title: "My profile — Nexus" },
+      { title: translateStatic("meta.page.me") },
       { name: "description", content: "Edit your Nexus profile." },
       { name: "robots", content: "noindex" },
     ],

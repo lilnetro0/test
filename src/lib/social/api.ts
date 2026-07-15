@@ -2,6 +2,10 @@ import type { ChatMessage, Friend, DMConversation } from "@/lib/mock-data";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ensureProfile } from "@/lib/supabase/profile";
 import { withMappedDbError } from "@/lib/rate-limit";
+import {
+  expandArabicSearchNormTerms,
+  normalizeArabicForSearch,
+} from "@/lib/arabic-normalize";
 
 function formatTime(iso: string): string {
   try {
@@ -64,13 +68,26 @@ export async function fetchProfileByUsername(
     .select("id, username, tag, display_name, bio, status, status_text");
 
   if (withTag) {
-    query = query.eq("username", withTag.username).eq("tag", withTag.tag);
+    const uname = normalizeArabicForSearch(withTag.username);
+    query = query
+      .eq("username_search_norm", uname)
+      .eq("tag", withTag.tag);
   } else {
     const username = decoded.replace(/^@/, "").split("#")[0];
     if (!username || username.length < 2) {
       return { profile: null, error: "Invalid username" };
     }
-    query = query.ilike("username", username);
+    const terms = expandArabicSearchNormTerms(username);
+    const primary = terms[0] ?? normalizeArabicForSearch(username);
+    // Prefer exact username fold; also allow display_name match (Arabic-first).
+    const orParts = [
+      `username_search_norm.eq.${primary}`,
+      ...terms.slice(0, 4).flatMap((term) => [
+        `username_search_norm.ilike.%${term}%`,
+        `display_name_search_norm.ilike.%${term}%`,
+      ]),
+    ];
+    query = query.or(orParts.join(","));
   }
 
   const { data, error } = await query.limit(1);
@@ -191,7 +208,7 @@ export async function sendFriendRequestByTag(
   const { data: target, error: findErr } = await client
     .from("profiles")
     .select("id")
-    .eq("username", parsed.username)
+    .eq("username_search_norm", normalizeArabicForSearch(parsed.username))
     .eq("tag", parsed.tag)
     .maybeSingle();
 
@@ -280,6 +297,7 @@ export async function submitReport(input: {
   targetUserId?: string;
   messageId?: string;
   dmMessageId?: string;
+  voiceChannelId?: string;
   reason: string;
   details?: string;
 }): Promise<{ ok: boolean; error?: string }> {
@@ -288,7 +306,13 @@ export async function submitReport(input: {
 
   await ensureProfile(input.reporterId);
 
-  if (!input.targetUserId && !input.messageId && !input.dmMessageId) {
+  if (
+    !input.targetUserId &&
+    !input.messageId &&
+    !input.dmMessageId &&
+    !input.voiceChannelId &&
+    !(input.details ?? "").trim()
+  ) {
     return { ok: false, error: "Nothing to report" };
   }
 
@@ -301,6 +325,7 @@ export async function submitReport(input: {
     target_user_id: input.targetUserId ?? null,
     message_id: input.messageId ?? null,
     dm_message_id: input.dmMessageId ?? null,
+    voice_channel_id: input.voiceChannelId ?? null,
     reason: input.reason.slice(0, 64),
     details: (input.details ?? "").slice(0, 2000),
     status: "open",

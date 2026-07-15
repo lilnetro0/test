@@ -3,7 +3,7 @@ import { Plus, Send, AtSign, Paperclip, Gift, X } from "lucide-react";
 import { EmojiPicker } from "./emoji-picker";
 import { HUBS, ME, type MemberInfo } from "@/lib/mock-data";
 import { toast } from "sonner";
-import { useT } from "@/lib/i18n";
+import { useT, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { uploadAttachment, ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES } from "@/lib/supabase/storage";
@@ -17,11 +17,19 @@ export type ComposerHandle = { focus: () => void };
 
 export type ComposerAttachment = { url: string; name: string; mime: string };
 
+const LFG_TEMPLATE_KEYS: TKey[] = [
+  "composer.lfg.tpl.ranked",
+  "composer.lfg.tpl.casual",
+  "composer.lfg.tpl.open",
+];
+
 export const Composer = forwardRef<
   ComposerHandle,
   {
     channelName: string;
     gameId?: string;
+    /** AF11 — show LFG post templates above the input */
+    lfgMode?: boolean;
     mentionMembers?: MemberInfo[];
     replyTo?: { id?: string; author: string; body: string };
     onCancelReply?: () => void;
@@ -34,7 +42,17 @@ export const Composer = forwardRef<
     ) => Promise<{ ok: boolean; error?: string } | void> | { ok: boolean; error?: string } | void;
   }
 >(function Composer(
-  { channelName, gameId, mentionMembers, replyTo, onCancelReply, onTyping, typingLabel, onSend },
+  {
+    channelName,
+    gameId,
+    lfgMode,
+    mentionMembers,
+    replyTo,
+    onCancelReply,
+    onTyping,
+    typingLabel,
+    onSend,
+  },
   ref,
 ) {
   const [value, setValue] = useState("");
@@ -125,7 +143,9 @@ export const Composer = forwardRef<
     }
   };
 
-  const placeholder = t("composer.placeholder").replace("#{channel}", channelName);
+  const placeholder = lfgMode
+    ? t("composer.placeholderLfg").replace("#{channel}", channelName)
+    : t("composer.placeholder").replace("#{channel}", channelName);
   const canSend = Boolean(value.trim() || pendingFile) && !sending && !uploading;
 
   return (
@@ -152,11 +172,37 @@ export const Composer = forwardRef<
           setPendingFile(f);
         }}
       />
+      {lfgMode ? (
+        <div className="mb-2 space-y-1.5">
+          <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+            {t("composer.lfg.hint")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {LFG_TEMPLATE_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setValue(t(key));
+                  setMentionQuery(null);
+                  inputRef.current?.focus();
+                }}
+                className="rounded-md border border-border-subtle bg-surface-mid/60 px-2.5 py-1 text-[11px] font-semibold text-stone-300 hover:border-accent/40 hover:text-white"
+                dir="auto"
+              >
+                {t(key)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {replyTo && (
         <div className="mb-2 flex items-center justify-between rounded-t-lg border border-b-0 border-border-subtle bg-surface-mid/50 px-4 py-2 text-xs">
           <span className="truncate text-stone-400">
             {t("composer.replying")}{" "}
-            <span className="font-semibold text-white">{replyTo.author}</span>
+            <span className="font-semibold text-white" dir="auto">
+              {replyTo.author}
+            </span>
           </span>
           <button
             onClick={onCancelReply}
@@ -170,7 +216,9 @@ export const Composer = forwardRef<
       {pendingFile && (
         <div className="mb-2 flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-mid px-3 py-2 text-xs text-stone-300">
           <Paperclip className="size-3.5 text-accent" />
-          <span className="min-w-0 flex-1 truncate">{pendingFile.name}</span>
+          <span className="min-w-0 flex-1 truncate" dir="auto">
+            {pendingFile.name}
+          </span>
           <button
             type="button"
             onClick={() => setPendingFile(null)}
@@ -182,7 +230,7 @@ export const Composer = forwardRef<
         </div>
       )}
       {typingLabel ? (
-        <p className="mb-1 truncate px-1 text-[11px] text-stone-500" aria-live="polite">
+        <p className="mb-1 truncate px-1 text-[11px] text-stone-500" aria-live="polite" dir="auto">
           {typingLabel}
         </p>
       ) : null}
@@ -198,7 +246,9 @@ export const Composer = forwardRef<
               className="flex w-full items-center gap-3 px-3 py-2 text-start transition-colors hover:bg-white/5"
             >
               <div className="size-6 rounded-full bg-stone-800" />
-              <span className="text-sm text-stone-200">{m.name}</span>
+              <span className="text-sm text-stone-200" dir="auto">
+                {m.name}
+              </span>
               <span className="font-mono text-[10px] text-stone-500 ms-auto">{m.tag}</span>
             </button>
           ))}
@@ -227,6 +277,7 @@ export const Composer = forwardRef<
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
+          dir="auto"
           className="min-w-0 flex-1 bg-transparent px-2 py-4 text-sm text-white outline-none placeholder:text-stone-600"
         />
         <div className="flex shrink-0 items-center gap-0.5 text-stone-500 me-1">

@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { Command as CommandIcon, Keyboard, MessageSquare, Mic, Search, HelpCircle } from "lucide-react";
-import { useT, type TKey } from "@/lib/i18n";
+import { useT, type TKey, translateStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/help")({
   head: () => ({
     meta: [
-      { title: "Help & Shortcuts — Nexus" },
+      { title: translateStatic("meta.page.help") },
       { name: "description", content: "Keyboard shortcuts, tips, and getting-started guide for Nexus." },
     ],
   }),
@@ -107,6 +107,13 @@ function HelpPage() {
               {t("help.stuck.title")}
             </h2>
             <p className="mt-1 text-sm text-stone-400">{t("help.stuck.body")}</p>
+            <h3 className="mt-4 text-sm font-semibold text-white">{t("help.appeal")}</h3>
+            <p className="mt-1 text-sm text-stone-400">
+              {t("help.appeal.body")}{" "}
+              <a className="text-accent underline" href="mailto:safety@nexus.app">
+                safety@nexus.app
+              </a>
+            </p>
           </section>
         </div>
       </main>

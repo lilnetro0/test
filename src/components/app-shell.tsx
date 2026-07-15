@@ -76,9 +76,9 @@ export function Sheet({
     bottom:
       "fixed inset-x-0 bottom-[var(--dock-clearance)] max-h-[min(75dvh,calc(100dvh-var(--dock-clearance)))] rounded-t-2xl border-t border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
     right:
-      "fixed inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200 ltr:right-0 ltr:border-s rtl:left-0 rtl:border-s",
+      "fixed inset-y-0 end-0 w-[min(340px,85vw)] border-s border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200",
     left:
-      "fixed inset-y-0 w-[min(340px,85vw)] border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-left-8 motion-safe:duration-200 ltr:left-0 ltr:border-e rtl:right-0 rtl:border-e",
+      "fixed inset-y-0 start-0 w-[min(340px,85vw)] border-e border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-left-8 motion-safe:duration-200",
   };
 
   return (

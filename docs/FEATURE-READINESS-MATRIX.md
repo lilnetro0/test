@@ -1,6 +1,6 @@
 # Feature Readiness Matrix — Nexus
 
-**Phase:** 18 (App Store / launch)  
+**Phase:** 18 (App Store / launch) + Phase 0 Arabic-first re-audit  
 **Date:** 2026-07-15  
 **Legend:** Y = yes / implemented in repo · P = partial · N = no / not present · ? = cannot verify from repo alone (needs deployed env)
 
@@ -33,7 +33,12 @@
 | Bans | Y (admin) | Y | Y (`banned_at`) | P | N | P | N | P | Client sign-out on banned profile |
 | Admin tools | Y | Y | Y (`08` + `platform_roles`) | Bypass via service role after gate | N | P | P (`parseAdminIds`) | P | DB roles + `admin_audit_log` (Phase 3); env bootstrap |
 | Account deletion | Y | Y | Y (P10 log) | N/A (Auth wipe) | N | P | N | P | Settings danger zone; hard CASCADE authored content |
-| Arabic RTL | Y | N/A | N/A | N/A | N/A | P | P (normalize unit) | P | Arabic-first policy + glossary (2026-07); auth toggle + UGC `dir=auto` + search fold; MENA discovery/admin deferred |
+| Arabic RTL | Y | N/A | N/A | N/A | N/A | P | P (normalize unit) | P | Chrome + bootstrap shipped (P13); **Partial** vs Arabic-first audit — see `ARABIC-FIRST-AUDIT.md` |
+| Arabic-first UX | P | P (prefs.lang/region) | Y (`user_prefs`) | Y | N/A | P | N | P | AF5 bilingual titles + admin shell AR; residual Games toasts EN |
+| Bidi / mixed-direction UGC | P | N/A | N/A | N/A | N/A | P | N | P | AF1: messages + discover + composer + notifs + report + admin report `dir=auto` |
+| Arabic search | P→Y* | Y (norm col + FN) | Y (`body_search_norm`) | N/A | N | P | Y | P | AF4: DB fold + trgm; *apply migration per env; hub catalog search_norm deferred |
+| MENA moderation | P | P (reports) | Y (reports) | Y | N | P | P (assist unit) | P | AF3: assist chips + AR templates + help appeals; not auto-ban |
+| Regional / MENA discovery | P | P | Y (`region`, `has_lfg`) | N/A | N | P | Y (`regions` vitest) | P | AF2 filters + AF3 templates + AF6 LFG chip; rich LFG board deferred |
 | Capacitor iOS | Y | N/A | N/A | N/A | N/A | Y (remote shell) | P (`cap:smoke` + `smoke:launch`) | P | Dual-mode + ASC checklist (P18); SSR not in www; 4.2 reduced not eliminated |
 | Cloudflare deployment | Docs/build target | Nitro CF | N/A | N/A | N/A | N/A | N | ? | Deploy/ops outside repo |
 | Ops / health | Y (admin chips) | Y | N/A | N/A | N/A | N/A | P (`ops:health`) | P | `GET /api/health` + CI probe + alert hooks (P16f); full APM deferred |
@@ -67,3 +72,13 @@
 6. Full APM SDKs / TURN synthetics (see `docs/OPS.md`)  
 7. Playwright / live RLS E2E against staging  
 8. Play / Android CI  
+
+### Arabic-first / MENA product gaps (Phase 0 re-audit)
+
+See [`ARABIC-FIRST-AUDIT.md`](ARABIC-FIRST-AUDIT.md). Highest:
+
+1. Regional / MENA discovery (country, profile region, hub templates)  
+2. Arabic moderation assist + admin bidi/i18n + appeals  
+3. DB-normalized Arabic search  
+4. Complete UGC `dir="auto"` coverage  
+5. Region locale fallback + remaining EN user-path strings  

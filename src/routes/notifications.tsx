@@ -3,14 +3,14 @@ import { AppShell } from "@/components/app-shell";
 import { AtSign, UserPlus, Volume2, Info, CheckCheck, Bell, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
-import { useT } from "@/lib/i18n";
+import { useT, translateStatic } from "@/lib/i18n";
 import { useNotifications } from "@/lib/notifications-provider";
 import type { NotificationItem } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications — Nexus" },
+      { title: translateStatic("meta.page.notifications") },
       { name: "description", content: "All your Nexus notifications in one place." },
     ],
   }),
@@ -91,12 +91,15 @@ function NotificationsPage() {
                           className={`truncate text-sm ${
                             n.read ? "font-medium text-stone-300" : "font-semibold text-white"
                           }`}
+                          dir="auto"
                         >
                           {n.title}
                         </p>
                         <span className="shrink-0 text-[10px] text-stone-500">{n.time}</span>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-stone-400">{n.body}</p>
+                      <p className="mt-0.5 truncate text-xs text-stone-400" dir="auto">
+                        {n.body}
+                      </p>
                     </div>
                   </button>
                 );

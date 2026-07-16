@@ -24,8 +24,14 @@ export type HubCard = {
   activeCount: string;
   category: "shooter" | "moba" | "sandbox" | "battle-royale" | "sports";
   members: number;
-  /** Resolved cover: hub image, else game image */
+  /** Resolved cover: hub image, else game cover */
   imageUrl?: string | null;
+  /** Official wide hero / banner (catalog) */
+  bannerUrl?: string | null;
+  /** Optional atmospheric background (catalog) */
+  backgroundUrl?: string | null;
+  /** Square logo / icon (catalog) */
+  iconUrl?: string | null;
   /** Hub audience region (ISO / MENA); omit or empty = global */
   region?: string | null;
   /** True when hub has #lfg text channel (Discover AF6) */

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Home,
@@ -11,7 +11,6 @@ import {
   LogOut,
   UserCircle,
 } from "lucide-react";
-import logo from "@/assets/nexus-logo.png";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { useNotifications } from "@/lib/notifications-provider";
@@ -20,42 +19,29 @@ import { trapFocus } from "@/lib/focus-trap";
 import { toast } from "sonner";
 
 /**
- * Persistent bottom dock — the ONLY primary navigation surface in the app.
- * Center brand always opens the hub sheet (navigates home with ?hubs=1 when needed).
+ * Persistent bottom dock — the ONLY primary navigation surface.
+ * Tabs (source order): Home · Discover · Messages · Friends · You
+ * Hub switching lives on the Home header (and `/?hubs=1`), not here.
+ * See docs/NAVIGATION-SPEC.md.
  */
-type Props = {
-  onBrandClick?: () => void;
-  brandActive?: boolean;
-};
-
-export function BottomDock({ onBrandClick, brandActive }: Props) {
+export function BottomDock() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
   const [youOpen, setYouOpen] = useState(false);
   const { t } = useT();
   const { unreadCount } = useNotifications();
   const { channelUnread, dmUnread } = useMessageUnreadTotals();
   const isHome = pathname === "/";
   const inYouSection =
-    pathname.startsWith("/friends") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/settings") ||
     pathname.startsWith("/profile") ||
     pathname === "/me";
 
-  const openHubs = () => {
-    if (isHome && onBrandClick) {
-      onBrandClick();
-      return;
-    }
-    void navigate({ to: "/", search: { hubs: "1" } as const });
-  };
-
   return (
     <>
       <nav
         aria-label={t("a11y.primaryNav")}
-        className="bottom-dock relative z-30 flex min-h-[var(--dock-base-height)] shrink-0 items-center justify-around gap-1 border-t border-border-subtle bg-surface-left/95 px-2 pb-safe pt-1 backdrop-blur-xl"
+        className="bottom-dock relative z-30 flex min-h-[var(--dock-base-height)] shrink-0 items-center justify-around gap-1 border-t border-border-subtle/80 bg-surface-left px-2 pb-safe pt-1 shadow-[0_-1px_0_rgba(255,255,255,0.03)]"
       >
         <DockItem
           to="/"
@@ -70,20 +56,6 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           label={t("nav.discover")}
           active={pathname.startsWith("/discover")}
         />
-
-        <button
-          type="button"
-          onClick={openHubs}
-          aria-label={t("nav.openHubs")}
-          className={`grid size-12 place-items-center rounded-2xl border transition-all md:size-14 md:-translate-y-2 ${
-            brandActive
-              ? "border-accent bg-accent/15 shadow-[var(--shadow-glow-accent)]"
-              : "border-accent/40 bg-accent/10 hover:border-accent hover:shadow-[var(--shadow-glow-accent)]"
-          }`}
-        >
-          <img src={logo} alt="" width={28} height={28} className="size-6 object-contain md:size-7" />
-        </button>
-
         <DockItem
           to="/dm"
           icon={<MessageSquare className="size-5" />}
@@ -91,13 +63,18 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
           active={pathname.startsWith("/dm")}
           badge={dmUnread}
         />
-
+        <DockItem
+          to="/friends"
+          icon={<Users className="size-5" />}
+          label={t("nav.friends")}
+          active={pathname.startsWith("/friends")}
+        />
         <button
           type="button"
           onClick={() => setYouOpen((v) => !v)}
           aria-label={t("nav.you")}
           aria-expanded={youOpen}
-          className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors ${
+          className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 nx-tab-active ${
             youOpen || inYouSection ? "text-accent" : "text-stone-500 hover:text-stone-200"
           }`}
         >
@@ -107,7 +84,7 @@ export function BottomDock({ onBrandClick, brandActive }: Props) {
               <span className="absolute -top-1 -end-1 size-2 rounded-full bg-danger ring-2 ring-surface-left" />
             ) : null}
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide">{t("nav.you")}</span>
+          <span className="nx-label text-[10px] text-inherit">{t("nav.you")}</span>
         </button>
       </nav>
 
@@ -133,7 +110,7 @@ function DockItem({
     <Link
       to={to}
       aria-label={badge && badge > 0 ? `${label} (${badge})` : label}
-      className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors ${
+      className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 nx-tab-active ${
         active ? "text-accent" : "text-stone-500 hover:text-stone-200"
       }`}
     >
@@ -145,7 +122,7 @@ function DockItem({
           </span>
         ) : null}
       </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wide">{label}</span>
+      <span className="nx-label text-[10px] text-inherit">{label}</span>
     </Link>
   );
 }
@@ -169,8 +146,8 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
       releaseTrap();
     };
   }, [onClose]);
+
   const items = [
-    { to: "/friends", icon: Users, label: t("nav.friends"), hint: t("you.friendsHint") },
     {
       to: "/notifications",
       icon: Bell,
@@ -191,7 +168,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
       <button
         aria-label={t("onboarding.close")}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/65"
       />
       <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 md:inset-x-auto md:end-3 md:w-80">
         <Link
@@ -209,7 +186,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
               {profile?.tag ? ` · #${profile.tag}` : ""}
             </p>
           </div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+          <span className="text-[10px] font-medium tracking-wide text-stone-500">
             {t("you.viewProfile")}
           </span>
         </Link>
@@ -230,7 +207,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
                 }`}
               >
                 <Icon className="size-4 shrink-0" />
-                <span className="flex-1 text-sm font-semibold">{item.label}</span>
+                <span className="flex-1 text-sm font-medium">{item.label}</span>
                 {"badge" in item && item.badge > 0 && (
                   <span className="min-w-5 rounded-full bg-danger px-1.5 text-center text-[10px] font-bold text-white">
                     {item.badge > 99 ? "99+" : item.badge}

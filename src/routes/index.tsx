@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Hash, Pin, Users, ChevronDown, Search, X } from "lucide-react";
+import { Hash, Pin, Users, ChevronDown, Search, X, Volume2 } from "lucide-react";
 import { GAMES, type HubCard } from "@/lib/mock-data";
 import { AppShell, Sheet } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
@@ -8,6 +8,11 @@ import { MessageItem } from "@/components/message-item";
 import { VoiceDock } from "@/components/voice-dock";
 import { LfgBoard } from "@/components/lfg-board";
 import { UserHoverCard } from "@/components/user-hover-card";
+import { ListSkeleton, ListRow, Section, ConfirmSheet } from "@/components/ui-native";
+import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
+import { GameIcon } from "@/components/game-icon";
+import { resolveBackgroundUrl, resolveIconUrl } from "@/lib/game-artwork";
 import { useT, translateStatic } from "@/lib/i18n";
 import { getHubOrder, setHubOrder } from "@/lib/prefs";
 import { getVoiceClient } from "@/lib/voice";
@@ -47,7 +52,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Nexus is a game-first chat & voice app. Jump between game hubs from the bottom dock. Zero learning curve.",
+          "Nexus is a game-first chat & voice app. Switch hubs from Home, then jump into chat and voice.",
       },
     ],
   }),
@@ -71,6 +76,8 @@ function NexusApp() {
   const [hubOrder, setHubOrderState] = useState<string[]>(() => GAMES.map((g) => g.id));
   const [dragId, setDragId] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportDialogTarget | null>(null);
+  const [kickTarget, setKickTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [kickBusy, setKickBusy] = useState(false);
   const { t } = useT();
   const { configured, prefs, savePrefs, accessToken, profile, user } = useAuth();
   const isAdmin = useIsAdmin();
@@ -131,13 +138,13 @@ function NexusApp() {
 
   // Live: search against DB (body ilike)
   useEffect(() => {
-    if (!chat.live || !searchOpen) return;
+    if (!chat.live) return;
     const handle = window.setTimeout(() => {
       void chat.searchMessages(searchQuery);
     }, 280);
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- searchMessages identity changes often
-  }, [chat.live, searchOpen, searchQuery, chat.activeChannelId]);
+  }, [chat.live, searchQuery, chat.activeChannelId]);
 
   useEffect(() => {
     if (chat.error) toast.error(chat.error);
@@ -182,47 +189,84 @@ function NexusApp() {
 
   const closeSearch = () => {
     setSearchOpen(false);
+  };
+
+  const clearSearch = () => {
+    setSearchOpen(false);
     setSearchQuery("");
     if (chat.live) void chat.searchMessages("");
   };
 
+  const joinVoice = (v: { id: string; name: string; livekitRoomName?: string | null }) => {
+    if (joiningVoice) return;
+    const roomName = v.livekitRoomName ?? `nexus-${chat.activeSlug}-${v.id}`;
+    void (async () => {
+      setJoiningVoice(true);
+      try {
+        await getVoiceClient().joinVoiceChannel({
+          channelId: v.id,
+          channelName: v.name,
+          roomName,
+          accessToken,
+          displayName: profile?.username ?? user?.email?.split("@")[0],
+        });
+        setVoiceChannel({ id: v.id, name: v.name });
+        setHubSheetOpen(false);
+        const live = getVoiceClient().getSession()?.live;
+        toast.success(live ? t("voice.joinOk", { name: v.name }) : t("voice.joinedPreview"));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t("voice.joinFail"));
+      } finally {
+        setJoiningVoice(false);
+      }
+    })();
+  };
+
   return (
-    <AppShell onBrandClick={() => setHubSheetOpen(true)} brandActive={hubSheetOpen}>
-      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-mid/40 px-3 backdrop-blur-md md:h-16 md:px-6">
+    <AppShell>
+      <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-border-subtle/80 bg-surface-mid/50 px-3 py-2 md:min-h-16 md:px-6">
         <button
+          type="button"
           onClick={() => setHubSheetOpen(true)}
-          className="flex min-w-0 items-center gap-3 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-1.5 text-start transition-colors hover:border-accent/40"
+          aria-label={t("nav.openHubs")}
+          aria-expanded={hubSheetOpen}
+          aria-haspopup="dialog"
+          className="nx-press flex min-w-0 items-center gap-3 rounded-xl border border-border-subtle/70 bg-white/[0.025] px-2.5 py-1.5 text-start shadow-[var(--nx-shadow-1)] transition-colors hover:border-accent/30"
         >
-          <span
-            className={`grid size-8 shrink-0 place-items-center rounded-lg font-display text-[10px] font-bold ${game.tint} ${game.textTint}`}
-          >
-            {game.short}
-          </span>
+          <GameIcon
+            src={resolveIconUrl({
+              coverUrl: game.imageUrl,
+              iconUrl: game.iconUrl,
+            })}
+            short={game.short}
+            tint={game.tint}
+            textTint={game.textTint}
+            size="md"
+            className="shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          />
           <span className="min-w-0">
-            <span className="block truncate font-display text-[11px] font-bold uppercase tracking-tight text-white">
+            <span className="nx-label block truncate text-[0.8125rem] text-white">
               {game.hubName}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-stone-500">
-              <Hash className="size-3" />
+            <span className="mt-0.5 flex items-center gap-1 text-[11px] font-normal text-stone-500">
+              <Hash className="size-3 opacity-70" />
               <span className="truncate">{chat.activeChannel.name}</span>
             </span>
           </span>
-          <ChevronDown className="ms-1 size-4 shrink-0 text-stone-500" />
+          <ChevronDown className="ms-0.5 size-3.5 shrink-0 text-stone-500" />
         </button>
 
         <div className="flex shrink-0 items-center gap-1">
           {chat.live ? (
             <div className="hidden items-center gap-2 rounded-full border border-white/5 bg-white/5 px-3 py-1.5 sm:flex">
-              <span className="size-2 rounded-full bg-accent shadow-[var(--shadow-glow-accent)]" />
-              <span className="text-[11px] font-bold uppercase tracking-tight text-stone-400">
+              <span className="size-2 rounded-full bg-accent" />
+              <span className="nx-caption">
                 {game.activeCount} {t("home.live")}
               </span>
             </div>
           ) : (
             <div className="hidden items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 sm:flex">
-              <span className="text-[11px] font-bold uppercase tracking-tight text-amber-100/90">
-                {t("home.demoLive")}
-              </span>
+              <span className="nx-caption text-amber-100/90">{t("home.demoLive")}</span>
             </div>
           )}
           <button
@@ -231,7 +275,9 @@ function NexusApp() {
               else setSearchOpen(true);
             }}
             className={`grid size-9 place-items-center rounded-lg transition-colors ${
-              searchOpen ? "bg-accent/15 text-accent" : "text-stone-400 hover:bg-white/5 hover:text-white"
+              searchOpen || searchQuery
+                ? "bg-accent/15 text-accent"
+                : "text-stone-400 hover:bg-white/5 hover:text-white"
             }`}
             aria-label={t("home.searchMessages")}
             aria-pressed={searchOpen}
@@ -274,38 +320,31 @@ function NexusApp() {
         </div>
       </header>
 
-      {searchOpen && (
-        <div className="flex items-center gap-2 border-b border-border-subtle bg-surface-mid/60 px-4 py-2 md:px-6">
-          <Search className="size-4 shrink-0 text-stone-500" />
-          <input
-            autoFocus
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("home.searchPlaceholder")}
-            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-stone-600"
-          />
-          {searchQuery && (
-            <span className="shrink-0 text-[10px] uppercase tracking-widest text-stone-500">
-              {filteredMessages.length} {t("home.searchResults")}
-            </span>
-          )}
+      {searchQuery ? (
+        <div className="flex items-center gap-2 border-b border-border-subtle bg-surface-mid/40 px-4 py-2 md:px-6">
+          <p className="nx-caption min-w-0 flex-1 truncate">
+            {filteredMessages.length} {t("home.searchResults")} · “{searchQuery}”
+          </p>
           <button
-            onClick={closeSearch}
-            className="grid size-8 place-items-center rounded-lg text-stone-500 hover:text-white"
+            type="button"
+            onClick={clearSearch}
+            className="nx-touch grid place-items-center rounded-lg text-stone-500 hover:text-white"
             aria-label={t("home.close")}
           >
             <X className="size-4" />
           </button>
         </div>
-      )}
+      ) : null}
 
-      {chat.activeChannel.topic && !searchOpen && (
-        <div className="border-b border-border-subtle bg-background/40 px-4 py-2 md:px-6">
-          <p className="truncate text-xs text-stone-500">{chat.activeChannel.topic}</p>
+      {chat.activeChannel.topic && !searchQuery && (
+        <div className="border-b border-border-subtle/70 bg-background/50 px-4 py-2.5 md:px-6">
+          <p className="nx-caption truncate" dir="auto">
+            {chat.activeChannel.topic}
+          </p>
         </div>
       )}
 
-      {!searchOpen && isLfgChannel(chat.activeChannel) ? (
+      {!searchQuery && isLfgChannel(chat.activeChannel) ? (
         <LfgBoard
           messages={chat.messages}
           onReply={(msg) =>
@@ -315,8 +354,8 @@ function NexusApp() {
       ) : null}
 
       {chat.loading && chat.live && (
-        <div className="border-b border-border-subtle px-4 py-2 text-center text-xs text-stone-500 md:px-6">
-          Loading hub…
+        <div className="border-b border-border-subtle px-4 py-3 md:px-6">
+          <ListSkeleton rows={3} />
         </div>
       )}
 
@@ -324,8 +363,20 @@ function NexusApp() {
         role="log"
         aria-live="polite"
         aria-label={`${chat.activeChannel.name} messages`}
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 md:space-y-8 md:p-6"
+        className="relative min-h-0 flex-1 space-y-3 overflow-y-auto p-3 md:space-y-4 md:p-6"
       >
+        {resolveBackgroundUrl({ backgroundUrl: game.backgroundUrl }) ? (
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.14]"
+            aria-hidden
+            style={{
+              backgroundImage: `linear-gradient(to bottom, transparent, var(--background)), url(${resolveBackgroundUrl({ backgroundUrl: game.backgroundUrl })})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        ) : null}
+        <div className="relative z-[1] space-y-3 md:space-y-4">
         {!searchOpen && chat.live && chat.hasMoreOlder && (
           <div className="flex justify-center pb-2">
             <button
@@ -343,7 +394,23 @@ function NexusApp() {
           </div>
         )}
         {searchQuery && filteredMessages.length === 0 ? (
-          <p className="py-12 text-center text-sm text-stone-500">{t("home.searchEmpty")}</p>
+          <p className="nx-body py-12 text-center text-muted-foreground">{t("home.searchEmpty")}</p>
+        ) : !searchQuery && filteredMessages.length === 0 && !chat.loading ? (
+          <EmptyState
+            icon={Hash}
+            title={t("home.emptyChannel.title")}
+            body={t("home.emptyChannel.body")}
+            primaryAction={
+              <Button type="button" variant="accent" size="touch" onClick={() => setHubSheetOpen(true)}>
+                {t("home.emptyChannel.ctaChannels")}
+              </Button>
+            }
+            secondaryAction={
+              <Button asChild variant="ghost" size="touch">
+                <Link to="/discover">{t("home.emptyChannel.ctaDiscover")}</Link>
+              </Button>
+            }
+          />
         ) : (
           filteredMessages.map((m) => (
             <MessageItem
@@ -409,6 +476,7 @@ function NexusApp() {
             />
           ))
         )}
+        </div>
       </div>
 
       {voiceChannel && (
@@ -453,68 +521,88 @@ function NexusApp() {
         }}
       />
 
+      <Sheet open={searchOpen} onClose={closeSearch} title={t("home.searchMessages")}>
+        <div className="space-y-3 p-4">
+          <div className="flex min-h-11 items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.03] px-3">
+            <Search className="size-4 shrink-0 text-stone-500" />
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("home.searchPlaceholder")}
+              dir="auto"
+              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-stone-600"
+            />
+          </div>
+          <p className="nx-caption">
+            {searchQuery
+              ? `${filteredMessages.length} ${t("home.searchResults")}`
+              : t("home.searchHint")}
+          </p>
+          <Button type="button" variant="accent" size="touch" className="w-full" onClick={closeSearch}>
+            {t("common.close")}
+          </Button>
+        </div>
+      </Sheet>
+
       <Sheet open={pinsOpen} onClose={() => setPinsOpen(false)} title={t("home.pinnedTitle")}>
-        <div className="space-y-4 p-4">
+        <div className="space-y-2 p-2">
           {chat.messages.filter((m) => m.pinned).length === 0 ? (
-            <p className="py-8 text-center text-sm text-stone-500">{t("home.pinnedEmpty")}</p>
+            <p className="nx-body py-8 text-center">{t("home.pinnedEmpty")}</p>
           ) : (
             chat.messages
               .filter((m) => m.pinned)
               .map((m) => (
-                <div key={m.id} className="rounded-xl border border-border-subtle bg-surface-mid/40 p-3">
-                  <p className="text-xs font-bold text-white">
-                    {m.author}{" "}
-                    <span className="font-normal text-stone-500">{m.time}</span>
-                  </p>
-                  <p className="mt-1 text-sm text-stone-300">{m.body}</p>
-                </div>
+                <ListRow
+                  key={m.id}
+                  title={m.author}
+                  subtitle={m.body}
+                  trailing={<span className="nx-caption">{m.time}</span>}
+                />
               ))
           )}
         </div>
       </Sheet>
 
       <Sheet open={hubSheetOpen} onClose={() => setHubSheetOpen(false)} title={t("home.hubs")}>
-        <div className="grid grid-cols-1 divide-y divide-border-subtle md:grid-cols-[220px_1fr] md:divide-x md:divide-y-0">
-          <div className="p-3">
-            <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("home.reorderHint")}
-            </p>
-            <div className="grid grid-cols-4 gap-2 md:grid-cols-2">
+        <div className="space-y-5 p-3 pb-6">
+          <Section title={t("home.reorderHint")}>
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {orderedGames.map((g) => {
                 const active = g.id === chat.activeSlug;
                 return (
                   <button
                     key={g.id}
+                    type="button"
                     draggable
                     onDragStart={() => setDragId(g.id)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => onDropReorder(g.id)}
                     onDragEnd={() => setDragId(null)}
                     onClick={() => selectGame(g.id)}
-                    className={`group flex cursor-grab flex-col items-center gap-1.5 rounded-xl border p-2 transition-all active:cursor-grabbing ${
+                    className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 py-2 transition-colors ${
                       active
-                        ? "border-accent bg-accent/10 shadow-[var(--shadow-glow-accent)]"
-                        : "border-border-subtle bg-white/[0.02] hover:border-accent/40"
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border-subtle text-stone-300 hover:border-accent/40"
                     } ${dragId === g.id ? "opacity-50" : ""}`}
                   >
-                    <span
-                      className={`grid size-10 place-items-center rounded-lg font-display text-[11px] font-bold ${g.tint} ${g.textTint}`}
-                    >
-                      {g.short}
-                    </span>
-                    <span className="w-full truncate text-center text-[10px] font-semibold text-stone-300">
-                      {g.name}
+                    <GameIcon
+                      src={resolveIconUrl({ coverUrl: g.imageUrl, iconUrl: g.iconUrl })}
+                      short={g.short}
+                      tint={g.tint}
+                      textTint={g.textTint}
+                      size="sm"
+                    />
+                    <span className="max-w-[7rem] truncate text-xs font-medium" dir="auto">
+                      {g.hubName}
                     </span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </Section>
 
-          <div className="p-3">
-            <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("home.text")} — {game.name}
-            </h4>
+          <Section title={t("home.text")}>
             {(() => {
               const lfg = chat.textChannels.find((c) => isLfgChannel(c));
               if (!lfg || lfg.id === chat.activeChannelId) return null;
@@ -525,112 +613,83 @@ function NexusApp() {
                     chat.selectChannel(lfg.id);
                     setHubSheetOpen(false);
                   }}
-                  className="mb-2 flex w-full items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent"
+                  className="mb-1 flex min-h-11 w-full items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 text-xs font-semibold text-accent"
                 >
                   <Hash className="size-3.5" />
                   {t("home.lfgJump")}
-                  <span className="ms-auto rounded bg-accent/20 px-1.5 py-0.5 text-[10px] uppercase">
-                    {t("home.lfgBadge")}
-                  </span>
                 </button>
               );
             })()}
-            <div className="mb-4 space-y-0.5">
-              {chat.textChannels.map((c) => {
-                const active = c.id === chat.activeChannelId;
-                const isLfg = isLfgChannel(c);
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      chat.selectChannel(c.id);
-                      setHubSheetOpen(false);
-                      setSearchQuery("");
-                      if (searchOpen && chat.live) void chat.searchMessages("");
-                    }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                      active
-                        ? "bg-white/5 font-medium text-white"
-                        : "text-stone-400 hover:bg-white/5 hover:text-stone-200"
-                    }`}
-                  >
-                    <Hash className={`size-3.5 ${active ? "text-accent" : "text-stone-600"}`} />
-                    <span className="truncate" dir="auto">
-                      {c.name}
-                    </span>
-                    {isLfg ? (
-                      <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent">
-                        {t("home.lfgBadge")}
-                      </span>
-                    ) : null}
-                    {c.unread ? (
-                      <span className="ms-auto grid size-5 place-items-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
+            {chat.textChannels.map((c) => {
+              const active = c.id === chat.activeChannelId;
+              const isLfg = isLfgChannel(c);
+              return (
+                <ListRow
+                  key={c.id}
+                  title={c.name}
+                  subtitle={isLfg ? t("home.lfgBadge") : undefined}
+                  muted={!active && !c.unread}
+                  leading={<Hash className={`size-4 ${active ? "text-accent" : "text-stone-500"}`} />}
+                  trailing={
+                    c.unread ? (
+                      <span className="grid min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
                         {c.unread}
                       </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
+                    ) : active ? (
+                      <span className="nx-caption text-accent">{t("home.activeChannel")}</span>
+                    ) : null
+                  }
+                  onClick={() => {
+                    chat.selectChannel(c.id);
+                    setHubSheetOpen(false);
+                    setSearchQuery("");
+                    if (chat.live) void chat.searchMessages("");
+                  }}
+                />
+              );
+            })}
+          </Section>
 
-            <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("home.voice")}
-            </h4>
-            <div className="space-y-1">
-              {chat.voiceChannels.map((v) => {
-                const hasMembers = v.members.length > 0;
-                return (
-                  <button
-                    key={v.id}
-                    disabled={joiningVoice}
-                    onClick={() => {
-                      if (joiningVoice) return;
-                      const roomName =
-                        v.livekitRoomName ?? `nexus-${chat.activeSlug}-${v.id}`;
-                      void (async () => {
-                        setJoiningVoice(true);
-                        try {
-                          await getVoiceClient().joinVoiceChannel({
-                            channelId: v.id,
-                            channelName: v.name,
-                            roomName,
-                            accessToken,
-                            displayName: profile?.username ?? user?.email?.split("@")[0],
-                          });
-                          setVoiceChannel({ id: v.id, name: v.name });
-                          setHubSheetOpen(false);
-                          const live = getVoiceClient().getSession()?.live;
-                          toast.success(
-                            live ? t("voice.joinOk", { name: v.name }) : t("voice.joinedPreview"),
-                          );
-                        } catch (err) {
-                          toast.error(
-                            err instanceof Error ? err.message : t("voice.joinFail"),
-                          );
-                        } finally {
-                          setJoiningVoice(false);
-                        }
-                      })();
-                    }}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-stone-400 transition-colors hover:bg-white/5 hover:text-stone-200 disabled:opacity-50"
-                  >
-                    <span
-                      className={`size-1.5 rounded-full ${
-                        hasMembers
-                          ? "bg-online shadow-[var(--shadow-glow-online)]"
-                          : "bg-stone-600"
-                      }`}
-                    />
-                    <span className="truncate">{v.name}</span>
-                    {hasMembers && (
-                      <span className="ms-auto font-mono text-[10px] text-stone-500">
-                        {v.members.length}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <Section title={t("home.voice")}>
+            {chat.voiceChannels.map((v) => {
+              const hasMembers = v.members.length > 0;
+              const inHere = voiceChannel?.id === v.id;
+              return (
+                <ListRow
+                  key={v.id}
+                  title={v.name}
+                  subtitle={
+                    inHere
+                      ? t("home.inVoice")
+                      : hasMembers
+                        ? t("home.voiceCount", { n: String(v.members.length) })
+                        : t("home.voiceEmpty")
+                  }
+                  leading={
+                    <Volume2 className={`size-4 ${hasMembers || inHere ? "text-online" : "text-stone-500"}`} />
+                  }
+                  trailing={
+                    <Button
+                      type="button"
+                      variant={inHere ? "secondary" : "accent"}
+                      size="sm"
+                      disabled={joiningVoice || inHere}
+                      onClick={() => joinVoice(v)}
+                    >
+                      {inHere ? t("home.joined") : t("home.joinVoice")}
+                    </Button>
+                  }
+                />
+              );
+            })}
+          </Section>
+
+          <div className="flex flex-col gap-2 px-1">
+            <Button asChild variant="ghost" size="touch" className="w-full border border-border-subtle">
+              <Link to="/discover" onClick={() => setHubSheetOpen(false)}>
+                {t("home.findHubs")}
+              </Link>
+            </Button>
           </div>
         </div>
       </Sheet>
@@ -639,11 +698,11 @@ function NexusApp() {
         open={membersOpen}
         onClose={() => setMembersOpen(false)}
         title={`${game.name} — ${t("home.roster")}`}
-        side="right"
+        side="bottom"
       >
         <div className="space-y-8 p-5">
           <section>
-            <h4 className="mb-3 px-1 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+            <h4 className="nx-section mb-3 px-1">
               {t("home.online")} — {chat.members.online.length}
             </h4>
             <div className="space-y-3">
@@ -670,13 +729,11 @@ function NexusApp() {
                           )}
                         </div>
                         {m.inVoice ? (
-                          <p className="truncate text-[9px] font-bold uppercase tracking-tight text-accent">
-                            In {m.inVoice}
+                          <p className="nx-caption truncate text-accent">
+                            {t("home.inVoiceNamed", { name: m.inVoice })}
                           </p>
                         ) : (
-                          <p className="truncate text-[9px] uppercase tracking-tight text-stone-500">
-                            {m.status ?? "Online"}
-                          </p>
+                          <p className="nx-caption truncate">{m.status ?? t("you.online")}</p>
                         )}
                       </div>
                     </button>
@@ -720,24 +777,13 @@ function NexusApp() {
                       m.userId !== user?.id ? (
                         <button
                           type="button"
-                          onClick={async () => {
-                            if (!confirm(`Kick ${m.name} from hub?`)) return;
-                            const hubId = chat.activeHubUuid!;
-                            const userId = m.userId!;
-                            const r = isAdmin && accessToken
-                              ? await adminKickFromHub({
-                                  data: { accessToken, hubId, userId },
-                                })
-                              : await kickHubMember(hubId, userId);
-                            if (!r.ok) toast.error(r.error ?? t("toast.failed"));
-                            else {
-                              toast.success(t("toast.kicked", { name: m.name }));
-                              void chat.refreshMembers();
-                            }
+                          onClick={() => {
+                            if (!m.userId) return;
+                            setKickTarget({ userId: m.userId, name: m.name });
                           }}
-                          className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase text-danger hover:bg-danger/15"
+                          className="rounded px-2 py-1 text-[10px] font-semibold text-danger hover:bg-danger/15"
                         >
-                          Kick
+                          {t("home.kick")}
                         </button>
                       ) : null}
                     </div>
@@ -748,7 +794,7 @@ function NexusApp() {
           </section>
 
           <section className="opacity-60">
-            <h4 className="mb-3 px-1 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+            <h4 className="nx-section mb-3 px-1">
               {t("home.offline")} — {chat.members.offline.length}
             </h4>
             <div className="space-y-3">
@@ -762,6 +808,41 @@ function NexusApp() {
           </section>
         </div>
       </Sheet>
+
+      <ConfirmSheet
+        open={!!kickTarget}
+        onOpenChange={(open) => {
+          if (!open) setKickTarget(null);
+        }}
+        title={t("home.kickTitle")}
+        description={
+          kickTarget ? t("home.kickConfirm", { name: kickTarget.name }) : undefined
+        }
+        destructive
+        busy={kickBusy}
+        confirmLabel={t("home.kick")}
+        onConfirm={async () => {
+          if (!kickTarget || !chat.activeHubUuid) return;
+          setKickBusy(true);
+          try {
+            const hubId = chat.activeHubUuid;
+            const r =
+              isAdmin && accessToken
+                ? await adminKickFromHub({
+                    data: { accessToken, hubId, userId: kickTarget.userId },
+                  })
+                : await kickHubMember(hubId, kickTarget.userId);
+            if (!r.ok) toast.error(r.error ?? t("toast.failed"));
+            else {
+              toast.success(t("toast.kicked", { name: kickTarget.name }));
+              void chat.refreshMembers();
+              setKickTarget(null);
+            }
+          } finally {
+            setKickBusy(false);
+          }
+        }}
+      />
 
       <ReportDialog
         open={!!reportTarget}

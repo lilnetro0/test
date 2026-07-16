@@ -107,6 +107,9 @@ export type Database = {
           tint: string;
           text_tint: string;
           image_url: string | null;
+          banner_url: string | null;
+          background_url: string | null;
+          icon_url: string | null;
           name_search_norm: string | null;
           created_at: string;
         };
@@ -118,6 +121,9 @@ export type Database = {
           tint?: string;
           text_tint?: string;
           image_url?: string | null;
+          banner_url?: string | null;
+          background_url?: string | null;
+          icon_url?: string | null;
           name_search_norm?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["games"]["Insert"]>;

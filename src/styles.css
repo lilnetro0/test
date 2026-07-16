@@ -3,10 +3,12 @@
 @import "tw-animate-css";
 /* AF18 — self-hosted Arabic; AF20 — self-hosted Latin display/UI */
 @import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
 @import "@fontsource/inter/latin-600.css";
 @import "@fontsource/space-grotesk/latin-500.css";
 @import "@fontsource/space-grotesk/latin-700.css";
 @import "@fontsource/noto-sans-arabic/arabic-400.css";
+@import "@fontsource/noto-sans-arabic/arabic-500.css";
 @import "@fontsource/noto-sans-arabic/arabic-600.css";
 
 @custom-variant dark (&:is(.dark *));
@@ -39,8 +41,13 @@
   --font-display: "Space Grotesk", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
 
-  --shadow-glow-accent: 0 0 12px color-mix(in oklab, var(--accent) 45%, transparent);
-  --shadow-glow-online: 0 0 8px color-mix(in oklab, var(--online) 55%, transparent);
+  /* Soft depth — no neon glow */
+  --shadow-glow-accent: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);
+  --shadow-glow-online: 0 0 0 1px color-mix(in oklab, var(--online) 40%, transparent);
+
+  --shadow-nx-1: var(--nx-shadow-1);
+  --shadow-nx-2: var(--nx-shadow-2);
+  --shadow-nx-3: var(--nx-shadow-3);
 }
 
 :root {
@@ -58,19 +65,29 @@
   --background: oklch(0.145 0.005 260);
   --foreground: oklch(0.92 0.005 260);
 
-  --surface-left: oklch(0.175 0.005 260);
-  --surface-mid: oklch(0.205 0.005 260);
-  --surface-right: oklch(0.175 0.005 260);
-  --border-subtle: oklch(0.28 0.006 260);
+  --surface-left: oklch(0.168 0.006 260);
+  --surface-mid: oklch(0.195 0.006 260);
+  --surface-right: oklch(0.168 0.006 260);
+  --border-subtle: oklch(0.3 0.008 260);
 
-  --accent: oklch(0.86 0.15 200);
-  --accent-foreground: oklch(0.15 0.01 260);
+  /* Premium teal — deeper, ~25% less neon intensity than prior cyan */
+  --accent: oklch(0.72 0.1 205);
+  --accent-foreground: oklch(0.14 0.01 260);
 
   --muted: oklch(0.24 0.005 260);
   --muted-foreground: oklch(0.62 0.01 260);
 
-  --online: oklch(0.72 0.17 155);
-  --danger: oklch(0.65 0.22 25);
+  --online: oklch(0.7 0.14 155);
+  --danger: oklch(0.64 0.18 25);
+
+  /* Layered depth (no glass) */
+  --nx-shadow-1: 0 1px 0 color-mix(in oklab, white 4%, transparent),
+    0 1px 2px color-mix(in oklab, black 35%, transparent);
+  --nx-shadow-2: 0 1px 0 color-mix(in oklab, white 5%, transparent),
+    0 4px 14px color-mix(in oklab, black 40%, transparent);
+  --nx-shadow-3: 0 1px 0 color-mix(in oklab, white 6%, transparent),
+    0 10px 28px color-mix(in oklab, black 48%, transparent);
+  --nx-highlight: inset 0 1px 0 color-mix(in oklab, white 6%, transparent);
 }
 
 /* High-contrast token variant — toggled via .high-contrast on <html> */
@@ -81,7 +98,7 @@
   --surface-mid: oklch(0.16 0.005 260);
   --surface-right: oklch(0.14 0.005 260);
   --border-subtle: oklch(0.45 0.01 260);
-  --accent: oklch(0.9 0.16 200);
+  --accent: oklch(0.8 0.12 205);
   --muted-foreground: oklch(0.78 0.01 260);
   --shadow-glow-accent: 0 0 0 2px color-mix(in oklab, var(--accent) 70%, transparent);
   --shadow-glow-online: 0 0 0 2px color-mix(in oklab, var(--online) 70%, transparent);
@@ -104,14 +121,132 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-weight: 400;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
   }
 
   /* Arabic: avoid Latin-style uppercase tracking on display text */
-  html[lang="ar"] .uppercase {
+  html[lang="ar"] .uppercase,
+  html[lang="ar"] .nx-title,
+  html[lang="ar"] .nx-label,
+  html[lang="ar"] .nx-section,
+  html[lang="ar"] .nx-display {
     text-transform: none;
     letter-spacing: normal;
+  }
+}
+
+/* —— Nexus design system utilities —— */
+:root {
+  --nx-space-1: 0.25rem; /* 4 */
+  --nx-space-2: 0.5rem; /* 8 */
+  --nx-space-3: 0.75rem; /* 12 */
+  --nx-space-4: 1rem; /* 16 */
+  --nx-space-5: 1.5rem; /* 24 */
+  --nx-space-6: 2rem; /* 32 */
+  --nx-space-7: 2.5rem; /* 40 */
+  --nx-touch: 2.75rem; /* 44 */
+
+  /* Premium motion — smooth decelerate, slightly longer sheets */
+  --nx-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --nx-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --nx-motion-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --nx-motion-fast: 160ms;
+  --nx-motion-sheet: 260ms;
+  --nx-motion-sheet-out: 200ms;
+  --nx-motion-press: 120ms;
+}
+
+/* Screen / sheet titles — Medium, not Bold */
+@utility nx-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  color: var(--color-foreground);
+  text-transform: none;
+}
+
+/* Hero identity (profile username, brand) — Bold reserved here */
+@utility nx-display {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--color-foreground);
+  text-transform: none;
+}
+
+@utility nx-section {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+@utility nx-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--color-foreground);
+}
+
+@utility nx-body {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+@utility nx-caption {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-muted-foreground);
+}
+
+@utility nx-touch {
+  min-height: var(--nx-touch);
+  min-width: var(--nx-touch);
+}
+
+/* Surface elevations — layered, not flat */
+@utility nx-elev-1 {
+  background-color: color-mix(in oklab, var(--surface-mid) 55%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 70%, transparent);
+  box-shadow: var(--nx-shadow-1);
+}
+
+@utility nx-elev-2 {
+  background-color: var(--surface-mid);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--nx-shadow-2), var(--nx-highlight);
+}
+
+@utility nx-elev-3 {
+  background-color: color-mix(in oklab, var(--surface-mid) 92%, white 2%);
+  border: 1px solid color-mix(in oklab, var(--border-subtle) 85%, white 4%);
+  box-shadow: var(--nx-shadow-3), var(--nx-highlight);
+}
+
+@utility nx-press {
+  transition:
+    transform var(--nx-motion-press) var(--nx-motion-ease),
+    opacity var(--nx-motion-press) var(--nx-motion-ease),
+    background-color var(--nx-motion-fast) var(--nx-motion-ease);
+  &:active {
+    transform: scale(0.98);
   }
 }
 
@@ -167,4 +302,20 @@ html[data-keyboard-open] .bottom-dock {
     display: none;
   }
   scrollbar-width: none;
+}
+
+@utility nx-sheet-panel {
+  animation-duration: var(--nx-motion-sheet);
+  animation-timing-function: var(--nx-motion-ease-out);
+}
+
+@utility nx-sheet-scrim {
+  animation-duration: var(--nx-motion-fast);
+  animation-timing-function: var(--nx-motion-ease);
+}
+
+@utility nx-tab-active {
+  transition:
+    color var(--nx-motion-fast) var(--nx-motion-ease),
+    transform var(--nx-motion-fast) var(--nx-motion-ease);
 }

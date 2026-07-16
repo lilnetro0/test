@@ -9,8 +9,8 @@
 
 | Concept | Table | Identity | Purpose |
 |---------|--------|----------|---------|
-| **Catalog game** | `public.games` | `games.id` (text, e.g. `valorant`) | Title, short code, category, tint, optional cover (`image_url`). **Not** membership. |
-| **Hub (community)** | `public.hubs` | `hubs.id` (uuid) + **`hubs.slug`** (unique text) | Joinable community. FK `hubs.game_id → games.id`. Optional cover (`image_url`). |
+| **Catalog game** | `public.games` | `games.id` (text, e.g. `valorant`) | Title, short code, category, tint, official artwork: `image_url` (cover), `banner_url`, `background_url`, `icon_url`. **Not** membership. |
+| **Hub (community)** | `public.hubs` | `hubs.id` (uuid) + **`hubs.slug`** (unique text) | Joinable community. FK `hubs.game_id → games.id`. Optional cover override (`image_url`). |
 
 **Cardinality (product policy):** schema allows **many hubs per game** (no `UNIQUE(game_id)`). That is intentional — regional / extra hubs are allowed. Seed and admin defaults still create one “official” hub with `slug = game_id`. Do **not** add a unique constraint unless product locks single-hub-per-game.
 
@@ -29,6 +29,9 @@
 | Join API | `joinHubBySlug(slug)` → resolve uuid → `hub_members` |
 | Hero CSS presets (`HubHero`) | **`games.id`** (`HubCard.gameId`), not hub slug |
 | Covers | Prefer `hubs.image_url`, else `games.image_url` |
+| Banner / hero | `games.banner_url`, else cover |
+| Icon / logo | `games.icon_url`, else cover |
+| Background | `games.background_url` (optional; no forced fallback) |
 
 ### UI type `HubCard` (formerly / alias `Game`)
 
@@ -49,8 +52,8 @@
 ## Images
 
 1. Upload via admin → `hub-media` storage bucket.
-2. Attach to a **game** and/or **hub** row (`image_url`).
-3. Client catalog mapping: `hub.image_url || game.image_url`.
+2. Attach to a **game** slot (`cover` / `banner` / `background` / `icon`) or a **hub** cover (`image_url`).
+3. Client catalog mapping: cover = `hub.image_url || game.image_url`; banner/icon/background from catalog game columns.
 
 ---
 

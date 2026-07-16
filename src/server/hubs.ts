@@ -31,6 +31,9 @@ export const listHubs = createServerFn({ method: "GET" })
         category: game?.category ?? "sandbox",
         members: h.member_count,
         imageUrl: h.image_url || game?.image_url || null,
+        bannerUrl: game?.banner_url || null,
+        backgroundUrl: game?.background_url || null,
+        iconUrl: game?.icon_url || null,
       };
     });
 

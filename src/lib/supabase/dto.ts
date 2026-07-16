@@ -18,6 +18,9 @@ export type HubCardDto = {
   category: string;
   members: number;
   imageUrl?: string | null;
+  bannerUrl?: string | null;
+  backgroundUrl?: string | null;
+  iconUrl?: string | null;
 };
 
 /** @deprecated Prefer `HubCardDto`. */

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { REPORT_REASONS, type ReportReason } from "@/lib/trust-safety";
 import { useT, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
@@ -29,13 +30,15 @@ export type ReportDialogTarget = {
   messageId?: string;
   dmMessageId?: string;
   preview?: string;
-  /** AF8 — stamp into details for voice-session reports */
   voiceChannelId?: string;
   voiceChannelName?: string;
-  /** AF12 — optional LiveKit roster for picking a target */
   voiceParticipants?: ReportVoiceParticipant[];
 };
 
+/**
+ * Report flow as a bottom sheet (Phase G) — replaces centered Dialog for consumer UX.
+ * Export name kept as ReportDialog for call-site stability.
+ */
 export function ReportDialog({
   open,
   onOpenChange,
@@ -79,100 +82,89 @@ export function ReportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="border-border-subtle bg-surface-mid sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display text-base font-bold uppercase tracking-tight text-white">
-            {t("report.title")}
-          </DialogTitle>
-          <DialogDescription className="text-xs text-stone-400">
-            {t("report.desc")}
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="bottom-[var(--dock-clearance)] max-h-[min(85dvh,calc(100dvh-var(--dock-clearance)))] rounded-t-2xl border-border-subtle bg-surface-mid p-0 sm:mx-auto sm:max-w-md"
+      >
+        <SheetHeader className="space-y-2 border-b border-border-subtle px-4 py-4 text-start">
+          <SheetTitle className="nx-title">{t("report.title")}</SheetTitle>
+          <SheetDescription className="nx-body">{t("report.desc")}</SheetDescription>
+        </SheetHeader>
 
-        {target?.preview ? (
-          <p
-            className="line-clamp-3 rounded-md border border-border-subtle bg-background/50 p-2 text-xs text-stone-400"
-            dir="auto"
-          >
-            {target.preview}
-          </p>
-        ) : null}
-
-        {target?.voiceChannelId && voiceOptions.length > 0 ? (
-          <label className="block space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("report.voicePickLabel")}
-            </span>
-            <select
-              value={pickedUserId}
-              onChange={(e) => setPickedUserId(e.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4">
+          {target?.preview ? (
+            <p
+              className="line-clamp-3 rounded-lg border border-border-subtle bg-white/[0.03] p-3 text-xs text-stone-400"
+              dir="auto"
             >
-              <option value="">{t("report.voicePickNone")}</option>
-              {voiceOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name || p.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+              {target.preview}
+            </p>
+          ) : null}
 
-        <fieldset className="space-y-2">
-          <legend className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {t("report.reasonLabel")}
-          </legend>
-          <div className="grid gap-1.5">
-            {REPORT_REASONS.map((r) => (
-              <label
-                key={r}
-                className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs ${
-                  reason === r
-                    ? "border-accent/50 bg-accent/10 text-white"
-                    : "border-border-subtle text-stone-300 hover:bg-white/5"
-                }`}
+          {target?.voiceChannelId && voiceOptions.length > 0 ? (
+            <label className="block space-y-1.5">
+              <span className="nx-label">{t("report.voicePickLabel")}</span>
+              <select
+                value={pickedUserId}
+                onChange={(e) => setPickedUserId(e.target.value)}
+                className="min-h-11 w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
               >
-                <input
-                  type="radio"
-                  name="report-reason"
-                  className="accent-[hsl(var(--accent))]"
-                  checked={reason === r}
-                  onChange={() => setReason(r)}
-                />
-                {t(REASON_LABEL_KEYS[r])}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+                <option value="">{t("report.voicePickNone")}</option>
+                {voiceOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name || p.id.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
-        <label className="block space-y-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {t("report.detailsLabel")}
-          </span>
-          <textarea
-            value={details}
-            onChange={(e) => setDetails(e.target.value.slice(0, 500))}
-            rows={3}
-            placeholder={t("report.detailsPlaceholder")}
-            dir="auto"
-            className="w-full resize-none rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
-          />
-        </label>
+          <fieldset className="space-y-2">
+            <legend className="nx-section">{t("report.reasonLabel")}</legend>
+            <div className="grid gap-1.5">
+              {REPORT_REASONS.map((r) => (
+                <label
+                  key={r}
+                  className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm ${
+                    reason === r
+                      ? "border-accent/50 bg-accent/10 text-white"
+                      : "border-border-subtle text-stone-300 hover:bg-white/5"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="report-reason"
+                    className="accent-[color:var(--accent)]"
+                    checked={reason === r}
+                    onChange={() => setReason(r)}
+                  />
+                  {t(REASON_LABEL_KEYS[r])}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <button
+          <label className="block space-y-1.5">
+            <span className="nx-label">{t("report.detailsLabel")}</span>
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value.slice(0, 500))}
+              rows={3}
+              placeholder={t("report.detailsPlaceholder")}
+              dir="auto"
+              className="w-full resize-none rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+            />
+          </label>
+        </div>
+
+        <SheetFooter className="flex-col gap-2 border-t border-border-subtle px-4 py-3 sm:flex-col">
+          <Button
             type="button"
-            className="rounded-md px-3 py-2 text-xs font-semibold text-stone-400 hover:text-white"
-            onClick={() => handleOpenChange(false)}
-            disabled={busy}
-          >
-            {t("common.cancel")}
-          </button>
-          <button
-            type="button"
+            variant="accent"
+            size="touch"
+            className="w-full"
             disabled={busy || !target}
-            className="rounded-md bg-accent px-3 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground hover:brightness-110 disabled:opacity-50"
             onClick={async () => {
               if (!target) return;
               setBusy(true);
@@ -180,8 +172,7 @@ export function ReportDialog({
                 target.voiceChannelId != null
                   ? `[voice:${target.voiceChannelId}|${target.voiceChannelName ?? ""}]\n`
                   : "";
-              const chosen =
-                pickedUserId || target.targetUserId || undefined;
+              const chosen = pickedUserId || target.targetUserId || undefined;
               const res = await onSubmit({
                 reason,
                 details: `${voiceStamp}${details.trim()}`.trim(),
@@ -192,9 +183,19 @@ export function ReportDialog({
             }}
           >
             {busy ? t("report.submitting") : t("report.submit")}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="touch"
+            className="w-full"
+            disabled={busy}
+            onClick={() => handleOpenChange(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

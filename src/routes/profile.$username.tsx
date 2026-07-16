@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
+import { EmptyState } from "@/components/empty-state";
+import { ListSkeleton, ScreenHeader } from "@/components/ui-native";
+import { Button } from "@/components/ui/button";
 import { FRIENDS, GAMES, type HubCard } from "@/lib/mock-data";
 import { ArrowLeft, MessageSquare, UserPlus, Gamepad2, Flag, Ban } from "lucide-react";
 import { toast } from "sonner";
@@ -152,75 +155,96 @@ function ProfilePage() {
   return (
     <AppShell>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border-subtle bg-background/80 px-4 backdrop-blur-md">
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined" && window.history.length > 1) {
-                window.history.back();
-                return;
-              }
-              void navigate({ to: "/friends" });
-            }}
-            className="grid size-9 place-items-center rounded-lg text-stone-400 hover:bg-white/5 hover:text-white"
-            aria-label={t("common.back")}
-          >
-            <ArrowLeft className="size-4 rtl:rotate-180" />
-          </button>
-          <h1 className="truncate font-display text-sm font-bold uppercase tracking-tight text-white">
-            {t("profile.title")}
-          </h1>
-        </header>
+        <ScreenHeader
+          className="sticky top-0 z-10 bg-background/95"
+          title={t("profile.title")}
+          leading={
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  window.history.back();
+                  return;
+                }
+                void navigate({ to: "/friends" });
+              }}
+              className="nx-touch grid place-items-center rounded-lg text-stone-400 hover:bg-white/5 hover:text-white"
+              aria-label={t("common.back")}
+            >
+              <ArrowLeft className="size-4 rtl:rotate-180" />
+            </button>
+          }
+        />
 
-        <div className="relative h-40 border-b border-border-subtle bg-gradient-to-br from-accent/25 via-stone-800/40 to-transparent md:h-56" />
+        <div className="relative h-36 overflow-hidden border-b border-border-subtle/70 md:h-48">
+          <div
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,color-mix(in_oklab,var(--accent)_18%,transparent),transparent_50%),linear-gradient(200deg,oklch(0.22_0.02_280),transparent_45%),linear-gradient(to_bottom,oklch(0.18_0.01_260),var(--background))]"
+            aria-hidden
+          />
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent" />
+        </div>
 
         <div className="mx-auto max-w-3xl px-4 pb-16 md:px-6">
           {loading ? (
-            <p className="mt-8 text-sm text-stone-500">{t("profile.loading")}</p>
+            <div className="mt-6">
+              <ListSkeleton rows={4} />
+            </div>
           ) : live && !profile ? (
-            <p className="mt-8 text-sm text-stone-500">{t("profile.notFound")}</p>
+            <EmptyState
+              icon={Gamepad2}
+              title={t("profile.notFound")}
+              body={t("empty.search.body")}
+              className="min-h-[240px]"
+            />
           ) : (
             <>
-              <div className="-mt-14 flex flex-col items-start gap-4 md:-mt-16 md:flex-row md:items-end md:justify-between">
+              <div className="-mt-14 flex flex-col items-start gap-5 md:-mt-16 md:flex-row md:items-end md:justify-between">
                 <div className="flex items-end gap-4">
-                  <div className="grid size-24 shrink-0 place-items-center rounded-2xl border-4 border-background bg-gradient-to-br from-accent/40 to-stone-700/40 font-display text-2xl font-bold text-white shadow-xl md:size-32 md:text-3xl">
+                  <div className="grid size-28 shrink-0 place-items-center rounded-[1.35rem] border-[3px] border-background bg-gradient-to-br from-accent/30 to-stone-800/50 font-display text-2xl font-semibold text-white shadow-[var(--nx-shadow-2)] md:size-32 md:text-3xl">
                     {displayName.slice(0, 2).toUpperCase()}
                   </div>
-                  <div className="pb-2">
-                    <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white md:text-3xl">
-                      {displayName}
-                    </h2>
-                    <p className="mt-1 flex items-center gap-2 text-xs text-stone-400">
-                      <span
-                        className={`size-2 rounded-full ${
-                          status === "offline"
-                            ? "bg-stone-600"
-                            : "bg-online shadow-[var(--shadow-glow-online)]"
-                        }`}
-                      />
-                      {status}
-                      {tag ? ` · ${tag}` : ""}
-                    </p>
+                  <div className="pb-1">
+                    <h2 className="nx-display text-[1.85rem] md:text-[2.15rem]">{displayName}</h2>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle/80 bg-white/[0.03] px-2.5 py-1 shadow-[var(--nx-shadow-1)]">
+                        <span
+                          className={`size-1.5 rounded-full ${
+                            status === "offline" ? "bg-stone-500" : "bg-online"
+                          }`}
+                        />
+                        <span className="nx-caption text-stone-300">{status}</span>
+                      </span>
+                      {tag ? (
+                        <span className="nx-caption font-mono text-stone-500">{tag}</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
                 {(!live || (profile && profile.id !== user?.id)) && (
                   <div className="flex flex-wrap gap-2">
-                    <button
+                    <Button
+                      type="button"
+                      variant="accent"
+                      size="sm"
                       disabled={busy === "dm"}
                       onClick={() => void onMessage()}
-                      className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground hover:brightness-110 disabled:opacity-50"
                     >
                       <MessageSquare className="size-3.5" /> {t("profile.message")}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       disabled={busy === "friend"}
                       onClick={() => void onAdd()}
-                      className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wide text-stone-200 hover:bg-white/10 disabled:opacity-50"
                     >
                       <UserPlus className="size-3.5" /> {t("profile.add")}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         if (live && profile) {
                           setReportTarget({ targetUserId: profile.id });
@@ -228,48 +252,53 @@ function ProfilePage() {
                           setReportTarget({ targetUserId: "mock" });
                         }
                       }}
-                      className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wide text-stone-200 hover:bg-white/10"
                     >
                       <Flag className="size-3.5" /> {t("profile.report")}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       disabled={busy === "block"}
                       onClick={() => void onBlock()}
-                      className="flex items-center gap-2 rounded-lg border border-border-subtle bg-danger/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-danger hover:bg-danger/15 disabled:opacity-50"
+                      className="text-danger hover:text-danger"
                     >
                       <Ban className="size-3.5" /> {t("friends.block")}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
 
-              <div className="mt-8 rounded-2xl border border-border-subtle bg-surface-mid p-5">
-                <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                  {t("profile.about")}
-                </h3>
-                <p className="text-sm text-stone-300">{bio}</p>
-              </div>
+              <section className="mt-10 space-y-2.5">
+                <h3 className="nx-section">{t("profile.about")}</h3>
+                <p className="nx-body max-w-prose text-pretty">{bio}</p>
+              </section>
 
-              <div className="mt-8">
-                <h3 className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                  <Gamepad2 className="size-3.5 text-accent" />
+              <section className="mt-10">
+                <h3 className="nx-section mb-4 flex items-center gap-2">
+                  <Gamepad2 className="size-3.5 text-accent/80" strokeWidth={1.75} />
                   {t("profile.sharedHubs")}
                 </h3>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {hubs.map((g) => (
-                    <Link
-                      key={g.id}
-                      to="/"
-                      search={{ hub: g.id }}
-                      className={`group flex flex-col items-center gap-2 rounded-xl border border-border-subtle p-4 transition-all hover:border-accent/40 ${g.tint}`}
-                    >
-                      <span className={`font-display text-sm font-bold ${g.textTint}`}>{g.short}</span>
-                      <span className="text-[11px] font-semibold text-stone-200">{g.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+                {hubs.length === 0 ? (
+                  <p className="nx-body">{t("me.noHubs")}</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {hubs.map((g) => (
+                      <Link
+                        key={g.id}
+                        to="/"
+                        search={{ hub: g.id }}
+                        className={`nx-press group flex flex-col items-center gap-2 rounded-2xl border border-border-subtle/70 p-4 shadow-[var(--nx-shadow-1)] transition-colors hover:border-accent/30 ${g.tint}`}
+                      >
+                        <span className={`font-display text-sm font-semibold ${g.textTint}`}>
+                          {g.short}
+                        </span>
+                        <span className="nx-caption text-center text-stone-300">{g.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
             </>
           )}
         </div>

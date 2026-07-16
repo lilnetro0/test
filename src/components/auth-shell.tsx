@@ -1,9 +1,15 @@
-import { GAMES } from "@/lib/mock-data";
 import logo from "@/assets/nexus-logo.png";
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { LegalLinks } from "@/components/legal-page";
+import { Field } from "@/components/ui-native";
 import { useT, type Lang, LANG_LABELS } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
+/**
+ * Full-bleed native auth frame — quiet background, no glass card / game-tile collage.
+ * Brand is the primary signal; form title is secondary (design.md).
+ */
 export function AuthShell({
   title,
   subtitle,
@@ -18,29 +24,15 @@ export function AuthShell({
   const { lang, setLang, t } = useT();
 
   return (
-    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-y-auto bg-background p-6 pt-safe pb-safe">
-      {/* Ambient game-tile backdrop */}
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute -start-10 top-10 grid grid-cols-2 gap-4 blur-[1px]">
-          {GAMES.slice(0, 4).map((g) => (
-            <div key={g.id} className={`grid size-20 place-items-center rounded-2xl ${g.tint}`}>
-              <span className={`font-display text-xs font-bold ${g.textTint}`}>{g.short}</span>
-            </div>
-          ))}
-        </div>
-        <div className="absolute -end-6 bottom-10 grid grid-cols-2 gap-4 blur-[1px]">
-          {GAMES.slice(4, 8).map((g) => (
-            <div key={g.id} className={`grid size-20 place-items-center rounded-2xl ${g.tint}`}>
-              <span className={`font-display text-xs font-bold ${g.textTint}`}>{g.short}</span>
-            </div>
-          ))}
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/90 to-background" />
-      </div>
+    <div className="relative flex min-h-dvh w-full flex-col overflow-y-auto bg-background pt-safe pb-safe">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--accent)_8%,transparent),transparent_52%)]"
+        aria-hidden
+      />
 
-      <div className="absolute inset-x-0 top-0 z-10 flex justify-end p-4 pt-safe">
+      <div className="relative z-10 flex justify-end px-4 py-3">
         <div
-          className="inline-flex rounded-full border border-border-subtle bg-surface-mid/90 p-0.5 text-[11px] font-semibold backdrop-blur"
+          className="inline-flex rounded-full border border-border-subtle/80 bg-surface-mid/60 p-0.5 text-[11px] font-medium shadow-[var(--nx-shadow-1)]"
           role="group"
           aria-label={t("settings.section.language")}
         >
@@ -49,9 +41,10 @@ export function AuthShell({
               key={code}
               type="button"
               onClick={() => setLang(code)}
-              className={`rounded-full px-3 py-1 transition-colors ${
-                lang === code ? "bg-accent/20 text-accent" : "text-stone-400 hover:text-white"
-              }`}
+              className={cn(
+                "rounded-full px-3 py-1.5 transition-colors",
+                lang === code ? "bg-accent/18 text-accent" : "text-stone-400 hover:text-white",
+              )}
             >
               {LANG_LABELS[code].native}
             </button>
@@ -59,28 +52,23 @@ export function AuthShell({
         </div>
       </div>
 
-      <div className="relative w-full max-w-md">
-        <Link to="/" search={{}} className="mb-8 flex items-center justify-center gap-3">
-          <img src={logo} alt="Nexus" width={40} height={40} className="size-10 object-contain" />
-          <span className="font-display text-xl font-bold uppercase tracking-tight text-white">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-8">
+        <Link to="/" search={{}} className="mb-6 flex flex-col items-center gap-2 text-center">
+          <img src={logo} alt="" width={44} height={44} className="size-11 object-contain" />
+          <span className="font-display text-[1.75rem] font-bold tracking-tight text-white">
             Nexus
           </span>
         </Link>
 
-        <div className="rounded-2xl border border-border-subtle bg-surface-mid/80 p-8 backdrop-blur-xl">
-          <div className="mb-6 text-center">
-            <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-white">
-              {title}
-            </h1>
-            {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
-          </div>
-          {children}
+        <div className="mb-6 text-center">
+          <h1 className="nx-title text-lg">{title}</h1>
+          {subtitle ? <p className="nx-body mt-1.5">{subtitle}</p> : null}
         </div>
 
-        {footer && (
-          <div className="mt-6 text-center text-sm text-stone-400">{footer}</div>
-        )}
-        <div className="mt-4 flex justify-center">
+        {children}
+
+        {footer ? <div className="nx-body mt-8 text-center">{footer}</div> : null}
+        <div className="mt-6 flex justify-center">
           <LegalLinks />
         </div>
       </div>
@@ -88,6 +76,10 @@ export function AuthShell({
   );
 }
 
+const controlClass =
+  "flex min-h-11 w-full rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
+
+/** Auth-specific field: label + optional end hint (e.g. Forgot) using Phase B Field chrome. */
 export function AuthField({
   label,
   type = "text",
@@ -99,27 +91,33 @@ export function AuthField({
   required,
   autoComplete,
   minLength,
+  id,
 }: {
   label: string;
   type?: string;
   placeholder?: string;
-  hint?: React.ReactNode;
+  hint?: ReactNode;
   name?: string;
   value?: string;
   onChange?: (value: string) => void;
   required?: boolean;
   autoComplete?: string;
   minLength?: number;
+  id?: string;
 }) {
+  const inputId = id ?? name;
   return (
-    <label className="block">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">
-          {label}
+    <Field
+      label={
+        <span className="flex w-full items-center justify-between gap-2">
+          <span>{label}</span>
+          {hint ? <span className="font-normal text-accent">{hint}</span> : null}
         </span>
-        {hint && <span className="text-[11px] text-accent hover:underline">{hint}</span>}
-      </div>
+      }
+      id={inputId}
+    >
       <input
+        id={inputId}
         type={type}
         name={name}
         placeholder={placeholder}
@@ -128,8 +126,8 @@ export function AuthField({
         required={required}
         autoComplete={autoComplete}
         minLength={minLength}
-        className="w-full rounded-lg border border-border-subtle bg-background px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-stone-600 focus:border-accent/50"
+        className={cn(controlClass, "h-11")}
       />
-    </label>
+    </Field>
   );
 }

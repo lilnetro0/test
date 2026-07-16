@@ -76,7 +76,7 @@ export function Onboarding() {
           <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-accent/40 bg-accent/10 text-accent shadow-[var(--shadow-glow-accent)]">
             <Icon className="size-6" />
           </div>
-          <h2 className="mt-4 text-center font-display text-lg font-bold uppercase tracking-tight text-white">
+          <h2 className="mt-4 text-center font-display text-lg font-medium tracking-tight text-white">
             {s.title}
           </h2>
           <p className="mx-auto mt-2 max-w-xs text-center text-sm text-stone-400">{s.body}</p>
@@ -96,13 +96,13 @@ export function Onboarding() {
           <div className="flex gap-2">
             <button
               onClick={close}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 hover:text-white"
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-400 hover:text-white"
             >
               {t("onboarding.skip")}
             </button>
             <button
               onClick={() => (isLast ? close() : setStep((n) => n + 1))}
-              className="rounded-lg bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-accent-foreground hover:brightness-110"
+              className="nx-press rounded-lg bg-accent px-4 py-1.5 text-xs font-medium text-accent-foreground hover:brightness-110"
             >
               {isLast ? t("onboarding.enter") : t("onboarding.next")}
             </button>

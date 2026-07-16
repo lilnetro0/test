@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { HubRole } from "@/lib/supabase/types";
 import { requireAdmin, writeAdminAudit } from "@/lib/admin/authz";
 import { HUB_MEDIA_MAX_BYTES, IMAGE_MIME_TYPES } from "@/lib/supabase/storage-policy";
+import { gameArtworkColumn, type GameArtworkSlot } from "@/lib/game-artwork";
 
 function slugify(input: string): string {
   const s = input
@@ -219,6 +220,9 @@ export const adminUpsertGame = createServerFn({ method: "POST" })
         tint?: string;
         text_tint?: string;
         image_url?: string | null;
+        banner_url?: string | null;
+        background_url?: string | null;
+        icon_url?: string | null;
       };
     }) => data,
   )
@@ -239,6 +243,9 @@ export const adminUpsertGame = createServerFn({ method: "POST" })
       tint: data.game.tint ?? "bg-stone-500/20",
       text_tint: data.game.text_tint ?? "text-stone-300",
       image_url: data.game.image_url ?? null,
+      banner_url: data.game.banner_url ?? null,
+      background_url: data.game.background_url ?? null,
+      icon_url: data.game.icon_url ?? null,
     });
     if (error) return { ok: false as const, error: error.message };
     await writeAdminAudit({
@@ -640,6 +647,8 @@ export const adminUploadHubMedia = createServerFn({ method: "POST" })
       base64: string;
       contentType: string;
       fileName?: string;
+      /** Artwork slot when attaching to a game (default cover). Hubs always use cover. */
+      slot?: GameArtworkSlot;
       attachTo?: { kind: "game" | "hub"; id: string };
     }) => data,
   )
@@ -657,7 +666,7 @@ export const adminUploadHubMedia = createServerFn({ method: "POST" })
     const raw = data.base64.includes(",") ? data.base64.split(",")[1]! : data.base64;
     const bytes = Buffer.from(raw, "base64");
     if (bytes.length > HUB_MEDIA_MAX_BYTES) {
-      return { ok: false as const, error: "Image too large (max 5MB)" };
+      return { ok: false as const, error: "Image too large (max 8MB)" };
     }
 
     const ext =
@@ -668,7 +677,11 @@ export const adminUploadHubMedia = createServerFn({ method: "POST" })
           : data.contentType === "image/gif"
             ? "gif"
             : "jpg";
-    const path = `admin/${crypto.randomUUID()}.${ext}`;
+    const slot: GameArtworkSlot = data.slot ?? "cover";
+    const folder = data.attachTo
+      ? `admin/${data.attachTo.kind}/${data.attachTo.id}`
+      : "admin";
+    const path = `${folder}/${slot}-${crypto.randomUUID()}.${ext}`;
 
     const { error: upErr } = await admin.storage.from("hub-media").upload(path, bytes, {
       contentType: data.contentType,
@@ -680,10 +693,16 @@ export const adminUploadHubMedia = createServerFn({ method: "POST" })
     const url = pub.publicUrl;
 
     if (data.attachTo?.kind === "game") {
-      const { error } = await admin
-        .from("games")
-        .update({ image_url: url })
-        .eq("id", data.attachTo.id);
+      const column = gameArtworkColumn(slot);
+      const patch =
+        column === "image_url"
+          ? { image_url: url }
+          : column === "banner_url"
+            ? { banner_url: url }
+            : column === "background_url"
+              ? { background_url: url }
+              : { icon_url: url };
+      const { error } = await admin.from("games").update(patch).eq("id", data.attachTo.id);
       if (error) return { ok: false as const, error: error.message };
     } else if (data.attachTo?.kind === "hub") {
       const { error } = await admin
@@ -698,9 +717,9 @@ export const adminUploadHubMedia = createServerFn({ method: "POST" })
       action: "media.upload",
       targetType: data.attachTo?.kind ?? "file",
       targetId: data.attachTo?.id ?? path,
-      meta: { path, url },
+      meta: { path, url, slot },
     });
-    return { ok: true as const, url };
+    return { ok: true as const, url, slot };
   });
 
 export const adminSetHubRole = createServerFn({ method: "POST" })

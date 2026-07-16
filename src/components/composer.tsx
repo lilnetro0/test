@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Plus, Send, AtSign, Paperclip, Gift, X } from "lucide-react";
+import { Plus, Send, AtSign, Paperclip, X } from "lucide-react";
 import { EmojiPicker } from "./emoji-picker";
 import { HUBS, ME, type MemberInfo } from "@/lib/mock-data";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   ATTACHMENT_MIME_TYPES,
   resolveAllowedMime,
 } from "@/lib/supabase/storage-policy";
+import { cn } from "@/lib/utils";
 
 export type ComposerHandle = { focus: () => void };
 
@@ -28,7 +29,6 @@ export const Composer = forwardRef<
   {
     channelName: string;
     gameId?: string;
-    /** AF11 — show LFG post templates above the input */
     lfgMode?: boolean;
     mentionMembers?: MemberInfo[];
     replyTo?: { id?: string; author: string; body: string };
@@ -60,6 +60,7 @@ export const Composer = forwardRef<
   const [sending, setSending] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [extrasOpen, setExtrasOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { t } = useT();
@@ -98,6 +99,7 @@ export const Composer = forwardRef<
   };
 
   const pickFile = () => {
+    setExtrasOpen(false);
     if (!live) {
       toast(t("composer.attachDemo"));
       return;
@@ -149,7 +151,7 @@ export const Composer = forwardRef<
   const canSend = Boolean(value.trim() || pendingFile) && !sending && !uploading;
 
   return (
-    <div className="shrink-0 border-t border-border-subtle/60 bg-background/40 p-2.5 md:p-6">
+    <div className="shrink-0 border-t border-border-subtle/60 bg-background/40 p-2.5 md:p-4">
       <input
         ref={fileRef}
         type="file"
@@ -174,9 +176,7 @@ export const Composer = forwardRef<
       />
       {lfgMode ? (
         <div className="mb-2 space-y-1.5">
-          <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {t("composer.lfg.hint")}
-          </p>
+          <p className="nx-section px-1">{t("composer.lfg.hint")}</p>
           <div className="flex flex-wrap gap-1.5">
             {LFG_TEMPLATE_KEYS.map((key) => (
               <button
@@ -187,7 +187,7 @@ export const Composer = forwardRef<
                   setMentionQuery(null);
                   inputRef.current?.focus();
                 }}
-                className="rounded-md border border-border-subtle bg-surface-mid/60 px-2.5 py-1 text-[11px] font-semibold text-stone-300 hover:border-accent/40 hover:text-white"
+                className="rounded-md border border-border-subtle bg-surface-mid/60 px-2.5 py-1.5 text-[11px] font-semibold text-stone-300 hover:border-accent/40 hover:text-white"
                 dir="auto"
               >
                 {t(key)}
@@ -205,6 +205,7 @@ export const Composer = forwardRef<
             </span>
           </span>
           <button
+            type="button"
             onClick={onCancelReply}
             className="text-stone-500 hover:text-white"
             aria-label={t("composer.cancelReply")}
@@ -236,12 +237,13 @@ export const Composer = forwardRef<
       ) : null}
       {mentionMatches.length > 0 && (
         <div className="mb-2 overflow-hidden rounded-lg border border-border-subtle bg-surface-mid">
-          <div className="border-b border-border-subtle px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+          <div className="nx-section border-b border-border-subtle px-3 py-1.5">
             {t("composer.mentions")} "{mentionQuery}"
           </div>
           {mentionMatches.map((m) => (
             <button
               key={`${m.name}-${m.tag}`}
+              type="button"
               onClick={() => insertMention(m.name, m.tag)}
               className="flex w-full items-center gap-3 px-3 py-2 text-start transition-colors hover:bg-white/5"
             >
@@ -249,25 +251,58 @@ export const Composer = forwardRef<
               <span className="text-sm text-stone-200" dir="auto">
                 {m.name}
               </span>
-              <span className="font-mono text-[10px] text-stone-500 ms-auto">{m.tag}</span>
+              <span className="ms-auto font-mono text-[10px] text-stone-500">{m.tag}</span>
             </button>
           ))}
-          <p className="border-t border-border-subtle px-3 py-1.5 text-[10px] text-stone-600">
-            {t("composer.mentionHint")}
-          </p>
+          <p className="nx-caption border-t border-border-subtle px-3 py-1.5">{t("composer.mentionHint")}</p>
         </div>
       )}
+
+      {extrasOpen ? (
+        <div className="mb-2 flex flex-wrap gap-2 rounded-xl border border-border-subtle bg-surface-mid p-2">
+          <button
+            type="button"
+            onClick={pickFile}
+            className="nx-touch inline-flex items-center gap-2 rounded-lg px-3 text-sm font-semibold text-stone-300 hover:bg-white/5 hover:text-white"
+          >
+            <Paperclip className="size-4" />
+            {t("composer.attach")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValue((v) => v + "@");
+              setExtrasOpen(false);
+              inputRef.current?.focus();
+            }}
+            className="nx-touch inline-flex items-center gap-2 rounded-lg px-3 text-sm font-semibold text-stone-300 hover:bg-white/5 hover:text-white"
+          >
+            <AtSign className="size-4" />
+            {t("composer.mention")}
+          </button>
+          <EmojiPicker
+            onPick={(e) => {
+              setValue((v) => v + e);
+              setExtrasOpen(false);
+              inputRef.current?.focus();
+            }}
+          />
+        </div>
+      ) : null}
+
       <form
         onSubmit={send}
-        className={`group relative flex items-center border border-border-subtle bg-surface-mid transition-colors focus-within:border-accent/50 ${
-          replyTo ? "rounded-b-xl rounded-t-none border-t-border-subtle/50" : "rounded-xl"
-        }`}
+        className={cn(
+          "relative flex min-h-11 items-center border border-border-subtle bg-surface-mid transition-colors focus-within:border-accent/50",
+          replyTo ? "rounded-b-xl rounded-t-none border-t-border-subtle/50" : "rounded-xl",
+        )}
       >
         <button
           type="button"
-          onClick={pickFile}
-          className="grid size-8 shrink-0 place-items-center rounded-lg text-stone-500 hover:text-white ms-2"
-          aria-label={t("composer.attach")}
+          onClick={() => setExtrasOpen((v) => !v)}
+          aria-expanded={extrasOpen}
+          className="ms-2 grid size-9 shrink-0 place-items-center rounded-lg text-stone-500 hover:text-white"
+          aria-label={t("composer.more")}
         >
           <Plus className="size-4" />
         </button>
@@ -278,42 +313,11 @@ export const Composer = forwardRef<
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           dir="auto"
-          className="min-w-0 flex-1 bg-transparent px-2 py-4 text-sm text-white outline-none placeholder:text-stone-600"
+          className="min-h-11 min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-white outline-none placeholder:text-stone-600"
         />
-        <div className="flex shrink-0 items-center gap-0.5 text-stone-500 me-1">
-          <button
-            type="button"
-            onClick={pickFile}
-            className="grid size-8 place-items-center rounded-lg hover:text-white"
-            aria-label={t("composer.upload")}
-          >
-            <Paperclip className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => toast(t("composer.gifSoon"))}
-            title={`${t("composer.gif")} · ${t("common.soon")}`}
-            className="grid size-7 place-items-center rounded-md text-stone-700 opacity-50 hover:opacity-80 hover:text-stone-500"
-            aria-label={`${t("composer.gif")} — ${t("common.comingSoon")}`}
-          >
-            <Gift className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setValue((v) => v + "@");
-              inputRef.current?.focus();
-            }}
-            className="grid size-8 place-items-center rounded-lg hover:text-white"
-            aria-label={t("composer.mention")}
-          >
-            <AtSign className="size-4" />
-          </button>
-          <EmojiPicker onPick={(e) => setValue((v) => v + e)} />
-        </div>
         <button
           type="submit"
-          className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent transition-colors hover:bg-accent/20 disabled:opacity-40 me-2"
+          className="me-2 grid size-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
           aria-label={t("composer.send")}
           disabled={!canSend}
         >

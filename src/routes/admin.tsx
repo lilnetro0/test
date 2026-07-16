@@ -30,12 +30,14 @@ import {
 import { Gamepad2, Hash, Mic, Shield, Flag, Users, Database } from "lucide-react";
 import { getAppHealth } from "@/lib/ops/get-app-health";
 import type { AppHealthReport } from "@/lib/ops/health";
-import { useT, translateStatic } from "@/lib/i18n";
+import { useT, translateStatic, type TKey } from "@/lib/i18n";
 import { REGION_OPTIONS, normalizeRegionCode, type RegionCode } from "@/lib/regions";
 import {
   MOD_RESPONSE_TEMPLATES,
   scanArabicAssistSignals,
 } from "@/lib/moderation/arabic-assist";
+import type { GameArtworkSlot } from "@/lib/game-artwork";
+import { HUB_MEDIA_ACCEPT } from "@/lib/supabase/storage-policy";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -57,6 +59,9 @@ type GameRow = {
   tint: string;
   text_tint: string;
   image_url: string | null;
+  banner_url: string | null;
+  background_url: string | null;
+  icon_url: string | null;
 };
 
 type HubRow = {
@@ -462,7 +467,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
   const { t } = useT();
   const [games, setGames] = useState<GameRow[]>([]);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({
+  const emptyForm = {
     id: "",
     name: "",
     short: "",
@@ -470,7 +475,11 @@ function GamesTab({ accessToken }: { accessToken: string }) {
     tint: "bg-stone-500/20",
     text_tint: "text-stone-300",
     image_url: "",
-  });
+    banner_url: "",
+    background_url: "",
+    icon_url: "",
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const refresh = useCallback(async () => {
     const g = await adminListGames({ data: { accessToken } });
@@ -495,6 +504,9 @@ function GamesTab({ accessToken }: { accessToken: string }) {
           tint: form.tint,
           text_tint: form.text_tint,
           image_url: form.image_url || null,
+          banner_url: form.banner_url || null,
+          background_url: form.background_url || null,
+          icon_url: form.icon_url || null,
         },
       },
     });
@@ -507,9 +519,81 @@ function GamesTab({ accessToken }: { accessToken: string }) {
     void refresh();
   };
 
+  const uploadSlot = async (slot: GameArtworkSlot, file: File) => {
+    if (!form.id) {
+      toast.error(t("admin.games.needId"));
+      return;
+    }
+    setBusy(true);
+    const { base64, contentType } = await fileToBase64(file);
+    const r = await adminUploadHubMedia({
+      data: {
+        accessToken,
+        base64,
+        contentType,
+        slot,
+        attachTo: { kind: "game", id: form.id },
+      },
+    });
+    setBusy(false);
+    if (!r.ok) {
+      toast.error(r.error);
+      return;
+    }
+    const key =
+      slot === "cover"
+        ? "image_url"
+        : slot === "banner"
+          ? "banner_url"
+          : slot === "background"
+            ? "background_url"
+            : "icon_url";
+    setForm((f) => ({ ...f, [key]: r.url }));
+    toast.success(t("admin.games.imageSet"));
+    void refresh();
+  };
+
+  const slots: {
+    slot: GameArtworkSlot;
+    key: "image_url" | "banner_url" | "background_url" | "icon_url";
+    labelKey: TKey;
+    hintKey: TKey;
+    preview: "square" | "wide";
+  }[] = [
+    {
+      slot: "cover",
+      key: "image_url",
+      labelKey: "admin.art.cover",
+      hintKey: "admin.art.coverHint",
+      preview: "square",
+    },
+    {
+      slot: "banner",
+      key: "banner_url",
+      labelKey: "admin.art.banner",
+      hintKey: "admin.art.bannerHint",
+      preview: "wide",
+    },
+    {
+      slot: "icon",
+      key: "icon_url",
+      labelKey: "admin.art.icon",
+      hintKey: "admin.art.iconHint",
+      preview: "square",
+    },
+    {
+      slot: "background",
+      key: "background_url",
+      labelKey: "admin.art.background",
+      hintKey: "admin.art.backgroundHint",
+      preview: "wide",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <Panel title={t("admin.games.create")}>
+        <p className="mb-3 text-xs text-stone-500">{t("admin.art.intro")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t("admin.games.id")}>
             <input
@@ -548,54 +632,82 @@ function GamesTab({ accessToken }: { accessToken: string }) {
               ))}
             </select>
           </Field>
-          <Field label={t("admin.field.image")}>
-            <input
-              value={form.image_url}
-              onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-              className={inputCls}
-            />
-          </Field>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className="cursor-pointer rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-stone-300">
-            {t("admin.action.upload")}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file || !form.id) {
-                  toast.error(t("admin.games.needId"));
-                  return;
-                }
-                setBusy(true);
-                const { base64, contentType } = await fileToBase64(file);
-                const r = await adminUploadHubMedia({
-                  data: {
-                    accessToken,
-                    base64,
-                    contentType,
-                    attachTo: { kind: "game", id: form.id },
-                  },
-                });
-                setBusy(false);
-                if (!r.ok) toast.error(r.error);
-                else {
-                  setForm((f) => ({ ...f, image_url: r.url }));
-                  toast.success(t("admin.games.imageSet"));
-                  void refresh();
-                }
-              }}
-            />
-          </label>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {slots.map((s) => (
+            <div
+              key={s.slot}
+              className="rounded-xl border border-border-subtle/80 bg-white/[0.02] p-3 shadow-[var(--nx-shadow-1)]"
+            >
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-xs font-medium text-white">{t(s.labelKey)}</p>
+                  <p className="mt-0.5 text-[10px] text-stone-500">{t(s.hintKey)}</p>
+                </div>
+                {form[s.key] ? (
+                  <button
+                    type="button"
+                    className="text-[10px] font-medium text-danger"
+                    onClick={() => setForm((f) => ({ ...f, [s.key]: "" }))}
+                  >
+                    {t("admin.art.clear")}
+                  </button>
+                ) : null}
+              </div>
+              <div
+                className={`mb-2 overflow-hidden rounded-lg border border-border-subtle/60 bg-stone-950 ${
+                  s.preview === "wide" ? "aspect-[21/9]" : "aspect-square max-w-[7rem]"
+                }`}
+              >
+                {form[s.key] ? (
+                  <img src={form[s.key]} alt="" className="size-full object-cover" />
+                ) : (
+                  <div className="grid size-full place-items-center text-[10px] text-stone-600">
+                    {t("admin.art.fallback")}
+                  </div>
+                )}
+              </div>
+              <input
+                value={form[s.key]}
+                onChange={(e) => setForm((f) => ({ ...f, [s.key]: e.target.value }))}
+                className={inputCls}
+                placeholder="https://…"
+                dir="ltr"
+              />
+              <label className="mt-2 inline-flex cursor-pointer rounded-lg border border-border-subtle px-3 py-1.5 text-[11px] font-medium text-stone-300 hover:border-accent/40">
+                {t("admin.action.upload")}
+                <input
+                  type="file"
+                  accept={HUB_MEDIA_ACCEPT}
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) void uploadSlot(s.slot, file);
+                  }}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={busy || !form.id || !form.name}
             onClick={() => void save()}
-            className="rounded-lg bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2 text-xs font-medium text-accent-foreground disabled:opacity-40"
           >
             {t("admin.games.save")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setForm(emptyForm)}
+            className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-medium text-stone-400"
+          >
+            {t("admin.art.new")}
           </button>
         </div>
       </Panel>
@@ -604,17 +716,26 @@ function GamesTab({ accessToken }: { accessToken: string }) {
         <ul className="divide-y divide-border-subtle">
           {games.map((g) => (
             <li key={g.id} className="flex flex-wrap items-center gap-3 py-3">
-              {g.image_url ? (
-                <img src={g.image_url} alt="" className="size-10 rounded-lg object-cover" />
+              {g.icon_url || g.image_url ? (
+                <img
+                  src={g.icon_url || g.image_url!}
+                  alt=""
+                  className="size-10 rounded-lg object-cover"
+                />
               ) : (
-                <div className={`grid size-10 place-items-center rounded-lg text-[10px] font-bold ${g.tint} ${g.text_tint}`}>
+                <div
+                  className={`grid size-10 place-items-center rounded-lg text-[10px] font-semibold ${g.tint} ${g.text_tint}`}
+                >
                   {g.short}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white">{g.name}</p>
+                <p className="text-sm font-medium text-white">{g.name}</p>
                 <p className="text-[11px] text-stone-500">
                   {g.id} · {g.category}
+                  {[g.image_url, g.banner_url, g.icon_url, g.background_url].filter(Boolean).length
+                    ? ` · ${[g.image_url && "cover", g.banner_url && "banner", g.icon_url && "icon", g.background_url && "bg"].filter(Boolean).join(", ")}`
+                    : ` · ${t("admin.art.none")}`}
                 </p>
               </div>
               <button
@@ -628,9 +749,12 @@ function GamesTab({ accessToken }: { accessToken: string }) {
                     tint: g.tint,
                     text_tint: g.text_tint,
                     image_url: g.image_url ?? "",
+                    banner_url: g.banner_url ?? "",
+                    background_url: g.background_url ?? "",
+                    icon_url: g.icon_url ?? "",
                   })
                 }
-                className="text-xs font-semibold text-accent"
+                className="text-xs font-medium text-accent"
               >
                 {t("admin.action.edit")}
               </button>
@@ -648,7 +772,7 @@ function GamesTab({ accessToken }: { accessToken: string }) {
                     void refresh();
                   }
                 }}
-                className="text-xs font-semibold text-danger"
+                className="text-xs font-medium text-danger"
               >
                 {t("admin.action.delete")}
               </button>

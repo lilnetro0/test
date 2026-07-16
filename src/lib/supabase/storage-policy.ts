@@ -2,7 +2,7 @@
 
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2 MiB
 export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MiB
-export const HUB_MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5 MiB
+export const HUB_MEDIA_MAX_BYTES = 8 * 1024 * 1024; // 8 MiB — high-res cover / banner
 /** Soft cap across all objects under a user's attachments folder. */
 export const ATTACHMENT_USER_QUOTA_BYTES = 100 * 1024 * 1024; // 100 MiB
 

@@ -37,6 +37,9 @@ type HubJoinRow = {
         tint: string;
         text_tint: string;
         image_url?: string | null;
+        banner_url?: string | null;
+        background_url?: string | null;
+        icon_url?: string | null;
         name_search_norm?: string | null;
       }
     | {
@@ -47,6 +50,9 @@ type HubJoinRow = {
         tint: string;
         text_tint: string;
         image_url?: string | null;
+        banner_url?: string | null;
+        background_url?: string | null;
+        icon_url?: string | null;
         name_search_norm?: string | null;
       }[]
     | null;
@@ -56,6 +62,7 @@ type HubJoinRow = {
 export function mapHubRowToLiveHub(h: HubJoinRow): LiveHub {
   const game = Array.isArray(h.game) ? h.game[0] : h.game;
   const gameId = game?.id ?? h.slug;
+  const cover = h.image_url || game?.image_url || null;
   return {
     uuid: h.id,
     slug: h.slug,
@@ -72,7 +79,10 @@ export function mapHubRowToLiveHub(h: HubJoinRow): LiveHub {
       activeCount: h.active_count,
       category: (game?.category as HubCard["category"]) ?? "sandbox",
       members: h.member_count,
-      imageUrl: h.image_url || game?.image_url || null,
+      imageUrl: cover,
+      bannerUrl: game?.banner_url || null,
+      backgroundUrl: game?.background_url || null,
+      iconUrl: game?.icon_url || null,
       region: h.region ?? null,
       hasLfg: Boolean(h.has_lfg),
       nameSearchNorm: h.name_search_norm ?? null,

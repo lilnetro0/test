@@ -11,15 +11,7 @@ import { trapFocus } from "@/lib/focus-trap";
  * bottom dock. Use on every authenticated route so navigation is
  * consistent regardless of viewport.
  */
-export function AppShell({
-  children,
-  onBrandClick,
-  brandActive,
-}: {
-  children: ReactNode;
-  onBrandClick?: () => void;
-  brandActive?: boolean;
-}) {
+export function AppShell({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background pt-safe text-foreground">
@@ -28,7 +20,7 @@ export function AppShell({
         <div id="main-content" className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
-        <BottomDock onBrandClick={onBrandClick} brandActive={brandActive} />
+        <BottomDock />
       </div>
     </RequireAuth>
   );
@@ -74,11 +66,11 @@ export function Sheet({
 
   const panelBySide: Record<typeof side, string> = {
     bottom:
-      "fixed inset-x-0 bottom-[var(--dock-clearance)] max-h-[min(75dvh,calc(100dvh-var(--dock-clearance)))] rounded-t-2xl border-t border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-bottom-8 motion-safe:duration-200",
+      "fixed inset-x-0 bottom-[var(--dock-clearance)] max-h-[min(75dvh,calc(100dvh-var(--dock-clearance)))] rounded-t-[1.35rem] border-t border-border-subtle/80 nx-sheet-panel motion-safe:animate-in motion-safe:slide-in-from-bottom-6 motion-safe:fade-in-0",
     right:
-      "fixed inset-y-0 end-0 w-[min(340px,85vw)] border-s border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-right-8 motion-safe:duration-200",
+      "fixed inset-y-0 end-0 w-[min(340px,85vw)] border-s border-border-subtle/80 nx-sheet-panel motion-safe:animate-in motion-safe:slide-in-from-right-6 motion-safe:fade-in-0",
     left:
-      "fixed inset-y-0 start-0 w-[min(340px,85vw)] border-e border-border-subtle motion-safe:animate-in motion-safe:slide-in-from-left-8 motion-safe:duration-200",
+      "fixed inset-y-0 start-0 w-[min(340px,85vw)] border-e border-border-subtle/80 nx-sheet-panel motion-safe:animate-in motion-safe:slide-in-from-left-6 motion-safe:fade-in-0",
   };
 
   return (
@@ -93,19 +85,19 @@ export function Sheet({
         type="button"
         aria-label={t("a11y.closePanel")}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="nx-sheet-scrim absolute inset-0 bg-black/55 motion-safe:animate-in motion-safe:fade-in-0"
       />
-      <div className={`${panelBySide[side]} flex flex-col bg-surface-mid shadow-2xl`}>
+      <div
+        className={`${panelBySide[side]} flex flex-col bg-surface-mid shadow-[var(--nx-shadow-3)]`}
+      >
         {title && (
           <header className="flex h-12 shrink-0 items-center justify-between border-b border-border-subtle px-4">
-            <h3 className="min-w-0 truncate font-display text-xs font-bold uppercase tracking-widest text-stone-300">
-              {title}
-            </h3>
+            <h3 className="nx-title min-w-0 truncate text-base">{title}</h3>
             <button
               type="button"
               onClick={onClose}
               aria-label={t("common.close")}
-              className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 hover:text-white"
+              className="nx-touch grid place-items-center text-sm font-semibold text-stone-500 hover:text-white"
             >
               ✕
             </button>

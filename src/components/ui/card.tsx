@@ -2,11 +2,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Card usage policy (design.md / Phase B):
+ * Cards are for rare callouts that improve readability — not default wrappers.
+ * Prefer Section + ListRow + spacing. Do not wrap every settings/list block in Card.
+ */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+      className={cn(
+        "rounded-xl border border-border-subtle/80 bg-surface-mid/80 text-foreground shadow-[var(--nx-shadow-1)]",
+        className,
+      )}
       {...props}
     />
   ),

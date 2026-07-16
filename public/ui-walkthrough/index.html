@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexus — UI Walkthrough (A–H)</title>
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --panel: #12151a;
+        --line: #2a3038;
+        --text: #e8eaed;
+        --muted: #8b939e;
+        --accent: #5eead4;
+        --phone-w: 280px;
+        --phone-h: 606px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", "Noto Sans Arabic", system-ui, sans-serif;
+      }
+      header.app {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--bg) 92%, transparent);
+      }
+      header.app h1 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      header.app p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      button.seg,
+      a.seg {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      button.seg[aria-pressed="true"],
+      a.seg.active {
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+      }
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 20px 80px;
+      }
+      section {
+        margin-top: 36px;
+      }
+      section h2 {
+        margin: 0 0 14px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 22px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 12px;
+      }
+      .card .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .card .meta strong {
+        color: var(--text);
+        font-weight: 650;
+      }
+      .phone {
+        width: var(--phone-w);
+        height: var(--phone-h);
+        margin: 0 auto;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        overflow: hidden;
+        background: #000;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+      .phone img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top;
+        display: block;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 640px) {
+        .pair {
+          grid-template-columns: 1fr;
+        }
+        .phone {
+          width: min(280px, 100%);
+          height: calc(min(280px, 100%) * 2.164);
+        }
+      }
+      .nav-demo {
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      @media (max-width: 860px) {
+        .nav-demo {
+          grid-template-columns: 1fr;
+        }
+      }
+      .nav-stage .phone {
+        width: min(320px, 100%);
+        height: calc(min(320px, 100%) * 2.164);
+      }
+      .nav-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .nav-list button {
+        text-align: start;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .nav-list button[aria-current="true"] {
+        border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+        color: var(--accent);
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app">
+      <div>
+        <h1>Nexus visual walkthrough</h1>
+        <p>Live capture · iPhone 14 · dark · EN + AR · mock UI session</p>
+      </div>
+      <div class="controls">
+        <button class="seg" id="btn-en" aria-pressed="true" type="button">English</button>
+        <button class="seg" id="btn-ar" aria-pressed="false" type="button">العربية</button>
+        <button class="seg" id="btn-play" type="button">Play nav</button>
+        <a class="seg" href="#nav">Nav demo</a>
+      </div>
+    </header>
+
+    <main>
+      <section id="nav">
+        <h2>Navigation demo</h2>
+        <div class="nav-demo">
+          <div class="nav-stage">
+            <div class="phone"><img id="nav-img" alt="" /></div>
+          </div>
+          <div class="nav-list" id="nav-list"></div>
+        </div>
+      </section>
+
+      <section id="screens">
+        <h2>Primary screens</h2>
+        <div class="grid" id="screen-grid"></div>
+      </section>
+
+      <section id="sheets">
+        <h2>Bottom sheets</h2>
+        <div class="grid" id="sheet-grid"></div>
+      </section>
+
+      <section id="states">
+        <h2>Empty · loading · extras</h2>
+        <div class="grid" id="state-grid"></div>
+      </section>
+    </main>
+
+    <script>
+      const SCREENS = [
+        { id: "01-login", label: "Login" },
+        { id: "02-register", label: "Register" },
+        { id: "03-home-chat", label: "Home · Game · Hub · Chat" },
+        { id: "07-discover", label: "Discover" },
+        { id: "09-messages", label: "Messages" },
+        { id: "10-messages-thread", label: "Messages · thread" },
+        { id: "11-friends", label: "Friends" },
+        { id: "15-notifications", label: "Notifications" },
+        { id: "16-profile-me", label: "Profile · me" },
+        { id: "17-profile-other", label: "Profile" },
+        { id: "18-settings-list", label: "Settings" },
+        { id: "19-settings-detail", label: "Settings · detail" },
+      ];
+
+      const SHEETS = [
+        { id: "04-hub-sheet", label: "Hub sheet" },
+        { id: "05-search-sheet", label: "Search sheet" },
+        { id: "06-members-sheet", label: "Members sheet" },
+        { id: "08-filter-sheet", label: "Discover filters" },
+        { id: "20-you-sheet", label: "You sheet" },
+        { id: "21-hubs-deeplink", label: "Hubs deeplink" },
+      ];
+
+      const STATES = [
+        { id: "13-friends-blocked-empty", label: "Empty · blocked" },
+        { id: "12-friends-pending", label: "Friends · pending" },
+        { id: "14-friends-add", label: "Friends · add" },
+        { id: "22-loading", label: "Loading" },
+      ];
+
+      const NAV = [
+        { file: "01-login", label: "Login" },
+        { file: "02-home", label: "Home" },
+        { file: "03-discover", label: "Discover" },
+        { file: "04-messages", label: "Messages" },
+        { file: "05-friends", label: "Friends" },
+        { file: "06-you", label: "You" },
+      ];
+
+      let lang = "en";
+      let navIndex = 0;
+      let timer = null;
+
+      function src(folder, id) {
+        return `${folder}/${id}.png`;
+      }
+
+      function phoneCard(label, imgSrc, badge) {
+        return `<article class="card">
+          <div class="meta"><strong>${label}</strong><span>${badge}</span></div>
+          <div class="phone"><img src="${imgSrc}" alt="${label}" loading="lazy" /></div>
+        </article>`;
+      }
+
+      function renderGrids() {
+        const badge = lang === "ar" ? "AR · RTL · dark" : "EN · dark";
+        document.getElementById("screen-grid").innerHTML = SCREENS.map((s) =>
+          phoneCard(s.label, src(lang, s.id), badge),
+        ).join("");
+        document.getElementById("sheet-grid").innerHTML = SHEETS.map((s) =>
+          phoneCard(s.label, src(lang, s.id), badge),
+        ).join("");
+        const extras =
+          lang === "en"
+            ? [
+                ...STATES,
+                { id: "04b-hub-voice", label: "Hub · voice", folder: "en" },
+                { file: "en-search-empty", label: "Empty · search", folder: "empty" },
+              ]
+            : STATES;
+        document.getElementById("state-grid").innerHTML = extras
+          .map((s) => {
+            if (s.folder === "empty") {
+              return phoneCard(s.label, `empty/${s.file}.png`, badge);
+            }
+            if (s.folder === "en") {
+              return phoneCard(s.label, `en/${s.id}.png`, badge);
+            }
+            return phoneCard(s.label, src(lang, s.id), badge);
+          })
+          .join("");
+        renderNav(false);
+      }
+
+      function renderNav(reset) {
+        if (reset) navIndex = 0;
+        const list = document.getElementById("nav-list");
+        list.innerHTML = NAV.map(
+          (step, i) =>
+            `<button type="button" data-i="${i}" aria-current="${i === navIndex ? "true" : "false"}">${i + 1}. ${step.label}</button>`,
+        ).join("");
+        list.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            stopNav();
+            navIndex = Number(btn.dataset.i);
+            showNavFrame();
+          });
+        });
+        showNavFrame();
+      }
+
+      function showNavFrame() {
+        const step = NAV[navIndex];
+        document.getElementById("nav-img").src = `nav/${lang}-${step.file}.png`;
+        document.querySelectorAll("#nav-list button").forEach((btn, i) => {
+          btn.setAttribute("aria-current", i === navIndex ? "true" : "false");
+        });
+      }
+
+      function stopNav() {
+        if (timer) clearInterval(timer);
+        timer = null;
+        document.getElementById("btn-play").textContent = "Play nav";
+      }
+
+      function playNav() {
+        if (timer) {
+          stopNav();
+          return;
+        }
+        document.getElementById("btn-play").textContent = "Pause nav";
+        timer = setInterval(() => {
+          navIndex = (navIndex + 1) % NAV.length;
+          showNavFrame();
+        }, 1400);
+      }
+
+      document.getElementById("btn-en").addEventListener("click", () => {
+        lang = "en";
+        document.getElementById("btn-en").setAttribute("aria-pressed", "true");
+        document.getElementById("btn-ar").setAttribute("aria-pressed", "false");
+        stopNav();
+        renderGrids();
+      });
+      document.getElementById("btn-ar").addEventListener("click", () => {
+        lang = "ar";
+        document.getElementById("btn-ar").setAttribute("aria-pressed", "true");
+        document.getElementById("btn-en").setAttribute("aria-pressed", "false");
+        stopNav();
+        renderGrids();
+      });
+      document.getElementById("btn-play").addEventListener("click", playNav);
+
+      renderGrids();
+    </script>
+  </body>
+</html>

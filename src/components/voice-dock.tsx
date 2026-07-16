@@ -58,7 +58,7 @@ export function VoiceDock({
 
   return (
     <div
-      className={`border-t border-border-subtle/80 bg-background/80 backdrop-blur-md ${
+      className={`border-t border-border-subtle/80 bg-background ${
         compact ? "px-2 py-1" : "p-3"
       }`}
     >
@@ -86,12 +86,12 @@ export function VoiceDock({
             />
           </div>
           <div className="min-w-0">
-            <p className={`truncate font-bold text-white ${compact ? "text-[11px]" : "text-xs"}`}>
+            <p className={`truncate font-semibold text-white ${compact ? "text-[11px]" : "text-xs"}`}>
               {channelName}
             </p>
             {!compact && (
               <p
-                className={`truncate text-[10px] uppercase tracking-tight ${
+                className={`nx-caption truncate ${
                   reconnecting
                     ? "text-amber-200/90"
                     : live

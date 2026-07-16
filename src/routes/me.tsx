@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
+import { Field, FieldInput, FieldTextarea, ScreenHeader } from "@/components/ui-native";
+import { Button } from "@/components/ui/button";
 import { GAMES, ME, type HubCard } from "@/lib/mock-data";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Gamepad2, Pencil, Trophy, Shield } from "lucide-react";
@@ -10,6 +12,8 @@ import { useAuth } from "@/lib/auth-provider";
 import { uploadAvatar, AVATAR_ACCEPT } from "@/lib/supabase/storage";
 import { fetchUserHubs } from "@/lib/chat/api";
 import { shouldUseMockData } from "@/lib/supabase/env";
+import { GameIcon } from "@/components/game-icon";
+import { resolveIconUrl } from "@/lib/game-artwork";
 
 export const Route = createFileRoute("/me")({
   head: () => ({
@@ -157,50 +161,53 @@ function MePage() {
   return (
     <AppShell>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border-subtle bg-background/80 px-4 backdrop-blur-md">
-          <h1 className="font-display text-sm font-bold uppercase tracking-tight text-white">
-            {t("me.title")}
-          </h1>
-          {!editing ? (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-stone-200 hover:bg-white/10"
-            >
-              <Pencil className="size-3.5" />
-              {t("me.edit")}
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={cancel}
-                className="rounded-lg border border-border-subtle px-3 py-1.5 text-xs font-semibold text-stone-400 hover:text-white"
-              >
-                {t("me.cancel")}
-              </button>
-              <button
-                onClick={() => void save()}
-                disabled={busy}
-                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-accent-foreground hover:brightness-110 disabled:opacity-60"
-              >
-                {busy ? "…" : t("me.save")}
-              </button>
-            </div>
-          )}
-        </header>
+        <ScreenHeader
+          className="sticky top-0 z-10 bg-background/95"
+          title={t("me.title")}
+          trailing={
+            !editing ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="size-3.5" />
+                {t("me.edit")}
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button type="button" variant="quiet" size="sm" onClick={cancel}>
+                  {t("me.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => void save()}
+                >
+                  {busy ? "…" : t("me.save")}
+                </Button>
+              </div>
+            )
+          }
+        />
 
-        <div className="relative h-36 border-b border-border-subtle bg-gradient-to-br from-accent/25 via-transparent to-transparent md:h-48" />
+        <div className="relative h-36 overflow-hidden border-b border-border-subtle/70 md:h-44">
+          <div
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_0%,color-mix(in_oklab,var(--accent)_22%,transparent),transparent_55%),linear-gradient(160deg,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_50%),linear-gradient(to_bottom,oklch(0.2_0.01_260),var(--background))]"
+            aria-hidden
+          />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
+        </div>
 
         <div className="mx-auto max-w-3xl px-4 pb-16 md:px-6">
-          <div className="-mt-12 flex items-end gap-4 md:-mt-14">
-            <div className="relative">
+          <div className="-mt-14 flex flex-col gap-5 sm:flex-row sm:items-end md:-mt-16">
+            <div className="relative shrink-0 self-start">
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
                   alt=""
-                  className="size-24 rounded-2xl border-4 border-background object-cover shadow-xl md:size-28"
+                  className="size-28 rounded-[1.35rem] border-[3px] border-background object-cover shadow-[var(--nx-shadow-2)] md:size-32"
                 />
               ) : (
-                <div className="grid size-24 place-items-center rounded-2xl border-4 border-background bg-accent/20 font-display text-2xl font-bold text-accent shadow-xl md:size-28">
+                <div className="grid size-28 place-items-center rounded-[1.35rem] border-[3px] border-background bg-gradient-to-br from-accent/25 to-surface-mid font-display text-2xl font-semibold text-accent shadow-[var(--nx-shadow-2)] md:size-32 md:text-3xl">
                   {initials}
                 </div>
               )}
@@ -218,7 +225,7 @@ function MePage() {
                       setUploadingAvatar(true);
                       const up = await uploadAvatar(user.id, file);
                       if (up.error || !up.url) {
-                        toast.error(up.error ?? "Upload failed");
+                        toast.error(up.error ?? t("me.uploadFailed"));
                         setUploadingAvatar(false);
                         return;
                       }
@@ -235,78 +242,75 @@ function MePage() {
                     type="button"
                     disabled={uploadingAvatar}
                     onClick={() => avatarInputRef.current?.click()}
-                    className="absolute -bottom-1 -end-1 grid size-8 place-items-center rounded-full border border-border-subtle bg-surface-mid text-accent shadow hover:bg-white/10 disabled:opacity-50"
-                    aria-label="Upload avatar"
+                    className="nx-touch absolute -bottom-1 -end-1 grid place-items-center rounded-full border border-border-subtle bg-surface-mid text-accent shadow-[var(--nx-shadow-1)] hover:bg-white/10 disabled:opacity-50"
+                    aria-label={t("me.uploadAvatar")}
                   >
                     <Camera className="size-3.5" />
                   </button>
                 </>
               )}
             </div>
-            <div className="min-w-0 flex-1 pb-2">
+            <div className="min-w-0 flex-1 pb-1">
               {editing ? (
                 <div className="space-y-3">
-                  <label className="block">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                      {t("me.displayName")}
-                    </span>
-                    <input
-                      value={form.displayName}
-                      onChange={(e) => setForm((p) => ({ ...p, displayName: e.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-border-subtle bg-surface-mid px-3 py-2 text-sm font-bold text-white outline-none focus:border-accent/50"
-                    />
-                  </label>
+                  <FieldInput
+                    label={t("me.displayName")}
+                    value={form.displayName}
+                    onChange={(e) => setForm((p) => ({ ...p, displayName: e.target.value }))}
+                  />
                   {configured && (
                     <div className="grid grid-cols-3 gap-2">
-                      <label className="col-span-2 block">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                          Username
-                        </span>
-                        <input
-                          value={form.username}
-                          onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
-                          className="mt-1 w-full rounded-lg border border-border-subtle bg-surface-mid px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                          {t("me.tag")}
-                        </span>
-                        <input
-                          value={form.tag}
-                          onChange={(e) => setForm((p) => ({ ...p, tag: e.target.value }))}
-                          maxLength={4}
-                          className="mt-1 w-full rounded-lg border border-border-subtle bg-surface-mid px-3 py-2 font-mono text-sm text-white outline-none focus:border-accent/50"
-                        />
-                      </label>
+                      <FieldInput
+                        className="col-span-2"
+                        label={t("auth.username")}
+                        value={form.username}
+                        onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                      />
+                      <FieldInput
+                        label={t("me.tag")}
+                        value={form.tag}
+                        maxLength={4}
+                        onChange={(e) => setForm((p) => ({ ...p, tag: e.target.value }))}
+                        className="font-mono"
+                      />
                     </div>
                   )}
                 </div>
               ) : (
                 <>
-                  <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white md:text-3xl">
-                    {form.displayName}
-                  </h2>
-                  <p className="mt-1 text-xs text-stone-400">
-                    <span className="text-online">●</span>{" "}
-                    {form.status || t("you.online")} · {form.username}
-                    {tagLabel}
-                  </p>
+                  <h2 className="nx-display text-[1.85rem] md:text-[2.15rem]">{form.displayName}</h2>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle/80 bg-white/[0.03] px-2.5 py-1 shadow-[var(--nx-shadow-1)]">
+                      <span
+                        className={`size-1.5 rounded-full ${
+                          form.presence === "offline"
+                            ? "bg-stone-500"
+                            : form.presence === "dnd"
+                              ? "bg-danger"
+                              : form.presence === "idle"
+                                ? "bg-amber-400"
+                                : "bg-online"
+                        }`}
+                      />
+                      <span className="nx-caption text-stone-300">
+                        {form.status || t("you.online")}
+                      </span>
+                    </span>
+                    <span className="nx-caption font-mono text-stone-500">
+                      {form.username}
+                      {tagLabel}
+                    </span>
+                  </div>
                 </>
               )}
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-border-subtle bg-surface-mid p-5">
-            <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("me.about")}
-            </h3>
+          <section className="mt-10 space-y-3">
+            <h3 className="nx-section">{t("me.about")}</h3>
             {editing ? (
               <div className="space-y-4">
-                <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                    {t("me.presence")}
-                  </span>
+                <Field label={t("me.presence")} hint={form.presence === "dnd" ? t("me.presenceDndHint") : undefined}>
                   <select
                     value={form.presence}
                     onChange={(e) =>
@@ -315,74 +319,70 @@ function MePage() {
                         presence: e.target.value as FormState["presence"],
                       }))
                     }
-                    className="mt-1 w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
+                    className="flex min-h-11 w-full rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-accent"
                   >
                     <option value="online">{t("me.presenceOnline")}</option>
                     <option value="idle">{t("me.presenceIdle")}</option>
                     <option value="dnd">{t("me.presenceDnd")}</option>
                     <option value="offline">{t("me.presenceOffline")}</option>
                   </select>
-                  {form.presence === "dnd" ? (
-                    <p className="mt-1 text-[11px] text-stone-500">{t("me.presenceDndHint")}</p>
-                  ) : null}
-                </label>
-                <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                    {t("me.status")}
-                  </span>
-                  <input
-                    value={form.status}
-                    onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                    {t("me.bio")}
-                  </span>
-                  <textarea
-                    value={form.bio}
-                    onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
-                    rows={3}
-                    className="mt-1 w-full resize-none rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-white outline-none focus:border-accent/50"
-                  />
-                </label>
+                </Field>
+                <FieldInput
+                  label={t("me.status")}
+                  value={form.status}
+                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+                />
+                <FieldTextarea
+                  label={t("me.bio")}
+                  value={form.bio}
+                  rows={3}
+                  onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
+                />
               </div>
             ) : (
-              <p className="text-sm text-stone-300">{form.bio || "—"}</p>
+              <p className="nx-body max-w-prose text-pretty">{form.bio || "—"}</p>
             )}
-          </div>
+          </section>
 
           {!configured ? (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              <Stat icon={Trophy} label="Wins" value="—" hint={t("me.demoStat")} />
-              <Stat icon={Shield} label="Rank" value="—" hint={t("me.demoStat")} />
-              <Stat icon={Gamepad2} label="Hubs" value={String(GAMES.length)} hint={t("me.demoStat")} />
+            <div className="mt-8 grid grid-cols-3 gap-2">
+              <Stat icon={Trophy} label={t("me.statWins")} value="—" hint={t("me.demoStat")} />
+              <Stat icon={Shield} label={t("me.statRank")} value="—" hint={t("me.demoStat")} />
+              <Stat
+                icon={Gamepad2}
+                label={t("me.statHubs")}
+                value={String(GAMES.length)}
+                hint={t("me.demoStat")}
+              />
             </div>
           ) : null}
 
-          <div className="mt-8">
-            <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("me.games")}
-            </h3>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {hubs.length === 0 ? (
-                <p className="col-span-full text-sm text-stone-500">{t("me.noHubs")}</p>
-              ) : (
-                hubs.map((g) => (
+          <section className="mt-10">
+            <h3 className="nx-section mb-4">{t("me.games")}</h3>
+            {hubs.length === 0 ? (
+              <p className="nx-body">{t("me.noHubs")}</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {hubs.map((g) => (
                   <Link
                     key={g.id}
                     to="/"
                     search={{ hub: g.id }}
-                    className={`group flex flex-col items-center gap-2 rounded-xl border border-border-subtle p-4 transition-all hover:border-accent/40 ${g.tint}`}
+                    className="nx-press group flex flex-col items-center gap-2 rounded-2xl border border-border-subtle/70 p-4 shadow-[var(--nx-shadow-1)] transition-colors hover:border-accent/30"
                   >
-                    <span className={`font-display text-sm font-bold ${g.textTint}`}>{g.short}</span>
-                    <span className="text-[11px] font-semibold text-stone-200">{g.name}</span>
+                    <GameIcon
+                      src={resolveIconUrl({ coverUrl: g.imageUrl, iconUrl: g.iconUrl })}
+                      short={g.short}
+                      tint={g.tint}
+                      textTint={g.textTint}
+                      size="lg"
+                    />
+                    <span className="nx-caption text-center text-stone-300">{g.name}</span>
                   </Link>
-                ))
-              )}
-            </div>
-          </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </main>
     </AppShell>
@@ -401,13 +401,11 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface-mid p-4">
-      <Icon className="size-4 text-accent" />
-      <p className="mt-2 font-display text-lg font-bold text-white">{value}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">{label}</p>
-      {hint ? (
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-amber-200/80">{hint}</p>
-      ) : null}
+    <div className="rounded-xl border border-border-subtle/60 bg-white/[0.02] px-3 py-3 shadow-[var(--nx-shadow-1)]">
+      <Icon className="size-3.5 text-accent/80" strokeWidth={1.75} />
+      <p className="mt-2 font-display text-base font-medium text-white/90">{value}</p>
+      <p className="nx-caption mt-0.5">{label}</p>
+      {hint ? <p className="nx-caption mt-1 opacity-70">{hint}</p> : null}
     </div>
   );
 }

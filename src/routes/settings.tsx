@@ -14,6 +14,8 @@ import {
   LogOut,
   Shield,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   applyAppearanceClasses,
@@ -37,6 +39,8 @@ import {
   REGION_OPTIONS,
   type RegionCode,
 } from "@/lib/regions";
+import { ScreenHeader, Section, ListRow } from "@/components/ui-native";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -66,6 +70,7 @@ type SectionId = (typeof SECTION_META)[number]["id"];
 
 function SettingsPage() {
   const [section, setSection] = useState<SectionId>("account");
+  const [mobileDetail, setMobileDetail] = useState(false);
   const navigate = useNavigate();
   const { t } = useT();
   const { configured, signOut } = useAuth();
@@ -82,44 +87,87 @@ function SettingsPage() {
     navigate({ to: "/login" });
   };
 
+  const openSection = (id: SectionId) => {
+    setSection(id);
+    setMobileDetail(true);
+  };
+
+  const sectionLabel = t(SECTION_META.find((s) => s.id === section)?.labelKey ?? "settings.title");
+
+  const sectionNav = (
+    <>
+      <Section title={t("settings.group.user")} className="px-2">
+        {SECTION_META.slice(0, 3).map((s) => {
+          const Icon = s.icon;
+          return (
+            <ListRow
+              key={s.id}
+              title={t(s.labelKey)}
+              leading={<Icon className="size-4 text-stone-400" />}
+              trailing={<ChevronRight className="size-4 text-stone-600 rtl:rotate-180" />}
+              onClick={() => openSection(s.id)}
+            />
+          );
+        })}
+      </Section>
+      <Section title={t("settings.group.app")} className="mt-4 px-2">
+        {SECTION_META.slice(3).map((s) => {
+          const Icon = s.icon;
+          return (
+            <ListRow
+              key={s.id}
+              title={t(s.labelKey)}
+              leading={<Icon className="size-4 text-stone-400" />}
+              trailing={<ChevronRight className="size-4 text-stone-600 rtl:rotate-180" />}
+              onClick={() => openSection(s.id)}
+            />
+          );
+        })}
+      </Section>
+      <div className="mt-4 px-2">
+        <ListRow
+          title={t("settings.logout")}
+          leading={<LogOut className="size-4 text-danger" />}
+          onClick={() => void logout()}
+          className="text-danger"
+        />
+      </div>
+    </>
+  );
+
   return (
     <AppShell>
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden w-64 shrink-0 flex-col border-e border-border-subtle bg-surface-mid md:flex">
-          <header className="flex h-16 items-center border-b border-border-subtle px-5">
-            <h1 className="font-display text-base font-bold uppercase tracking-tight text-white">
-              {t("settings.title")}
-            </h1>
-          </header>
-          <div className="flex-1 overflow-y-auto p-3">
-            <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("settings.group.user")}
-            </div>
-            {SECTION_META.slice(0, 3).map((s) => (
-              <SectionButton
-                key={s.id}
-                label={t(s.labelKey)}
-                icon={s.icon}
-                active={section === s.id}
-                onClick={() => setSection(s.id)}
-              />
-            ))}
-            <div className="mb-2 mt-4 px-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-              {t("settings.group.app")}
-            </div>
-            {SECTION_META.slice(3).map((s) => (
-              <SectionButton
-                key={s.id}
-                label={t(s.labelKey)}
-                icon={s.icon}
-                active={section === s.id}
-                onClick={() => setSection(s.id)}
-              />
-            ))}
-            <div className="my-3 h-px bg-border-subtle" />
+        <aside className="hidden w-72 shrink-0 flex-col border-e border-border-subtle bg-surface-mid md:flex">
+          <ScreenHeader title={t("settings.title")} />
+          <div className="flex-1 overflow-y-auto py-2">
+            <Section title={t("settings.group.user")} className="px-2">
+              {SECTION_META.slice(0, 3).map((s) => (
+                <SectionButton
+                  key={s.id}
+                  label={t(s.labelKey)}
+                  icon={s.icon}
+                  active={section === s.id}
+                  onClick={() => setSection(s.id)}
+                />
+              ))}
+            </Section>
+            <Section title={t("settings.group.app")} className="mt-4 px-2">
+              {SECTION_META.slice(3).map((s) => (
+                <SectionButton
+                  key={s.id}
+                  label={t(s.labelKey)}
+                  icon={s.icon}
+                  active={section === s.id}
+                  onClick={() => setSection(s.id)}
+                />
+              ))}
+            </Section>
+            <div className="my-3 mx-4 h-px bg-border-subtle" />
             <button
+              type="button"
               onClick={() => void logout()}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-danger hover:bg-danger/10"
+              className="mx-2 flex min-h-11 w-[calc(100%-1rem)] items-center gap-3 rounded-lg px-3 text-sm text-danger hover:bg-danger/10"
             >
               <LogOut className="size-4" />
               {t("settings.logout")}
@@ -127,36 +175,36 @@ function SettingsPage() {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          <div className="sticky top-0 z-10 border-b border-border-subtle bg-surface-mid/95 backdrop-blur-md md:hidden">
-            <div className="flex h-12 items-center px-4">
-              <h1 className="font-display text-sm font-bold uppercase tracking-tight text-white">
-                {t("settings.title")}
-              </h1>
-            </div>
-            <div className="flex gap-2 overflow-x-auto px-3 pb-2 no-scrollbar">
-              {SECTION_META.map((s) => {
-                const Icon = s.icon;
-                const active = section === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setSection(s.id)}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      active
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border-subtle text-stone-400 hover:text-white"
-                    }`}
-                  >
-                    <Icon className="size-3.5" />
-                    {t(s.labelKey)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="mx-auto w-full max-w-2xl px-4 py-5 pb-8 md:px-6 md:py-10">
+        {/* Mobile: section list */}
+        <main
+          className={`min-h-0 flex-1 flex-col overflow-y-auto md:hidden ${
+            mobileDetail ? "hidden" : "flex"
+          }`}
+        >
+          <ScreenHeader title={t("settings.title")} />
+          <div className="py-2 pb-8">{sectionNav}</div>
+        </main>
+
+        {/* Detail: mobile when drilled in; desktop always */}
+        <main
+          className={`min-h-0 flex-1 flex-col overflow-y-auto ${
+            mobileDetail ? "flex" : "hidden"
+          } md:flex`}
+        >
+          <ScreenHeader
+            title={sectionLabel}
+            leading={
+              <button
+                type="button"
+                onClick={() => setMobileDetail(false)}
+                className="nx-touch grid place-items-center rounded-lg text-stone-400 hover:bg-white/5 hover:text-white md:hidden"
+                aria-label={t("common.back")}
+              >
+                <ChevronLeft className="size-5 rtl:rotate-180" />
+              </button>
+            }
+          />
+          <div className="mx-auto w-full max-w-2xl px-4 py-5 pb-8 md:px-6 md:py-8">
             {section === "account" && <AccountSection />}
             {section === "privacy" && <PrivacySection />}
             {section === "billing" && <BillingSection />}
@@ -185,8 +233,9 @@ function SectionButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+      className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
         active ? "bg-white/5 font-medium text-white" : "text-stone-400 hover:bg-white/5 hover:text-white"
       }`}
     >
@@ -198,17 +247,16 @@ function SectionButton({
 
 function SettingsHeader({ title, sub }: { title: string; sub?: string }) {
   return (
-    <div className="mb-6">
-      <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-white">{title}</h2>
-      {sub && <p className="mt-1 text-sm text-stone-400">{sub}</p>}
+    <div className="mb-5">
+      <h2 className="nx-title">{title}</h2>
+      {sub ? <p className="nx-body mt-1">{sub}</p> : null}
     </div>
   );
 }
 
+/** Spacing group — not a bordered card (design.md / Phase H). */
 function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-4 rounded-xl border border-border-subtle bg-surface-mid p-5">{children}</div>
-  );
+  return <div className="mb-6 space-y-0.5">{children}</div>;
 }
 
 function Row({
@@ -221,10 +269,10 @@ function Row({
   action: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex min-h-11 items-center justify-between gap-4 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-white">{label}</p>
-        {desc && <p className="mt-0.5 text-xs text-stone-500">{desc}</p>}
+        <p className="nx-label">{label}</p>
+        {desc ? <p className="nx-caption mt-0.5">{desc}</p> : null}
       </div>
       {action}
     </div>

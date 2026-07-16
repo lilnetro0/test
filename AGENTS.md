@@ -9,6 +9,19 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
+## Design Language (UI / UX authority)
+
+[`design.md`](design.md) is the **official Design Language and UX specification** for Nexus (premium, mobile-first, native iOS feel, Arabic-first). It outranks ad-hoc UI prompts unless explicitly overridden.
+
+Before any UI/UX/frontend work:
+
+1. Read `design.md`
+2. Check [`docs/UI-AUDIT.md`](docs/UI-AUDIT.md) for known violations and the phased redesign roadmap (A→H)
+3. Follow [`docs/UI-IMPLEMENTATION-PLAN.md`](docs/UI-IMPLEMENTATION-PLAN.md) for shared components, phase DoD, and order
+4. Navigation IA: [`docs/NAVIGATION-SPEC.md`](docs/NAVIGATION-SPEC.md) + [`docs/UI-WIREFRAMES.md`](docs/UI-WIREFRAMES.md) (frozen). Phase A: [`docs/UI-PHASE-A.md`](docs/UI-PHASE-A.md). Phase B: [`docs/UI-PHASE-B.md`](docs/UI-PHASE-B.md) · [`docs/UI-DESIGN-SYSTEM.md`](docs/UI-DESIGN-SYSTEM.md). Phase C: [`docs/UI-PHASE-C.md`](docs/UI-PHASE-C.md). Phase D: [`docs/UI-PHASE-D.md`](docs/UI-PHASE-D.md). Phase E: [`docs/UI-PHASE-E.md`](docs/UI-PHASE-E.md). Phase F: [`docs/UI-PHASE-F.md`](docs/UI-PHASE-F.md). Phase G: [`docs/UI-PHASE-G.md`](docs/UI-PHASE-G.md) · [`docs/UI-MOTION.md`](docs/UI-MOTION.md). Phase H: [`docs/UI-PHASE-H.md`](docs/UI-PHASE-H.md) (A–H complete)
+5. Prefer systematic phases over one-off screen tweaks — wait for approval before implementing redesign phases
+6. Do not introduce new navigation patterns, layouts, or UX concepts during implementation — execute the frozen docs; stop and ask if architecture must change
+
 ## Arabic-first product direction
 
 Nexus targets **Arabic-speaking gamers in Saudi Arabia and the wider MENA region**.
@@ -16,6 +29,9 @@ Arabic is the primary product language (English supported). Do **not** treat Ara
 
 Standing docs (required reading for user-facing work):
 
+- [`design.md`](design.md) — Design Language (UI/UX authority)
+- [`docs/UI-AUDIT.md`](docs/UI-AUDIT.md) — Audit vs design.md + redesign roadmap
+- [`docs/UI-IMPLEMENTATION-PLAN.md`](docs/UI-IMPLEMENTATION-PLAN.md) — Phase A–H blueprint (shared system first)
 - [`docs/ARABIC-PRODUCT-GUIDELINES.md`](docs/ARABIC-PRODUCT-GUIDELINES.md)
 - [`docs/ARABIC-TERMINOLOGY.md`](docs/ARABIC-TERMINOLOGY.md)
 - [`docs/RTL-TEST-CHECKLIST.md`](docs/RTL-TEST-CHECKLIST.md)
@@ -45,4 +61,4 @@ Standing docs (required reading for user-facing work):
 - [`docs/ARABIC-FIRST-PHASE21.md`](docs/ARABIC-FIRST-PHASE21.md) — AF21 React SSR lang hydrate (Done)
 - [`docs/ARABIC-FIRST-PHASE22.md`](docs/ARABIC-FIRST-PHASE22.md) — AF22 physical CSS mop-up (Done)
 
-**Do not start large redesigns by default.** Audit → incremental tested changes. Every future phase completion report must include an **Arabic-first impact** section (UI, RTL tests, bidi, search, moderation, unresolved). Phase 0 of the hardening plan **must** evaluate the Arabic-first axes in that audit; implementation needs an approved follow-on phase.
+**Do not start large redesigns by default.** UI redesign follows `docs/UI-AUDIT.md` phases **after approval**. Arabic-first work: audit → incremental tested changes. Every future phase completion report must include an **Arabic-first impact** section (UI, RTL tests, bidi, search, moderation, unresolved).

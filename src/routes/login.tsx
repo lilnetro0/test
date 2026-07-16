@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthShell, AuthField } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -67,12 +68,8 @@ function LoginPage() {
         </>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        {!configured && (
-          <p className="rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-[11px] text-stone-500">
-            {t("auth.demoBanner")}
-          </p>
-        )}
+      <form onSubmit={onSubmit} className="space-y-5">
+        {!configured && <p className="nx-caption text-center">{t("auth.demoBanner")}</p>}
         <AuthField
           label={t("auth.email")}
           type="email"
@@ -94,22 +91,16 @@ function LoginPage() {
           autoComplete="current-password"
           hint={<Link to="/forgot-password">{t("auth.login.forgot")}</Link>}
         />
-        <label className="flex items-center gap-2 text-xs text-stone-400">
-          <input type="checkbox" className="accent-[color:var(--accent)]" defaultChecked />
+        <label className="flex min-h-11 items-center gap-2 text-sm text-stone-400">
+          <input type="checkbox" className="size-4 accent-[color:var(--accent)]" defaultChecked />
           {t("auth.login.keepSignedIn")}
         </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-lg bg-accent py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
-        >
+        <Button type="submit" variant="accent" size="touch" disabled={busy} className="w-full">
           {busy ? t("auth.login.busy") : t("auth.login.submit")}
-        </button>
-        <div className="flex items-center gap-3 py-2">
+        </Button>
+        <div className="flex items-center gap-3 py-1">
           <div className="h-px flex-1 bg-border-subtle" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-600">
-            {t("auth.login.orContinue")}
-          </span>
+          <span className="nx-caption">{t("auth.login.orContinue")}</span>
           <div className="h-px flex-1 bg-border-subtle" />
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -120,9 +111,12 @@ function LoginPage() {
               { label: "Steam", provider: null },
             ] as const
           ).map((p) => (
-            <button
+            <Button
               key={p.label}
               type="button"
+              variant="ghost"
+              size="touch"
+              className="border border-border-subtle text-stone-400"
               onClick={() => {
                 if (!p.provider) {
                   toast(t("auth.oauthSoon", { provider: p.label }));
@@ -136,10 +130,9 @@ function LoginPage() {
                   if (!r.ok) toast.error(r.error);
                 });
               }}
-              className="rounded-lg border border-border-subtle bg-background py-2.5 text-xs font-semibold text-stone-300 transition-colors hover:border-accent/40 hover:text-white"
             >
               {p.label}
-            </button>
+            </Button>
           ))}
         </div>
       </form>

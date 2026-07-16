@@ -2,13 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import type { Friend } from "@/lib/mock-data";
 import { useState } from "react";
-import { MessageSquare, Phone, X, UserPlus, Search, Users, Ban, Unlock } from "lucide-react";
+import { MessageSquare, X, UserPlus, Search, Users, Ban, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
+import { ScreenHeader } from "@/components/ui-native";
+import { Button } from "@/components/ui/button";
 import { useT, type TKey, translateStatic } from "@/lib/i18n";
 import { useFriends } from "@/hooks/use-friends";
 import type { PendingRequest } from "@/lib/social/api";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/friends")({
   head: () => ({
@@ -56,47 +57,43 @@ function FriendsPage() {
   return (
     <AppShell>
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border-subtle px-4 md:gap-4 md:px-6">
-          <h1 className="shrink-0 font-display text-base font-bold uppercase tracking-tight text-white">
-            {t("friends.title")}
-          </h1>
-          <div className="h-4 w-px shrink-0 bg-border-subtle" />
-          <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar">
-            {TABS.map((tabItem) => (
-              <button
-                key={tabItem.id}
-                type="button"
-                onClick={() => setTab(tabItem.id)}
-                className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  tab === tabItem.id
-                    ? "bg-white/5 text-white"
-                    : "text-stone-400 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {t(tabItem.key)}
-                {tabItem.id === "Pending" && social.incoming.length > 0 && (
-                  <span className="ms-1.5 rounded bg-danger px-1.5 py-0.5 text-[9px] font-bold text-white">
-                    {social.incoming.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-          <button
-            type="button"
-            onClick={() => setTab("Add Friend")}
-            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors sm:px-3 sm:text-xs ${
-              tab === "Add Friend"
-                ? "bg-online/20 text-online"
-                : "bg-online/15 text-online hover:bg-online/25"
-            }`}
-          >
-            <UserPlus className="size-3.5" />
-            <span className="max-sm:sr-only">{t("friends.tab.add")}</span>
-          </button>
-        </header>
+        <ScreenHeader
+          title={t("friends.title")}
+          trailing={
+            <Button
+              type="button"
+              variant={tab === "Add Friend" ? "accent" : "ghost"}
+              size="sm"
+              onClick={() => setTab("Add Friend")}
+            >
+              <UserPlus className="size-3.5" />
+              <span className="max-sm:sr-only">{t("friends.tab.add")}</span>
+            </Button>
+          }
+        />
+        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-border-subtle px-3 py-2 no-scrollbar md:px-6">
+          {TABS.map((tabItem) => (
+            <button
+              key={tabItem.id}
+              type="button"
+              onClick={() => setTab(tabItem.id)}
+              className={`min-h-9 shrink-0 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                tab === tabItem.id
+                  ? "bg-white/5 text-white"
+                  : "text-stone-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {t(tabItem.key)}
+              {tabItem.id === "Pending" && social.incoming.length > 0 ? (
+                <span className="ms-1.5 rounded bg-danger px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  {social.incoming.length}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-8 md:px-6">
+        <div className="flex-1 overflow-y-auto px-0 py-2 pb-8 md:px-0">
           {tab === "Add Friend" ? (
             <AddFriend
               onSend={async (tag) => {
@@ -208,17 +205,16 @@ function FriendsList({
   mode?: "friends" | "blocked";
 }) {
   const { t } = useT();
-  const isMobile = useIsMobile();
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-mid px-3 py-2">
+      <div className="mb-2 flex min-h-11 items-center gap-2 border-b border-border-subtle px-4 md:px-6">
         <Search className="size-4 text-stone-500" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("friends.search")}
-          className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-stone-600"
+          className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white outline-none placeholder:text-stone-600"
         />
       </div>
 
@@ -227,32 +223,27 @@ function FriendsList({
           icon={query ? Search : Users}
           title={query ? t("empty.search.title") : t("empty.friends.title")}
           body={query ? t("empty.search.body") : t("empty.friends.body")}
-          action={
+          primaryAction={
             !query ? (
-              <button
-                onClick={onAdd}
-                className="rounded-lg bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide text-accent-foreground"
-              >
+              <Button type="button" variant="accent" size="touch" onClick={onAdd}>
                 {t("empty.friends.cta")}
-              </button>
+              </Button>
             ) : undefined
           }
         />
       ) : (
         <>
-          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {label}
-          </h3>
-          <div className="divide-y divide-border-subtle rounded-xl border border-border-subtle bg-surface-mid/30">
+          <p className="nx-section px-4 py-2 md:px-6">{label}</p>
+          <div className="divide-y divide-border-subtle">
             {friends.map((f) => (
               <div
                 key={f.id ?? f.tag}
-                className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/[0.03]"
+                className="flex min-h-14 items-center gap-3 px-4 py-2 md:px-6"
               >
                 <div className="relative shrink-0">
                   <div className="size-10 rounded-full bg-stone-800" />
                   <div
-                    className={`absolute bottom-0 end-0 size-3 rounded-full border-2 border-background ${
+                    className={`absolute bottom-0 end-0 size-2.5 rounded-full border-2 border-background ${
                       f.status === "online"
                         ? "bg-online"
                         : f.status === "idle"
@@ -268,53 +259,39 @@ function FriendsList({
                     <Link
                       to="/profile/$username"
                       params={{ username: f.name }}
-                      className="truncate text-sm font-bold text-white hover:underline"
+                      className="nx-label truncate hover:underline"
                     >
                       {f.name}
                     </Link>
-                    <span className="font-mono text-[10px] text-stone-600">{f.tag}</span>
+                    <span className="nx-caption font-mono">{f.tag}</span>
                   </div>
-                  <p className="truncate text-xs text-stone-400">
-                    {f.activity ?? f.status.toUpperCase()}
-                  </p>
+                  <p className="nx-caption truncate">{f.activity ?? f.status}</p>
                 </div>
-                <div
-                  className={`flex transition-opacity ${
-                    isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                  }`}
-                >
+                <div className="flex shrink-0">
                   {mode === "blocked" ? (
                     <button
+                      type="button"
                       onClick={() => void onUnblock?.(f)}
-                      className="grid size-9 place-items-center rounded-md bg-white/5 text-stone-300 hover:text-online"
+                      className="nx-touch grid place-items-center rounded-lg text-stone-300 hover:bg-white/5 hover:text-online"
                       aria-label={t("friends.unblock")}
-                      title={t("friends.unblock")}
                     >
                       <Unlock className="size-4" />
                     </button>
                   ) : (
                     <>
                       <button
+                        type="button"
                         onClick={() => onMessage?.(f)}
-                        className="grid size-9 place-items-center rounded-md bg-white/5 text-stone-300 hover:text-white"
+                        className="nx-touch grid place-items-center rounded-lg text-stone-300 hover:bg-white/5 hover:text-white"
                         aria-label={t("friends.message")}
                       >
                         <MessageSquare className="size-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => toast(t("profile.callSoon"))}
-                        title={t("common.comingSoon")}
-                        className="ms-1 grid size-9 place-items-center rounded-md bg-white/5 text-stone-500 opacity-60 hover:bg-white/5 hover:text-stone-400"
-                        aria-label={`${t("friends.call")} — ${t("common.comingSoon")}`}
-                      >
-                        <Phone className="size-4" />
-                      </button>
-                      <button
                         onClick={() => void onBlock?.(f)}
-                        className="grid size-9 place-items-center rounded-md bg-white/5 text-stone-300 hover:text-danger ms-1"
+                        className="nx-touch grid place-items-center rounded-lg text-stone-300 hover:bg-white/5 hover:text-danger"
                         aria-label={t("friends.block")}
-                        title={t("friends.block")}
                       >
                         <Ban className="size-4" />
                       </button>
@@ -346,31 +323,32 @@ function PendingList({
     );
   }
   return (
-    <>
-      <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+    <div className="px-4 md:px-6">
+      <p className="nx-section py-2">
         {t("friends.incoming")} — {requests.length}
-      </h3>
-      <div className="divide-y divide-border-subtle rounded-xl border border-border-subtle bg-surface-mid/30">
+      </p>
+      <div className="divide-y divide-border-subtle">
         {requests.map((f) => (
-          <div key={f.requestId} className="flex items-center gap-4 px-4 py-3">
+          <div key={f.requestId} className="flex min-h-14 items-center gap-3 py-2">
             <div className="size-10 shrink-0 rounded-full bg-stone-800" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-white">
-                {f.name}{" "}
-                <span className="ms-1 font-mono text-[10px] text-stone-600">{f.tag}</span>
+              <p className="nx-label truncate">
+                {f.name} <span className="nx-caption font-mono">{f.tag}</span>
               </p>
-              <p className="truncate text-xs text-stone-400">{t("friends.incomingHint")}</p>
+              <p className="nx-caption truncate">{t("friends.incomingHint")}</p>
             </div>
             <button
+              type="button"
               onClick={() => void onAccept(f)}
-              className="grid size-9 place-items-center rounded-md bg-online/15 text-online hover:bg-online/25"
+              className="nx-touch grid place-items-center rounded-lg bg-online/15 text-online"
               aria-label={t("friends.accept")}
             >
               ✓
             </button>
             <button
+              type="button"
               onClick={() => void onDecline(f)}
-              className="grid size-9 place-items-center rounded-md bg-danger/15 text-danger hover:bg-danger/25"
+              className="nx-touch grid place-items-center rounded-lg bg-danger/15 text-danger"
               aria-label={t("friends.decline")}
             >
               <X className="size-4" />
@@ -378,7 +356,7 @@ function PendingList({
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -388,11 +366,9 @@ function AddFriend({ onSend }: { onSend: (usernameTag: string) => void | Promise
   const [busy, setBusy] = useState(false);
 
   return (
-    <div className="max-w-xl">
-      <h2 className="font-display text-lg font-bold uppercase tracking-tight text-white">
-        {t("friends.addTitle")}
-      </h2>
-      <p className="mt-1 text-sm text-stone-400">{t("friends.addBody")}</p>
+    <div className="mx-auto max-w-xl px-4 py-4 md:px-6">
+      <h2 className="nx-title">{t("friends.addTitle")}</h2>
+      <p className="nx-body mt-1">{t("friends.addBody")}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -404,22 +380,18 @@ function AddFriend({ onSend }: { onSend: (usernameTag: string) => void | Promise
             setValue("");
           });
         }}
-        className="mt-4 flex items-center gap-2 rounded-xl border border-border-subtle bg-surface-mid p-2"
+        className="mt-4 flex min-h-11 items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.03] p-1.5"
       >
-        <UserPlus className="size-4 text-stone-500 ms-2" />
+        <UserPlus className="ms-2 size-4 text-stone-500" />
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Username#0000"
           className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-stone-600"
         />
-        <button
-          type="submit"
-          disabled={busy || !value.trim()}
-          className="rounded-md bg-accent px-4 py-2 text-xs font-bold uppercase tracking-widest text-accent-foreground disabled:opacity-50"
-        >
+        <Button type="submit" variant="accent" size="sm" disabled={busy || !value.trim()}>
           {t("friends.sendRequest")}
-        </button>
+        </Button>
       </form>
     </div>
   );

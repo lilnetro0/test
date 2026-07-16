@@ -15,11 +15,11 @@ export function LegalPage({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border-subtle bg-surface-mid/40 px-6 py-4 backdrop-blur-md">
+      <header className="border-b border-border-subtle bg-surface-mid/60 px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <Link to="/" search={{}} className="flex items-center gap-2">
             <img src={logo} alt="" width={28} height={28} className="size-7 object-contain" />
-            <span className="font-display text-sm font-bold uppercase tracking-tight text-white">
+            <span className="font-display text-sm font-bold tracking-tight text-white">
               Nexus
             </span>
           </Link>

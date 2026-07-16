@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AuthShell, AuthField } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -85,11 +86,9 @@ function ResetPage() {
         </Link>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-5">
         {configured && !ready && (
-          <p className="rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-[11px] text-stone-500">
-            {t("auth.reset.waiting")}
-          </p>
+          <p className="nx-caption text-center">{t("auth.reset.waiting")}</p>
         )}
         <AuthField
           label={t("auth.reset.newPassword")}
@@ -113,13 +112,9 @@ function ResetPage() {
           minLength={8}
           autoComplete="new-password"
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-lg bg-accent py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
-        >
+        <Button type="submit" variant="accent" size="touch" disabled={busy} className="w-full">
           {busy ? t("auth.reset.busy") : t("auth.reset.submit")}
-        </button>
+        </Button>
       </form>
     </AuthShell>
   );

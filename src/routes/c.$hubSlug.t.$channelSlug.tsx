@@ -8,6 +8,11 @@ import { LfgBoard } from "@/components/lfg-board";
 import { ListSkeleton, ListRow, ConfirmSheet } from "@/components/ui-native";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import {
+  ChannelNotFound,
+  CommunityNotFound,
+  MembershipRequired,
+} from "@/components/community/recovery";
 import { useT, translateStatic } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { useHubChat } from "@/hooks/use-hub-chat";
@@ -111,6 +116,30 @@ function CommunityChatPage() {
   const isLfg = isLfgChannel(chat.activeChannel);
   const allMembers = [...chat.members.online, ...chat.members.offline];
 
+  if (!chat.loading && chat.hubNotFound) {
+    return (
+      <AppShell>
+        <CommunityNotFound slug={hubSlug} />
+      </AppShell>
+    );
+  }
+
+  if (!chat.loading && chat.live && !chat.isMember) {
+    return (
+      <AppShell>
+        <MembershipRequired hubSlug={hubSlug} />
+      </AppShell>
+    );
+  }
+
+  if (!chat.loading && chat.channelNotFound) {
+    return (
+      <AppShell>
+        <ChannelNotFound hubSlug={hubSlug} />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -126,7 +155,7 @@ function CommunityChatPage() {
             </Link>
             <div className="min-w-0">
               <p className="nx-caption truncate text-stone-500" dir="auto">
-                {chat.game.hubName}
+                {chat.game?.hubName ?? hubSlug}
               </p>
               <p className="flex items-center gap-1 truncate font-semibold text-white">
                 <Hash className="size-3.5 shrink-0 text-accent" />

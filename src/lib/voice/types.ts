@@ -14,6 +14,8 @@ export type VoiceParticipant = {
 export type VoiceSession = {
   channelId: string;
   channelName: string;
+  /** Community / hub display name for GlobalVoiceBar */
+  hubName?: string;
   roomName: string;
   connected: boolean;
   /** true when connected via LiveKit (not stub) */
@@ -24,6 +26,8 @@ export type VoiceSession = {
   localMuted?: boolean;
   /** Local deafen preference (hear nothing + mic off) */
   localDeafened?: boolean;
+  /** Mic permission was denied — joined muted */
+  micPermissionDenied?: boolean;
   participants: VoiceParticipant[];
 };
 
@@ -31,6 +35,8 @@ export type JoinVoiceInput = {
   channelId: string;
   channelName: string;
   roomName: string;
+  /** Community label for GlobalVoiceBar */
+  hubName?: string;
   /** DM thread UUID — uses LiveKit room nexus-dm-{threadId} */
   threadId?: string;
   /** Supabase access token — required for live join */

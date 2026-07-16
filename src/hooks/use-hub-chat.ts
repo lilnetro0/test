@@ -13,6 +13,7 @@ import { shouldUseMockData } from "@/lib/supabase/env";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-provider";
 import {
+  checkHubMembership,
   deleteChannelMessage,
   editChannelMessage,
   fetchChannels,
@@ -20,7 +21,6 @@ import {
   fetchLiveHubs,
   fetchMessage,
   fetchMessages,
-  joinHub,
   markChannelRead,
   refreshHubActiveCount,
   sendChannelMessage,
@@ -62,7 +62,7 @@ export function useHubChat(opts?: {
         const match = hub.textChannels.find(
           (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
         );
-        return match?.id ?? hub.textChannels[0]?.id ?? "general";
+        return match?.id ?? "";
       }
       return hub.textChannels[0]?.id ?? "general";
     }
@@ -81,6 +81,16 @@ export function useHubChat(opts?: {
   });
   const [loading, setLoading] = useState(live);
   const [error, setError] = useState<string | null>(null);
+  const [isMember, setIsMember] = useState(!live);
+  const [channelNotFound, setChannelNotFound] = useState(() => {
+    if (!channelKey || !shouldUseMockData()) return false;
+    const hub = HUBS[initialSlug || "fortnite"];
+    if (!hub) return true;
+    return !hub.textChannels.some(
+      (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
+    );
+  });
+  const [hubNotFound, setHubNotFound] = useState(false);
   const channelRef = useRef<string | null>(null);
 
   const games = useMemo<HubCard[]>(() => {
@@ -93,16 +103,16 @@ export function useHubChat(opts?: {
     return liveHubs.find((h) => h.slug === activeSlug) ?? liveHubs[0] ?? null;
   }, [live, liveHubs, activeSlug]);
 
-  const game = useMemo<HubCard>(() => {
+  const game = useMemo<HubCard | null>(() => {
     if (!live) {
       return (
         DISCOVER_HUBS.find((g) => g.id === activeSlug) ??
         GAMES.find((g) => g.id === activeSlug) ??
-        GAMES[0]
+        null
       );
     }
-    return activeHub?.game ?? games[0] ?? GAMES[0];
-  }, [live, activeSlug, activeHub, games]);
+    return activeHub?.game ?? null;
+  }, [live, activeSlug, activeHub]);
 
   const mockHub = HUBS[activeSlug] ?? HUBS.fortnite;
 
@@ -132,10 +142,11 @@ export function useHubChat(opts?: {
     setMessages([...hub.messages]);
   }, [live, activeSlug]);
 
-  // Load hub catalog (live)
+  // Load hub catalog (live) — do not silently fall back to another hub
   useEffect(() => {
     if (!live) {
       setLoading(false);
+      if (initialSlug && !HUBS[initialSlug]) setHubNotFound(true);
       return;
     }
     let cancelled = false;
@@ -144,10 +155,16 @@ export function useHubChat(opts?: {
       if (cancelled) return;
       if (err) setError(err);
       setLiveHubs(hubs);
-      if (hubs.length) {
-        const preferred = initialSlug && hubs.find((h) => h.slug === initialSlug);
-        if (preferred) setActiveSlug(preferred.slug);
-        else if (!hubs.find((h) => h.slug === activeSlug)) setActiveSlug(hubs[0].slug);
+      if (initialSlug) {
+        const preferred = hubs.find((h) => h.slug === initialSlug);
+        if (preferred) {
+          setActiveSlug(preferred.slug);
+          setHubNotFound(false);
+        } else {
+          setHubNotFound(true);
+        }
+      } else if (hubs.length && !hubs.find((h) => h.slug === activeSlug)) {
+        setActiveSlug(hubs[0].slug);
       }
       setLoading(false);
     });
@@ -164,34 +181,67 @@ export function useHubChat(opts?: {
 
   // Keep active channel aligned with route channel key
   useEffect(() => {
-    if (!channelKey) return;
+    if (!channelKey) {
+      setChannelNotFound(false);
+      return;
+    }
     if (live) {
+      if (!textChannels.length) return;
       const match = textChannels.find(
         (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
       );
-      if (match) setActiveChannelId(match.id);
+      if (match) {
+        setActiveChannelId(match.id);
+        setChannelNotFound(false);
+      } else {
+        setChannelNotFound(true);
+        setActiveChannelId("");
+        setMessages([]);
+      }
       return;
     }
-    const hub = HUBS[activeSlug] ?? HUBS.fortnite;
+    const hub = HUBS[activeSlug];
+    if (!hub) {
+      setHubNotFound(true);
+      setChannelNotFound(true);
+      return;
+    }
+    setHubNotFound(false);
     const match = hub.textChannels.find(
       (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
     );
-    if (match) setActiveChannelId(match.id);
+    if (match) {
+      setActiveChannelId(match.id);
+      setChannelNotFound(false);
+    } else {
+      setChannelNotFound(true);
+      setActiveChannelId("");
+    }
   }, [channelKey, live, textChannels, activeSlug]);
 
-  // Join hub + load channels/members when hub changes
+  // Load channels/members when hub changes — never auto-join
   useEffect(() => {
     if (!live || !activeHub || !user) return;
     let cancelled = false;
 
     void (async () => {
       setError(null);
-      const joined = await joinHub(activeHub.uuid, user.id);
+      const membership = await checkHubMembership(activeHub.uuid, user.id);
       if (cancelled) return;
-      if (!joined.ok) {
-        setError(joined.error ?? "Could not join hub");
+      if (membership.error) {
+        setError(membership.error);
         return;
       }
+      if (!membership.isMember) {
+        setIsMember(false);
+        setTextChannels([]);
+        setVoiceChannels([]);
+        setMembers({ online: [], offline: [] });
+        setMessages([]);
+        setActiveChannelId("");
+        return;
+      }
+      setIsMember(true);
 
       const [ch, mem] = await Promise.all([
         fetchChannels(activeHub.uuid),
@@ -221,7 +271,12 @@ export function useHubChat(opts?: {
           const match = ch.text.find(
             (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
           );
-          if (match) return match.id;
+          if (match) {
+            setChannelNotFound(false);
+            return match.id;
+          }
+          setChannelNotFound(true);
+          return "";
         }
         if (prev && ch.text.some((c) => c.id === prev)) return prev;
         if (!autoSelectChannel) return prev || "";
@@ -576,6 +631,9 @@ export function useHubChat(opts?: {
     live,
     loading,
     error,
+    isMember,
+    hubNotFound,
+    channelNotFound,
     games,
     game,
     activeSlug,

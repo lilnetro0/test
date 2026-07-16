@@ -18,6 +18,7 @@ export const livekitStubClient: VoiceClient = {
     session = {
       channelId: input.channelId,
       channelName: input.channelName,
+      hubName: input.hubName,
       roomName: input.roomName,
       connected: true,
       live: false,

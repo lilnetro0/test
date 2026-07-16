@@ -13,6 +13,8 @@ import { useT, translateStatic } from "@/lib/i18n";
 export type HomeSearch = {
   hub?: string;
   hubs?: "1";
+  /** Mock/dev QA only — force empty My Communities for screenshots. */
+  empty?: "1";
 };
 
 export const Route = createFileRoute("/")({
@@ -23,6 +25,9 @@ export const Route = createFileRoute("/")({
     }
     if (search.hubs === "1" || search.hubs === 1 || search.hubs === true) {
       next.hubs = "1";
+    }
+    if (search.empty === "1" || search.empty === 1 || search.empty === true) {
+      next.empty = "1";
     }
     return next;
   },
@@ -39,18 +44,19 @@ export const Route = createFileRoute("/")({
 });
 
 function MyCommunitiesPage() {
-  const { hub: hubFromSearch } = Route.useSearch();
+  const { hub: hubFromSearch, empty: emptyFromSearch } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { t } = useT();
   const { user, configured, prefs, savePrefs } = useAuth();
   const live = !shouldUseMockData();
   const [hubs, setHubs] = useState<HubCard[]>([]);
+  const [recommended, setRecommended] = useState<HubCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [hubOrder, setHubOrderState] = useState<string[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [lastHub, setLastHubState] = useState<string | null>(null);
 
-  // Legacy deep links → Game Home
+  // Legacy deep links → Game Home (preview; does not join)
   useEffect(() => {
     if (hubFromSearch) {
       void navigate({
@@ -71,7 +77,15 @@ function MyCommunitiesPage() {
     void (async () => {
       if (!live) {
         if (cancelled) return;
-        setHubs(GAMES);
+        // Mock default shows catalog as "joined" for demos.
+        // ?empty=1 forces empty My Communities for QA screenshots.
+        if (emptyFromSearch === "1") {
+          setHubs([]);
+          setRecommended(GAMES.slice(0, 6));
+        } else {
+          setHubs(GAMES);
+          setRecommended([]);
+        }
         setHubOrderState(getHubOrder(GAMES.map((g) => g.id)));
         setLoading(false);
         return;
@@ -79,29 +93,33 @@ function MyCommunitiesPage() {
       if (!user?.id) {
         if (cancelled) return;
         setHubs([]);
+        setRecommended([]);
         setLoading(false);
         return;
       }
       const mine = await fetchUserHubs(user.id);
-      let list = mine.hubs;
+      // Joined-only — never fall back to the public catalog.
+      const list = mine.hubs;
+      let suggestions: HubCard[] = [];
       if (!list.length) {
         const all = await fetchLiveHubs();
-        list = all.hubs.map((h) => h.game);
+        suggestions = all.hubs.map((h) => h.game).slice(0, 6);
       }
       if (cancelled) return;
       setHubs(list);
+      setRecommended(suggestions);
       const fallback = list.map((h) => h.id);
       if (configured && prefs?.hub_order && Array.isArray(prefs.hub_order) && prefs.hub_order.length) {
         setHubOrderState(getHubOrder(prefs.hub_order as string[]));
       } else {
-        setHubOrderState(getHubOrder(fallback.length ? fallback : GAMES.map((g) => g.id)));
+        setHubOrderState(getHubOrder(fallback.length ? fallback : []));
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [live, user?.id, configured, prefs]);
+  }, [live, user?.id, configured, prefs, emptyFromSearch]);
 
   const ordered = useMemo(() => {
     const byId = new Map(hubs.map((h) => [h.id, h]));
@@ -151,6 +169,7 @@ function MyCommunitiesPage() {
           ) : (
             <MyCommunitiesList
               hubs={ordered}
+              recommended={recommended}
               lastHub={lastHub}
               onReorder={onReorder}
               dragId={dragId}

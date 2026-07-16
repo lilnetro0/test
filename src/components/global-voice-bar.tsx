@@ -23,11 +23,20 @@ export function GlobalVoiceBar() {
 
   if (!session?.connected) return null;
 
+  const communityLabel = session.hubName?.trim() || t("community.voiceSection");
+  let statusHint = t("voice.status.connected");
+  if (session.micPermissionDenied) statusHint = t("voice.status.micDenied");
+  else if (session.reconnecting) statusHint = t("voice.reconnecting");
+  else if (!session.live) statusHint = t("voice.preview");
+
   return (
-    <div className="shrink-0">
+    <div className="shrink-0" role="status" aria-live="polite">
       <VoiceDock
         channelName={session.channelName}
-        gameName={session.live ? t("community.voiceSection") : t("voice.preview")}
+        gameName={`${communityLabel} · ${statusHint}`}
+        communityName={session.hubName}
+        reconnecting={Boolean(session.reconnecting)}
+        micDenied={Boolean(session.micPermissionDenied)}
         onDisconnect={() => {
           /* VoiceDock already calls leaveVoiceChannel; session change clears UI */
         }}

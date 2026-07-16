@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DISCOVER_HUBS,
   GAMES,
@@ -11,9 +11,10 @@ import {
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { useAuth } from "@/lib/auth-provider";
 import {
+  checkHubMembership,
   fetchChannels,
+  fetchHubBySlug,
   fetchHubMembers,
-  fetchLiveHubs,
   joinHub,
   refreshHubActiveCount,
   type LiveHub,
@@ -22,16 +23,21 @@ import { listVoiceRoomOccupancy } from "@/lib/voice/list-voice-occupancy";
 import { setLastHub } from "@/lib/prefs";
 import { isLfgChannel } from "@/lib/lfg";
 
+const OCCUPANCY_POLL_MS = 12_000;
+
 /**
- * Community Game Home data — hub identity, members, channels, voice occupancy.
- * Does not load messages (chat route owns that).
+ * Community Game Home data — hub identity, membership, channels, voice occupancy.
+ * Does NOT auto-join. Opening a URL only loads preview or member content.
  */
 export function useCommunity(hubSlug: string) {
   const live = !shouldUseMockData();
   const { user, accessToken } = useAuth();
-  const slug = hubSlug.trim() || "fortnite";
+  const slug = hubSlug.trim();
 
-  const [liveHubs, setLiveHubs] = useState<LiveHub[]>([]);
+  const [resolvedHub, setResolvedHub] = useState<LiveHub | null>(null);
+  const [hubNotFound, setHubNotFound] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [textChannels, setTextChannels] = useState<TextChannel[]>([]);
   const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([]);
   const [members, setMembers] = useState<{ online: MemberInfo[]; offline: MemberInfo[] }>({
@@ -41,32 +47,25 @@ export function useCommunity(hubSlug: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [occupancyConfigured, setOccupancyConfigured] = useState(false);
+  const pollActiveRef = useRef(false);
 
-  const activeHub = useMemo(() => {
-    if (!live) return null;
-    return liveHubs.find((h) => h.slug === slug) ?? null;
-  }, [live, liveHubs, slug]);
-
-  const game = useMemo<HubCard>(() => {
+  const game = useMemo<HubCard | null>(() => {
+    if (!slug) return null;
     if (!live) {
       return (
         DISCOVER_HUBS.find((g) => g.id === slug) ??
         GAMES.find((g) => g.id === slug) ??
-        GAMES[0]
+        null
       );
     }
-    return (
-      activeHub?.game ??
-      liveHubs[0]?.game ??
-      GAMES[0]
-    );
-  }, [live, slug, activeHub, liveHubs]);
+    return resolvedHub?.game ?? null;
+  }, [live, slug, resolvedHub]);
 
-  const mockHub = HUBS[slug] ?? HUBS.fortnite;
+  const mockHub = slug ? HUBS[slug] ?? null : null;
 
-  const displayText = live ? textChannels : mockHub.textChannels;
-  const displayVoice = live ? voiceChannels : mockHub.voiceChannels;
-  const displayMembers = live ? members : mockHub.members;
+  const displayText = live ? textChannels : mockHub?.textChannels ?? [];
+  const displayVoice = live ? voiceChannels : mockHub?.voiceChannels ?? [];
+  const displayMembers = live ? members : mockHub?.members ?? { online: [], offline: [] };
 
   const featuredText = useMemo(() => {
     const list = [...displayText];
@@ -123,104 +122,186 @@ export function useCommunity(hubSlug: string) {
     [accessToken],
   );
 
-  // Catalog
-  useEffect(() => {
-    setLastHub(slug);
-    if (!live) {
-      setLoading(false);
-      setError(null);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    void fetchLiveHubs().then(({ hubs, error: err }) => {
-      if (cancelled) return;
-      if (err) setError(err);
-      setLiveHubs(hubs);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [live, slug]);
-
-  // Join + channels + members
-  useEffect(() => {
-    if (!live) return;
-    if (!activeHub?.uuid || !user?.id) return;
-    let cancelled = false;
-
-    void (async () => {
-      setError(null);
-      const joined = await joinHub(activeHub.uuid, user.id);
-      if (cancelled) return;
-      if (!joined.ok) {
-        setError(joined.error ?? "Could not join hub");
-        return;
-      }
-
+  const loadMemberContent = useCallback(
+    async (hub: LiveHub) => {
       const [ch, mem] = await Promise.all([
-        fetchChannels(activeHub.uuid),
-        fetchHubMembers(activeHub.uuid),
+        fetchChannels(hub.uuid),
+        fetchHubMembers(hub.uuid),
       ]);
-      if (cancelled) return;
       if (ch.error) setError(ch.error);
       setTextChannels(ch.text);
       setMembers({ online: mem.online, offline: mem.offline });
-
-      const withOcc = await mergeOccupancy(activeHub.uuid, ch.voice);
-      if (!cancelled) setVoiceChannels(withOcc);
-
-      const active = await refreshHubActiveCount(activeHub.uuid);
-      if (!cancelled && active.activeCount) {
-        setLiveHubs((prev) =>
-          prev.map((h) =>
-            h.uuid === activeHub.uuid
-              ? { ...h, game: { ...h.game, activeCount: active.activeCount! } }
-              : h,
-          ),
+      const withOcc = await mergeOccupancy(hub.uuid, ch.voice);
+      setVoiceChannels(withOcc);
+      const active = await refreshHubActiveCount(hub.uuid);
+      if (active.activeCount) {
+        setResolvedHub((prev) =>
+          prev && prev.uuid === hub.uuid
+            ? { ...prev, game: { ...prev.game, activeCount: active.activeCount! } }
+            : prev,
         );
       }
+    },
+    [mergeOccupancy],
+  );
+
+  // Resolve hub + membership (never auto-join)
+  useEffect(() => {
+    if (!slug) {
+      setHubNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setHubNotFound(false);
+    setTextChannels([]);
+    setVoiceChannels([]);
+    setMembers({ online: [], offline: [] });
+
+    void (async () => {
+      if (!live) {
+        const card =
+          DISCOVER_HUBS.find((g) => g.id === slug) ?? GAMES.find((g) => g.id === slug) ?? null;
+        if (!card || !HUBS[slug]) {
+          if (!cancelled) {
+            setHubNotFound(true);
+            setResolvedHub(null);
+            setIsMember(false);
+            setLoading(false);
+          }
+          return;
+        }
+        if (!cancelled) {
+          setResolvedHub(null);
+          setIsMember(true);
+          setLastHub(slug);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const { hub, error: hubErr } = await fetchHubBySlug(slug);
+      if (cancelled) return;
+      if (hubErr) setError(hubErr);
+      if (!hub) {
+        setHubNotFound(true);
+        setResolvedHub(null);
+        setIsMember(false);
+        setLoading(false);
+        return;
+      }
+
+      setResolvedHub(hub);
+      setHubNotFound(false);
+
+      if (!user?.id) {
+        setIsMember(false);
+        setLoading(false);
+        return;
+      }
+
+      const mem = await checkHubMembership(hub.uuid, user.id);
+      if (cancelled) return;
+      if (mem.error) setError(mem.error);
+      setIsMember(mem.isMember);
+
+      if (mem.isMember) {
+        setLastHub(slug);
+        await loadMemberContent(hub);
+      }
+      if (!cancelled) setLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [live, activeHub?.uuid, user?.id, mergeOccupancy]);
+  }, [live, slug, user?.id, loadMemberContent]);
 
-  // Poll occupancy while Game Home is mounted
+  // Occupancy poll — only while member, Game Home mounted, and document visible
   useEffect(() => {
-    if (!live || !activeHub?.uuid || !accessToken) return;
+    if (!live || !isMember || !resolvedHub?.uuid || !accessToken) return;
+
     let cancelled = false;
+    let intervalId: number | null = null;
+
     const tick = async () => {
-      const ch = await fetchChannels(activeHub.uuid);
+      if (cancelled || document.hidden || !pollActiveRef.current) return;
+      const ch = await fetchChannels(resolvedHub.uuid);
       if (cancelled || ch.error) return;
       setTextChannels(ch.text);
-      const withOcc = await mergeOccupancy(activeHub.uuid, ch.voice);
+      const withOcc = await mergeOccupancy(resolvedHub.uuid, ch.voice);
       if (!cancelled) setVoiceChannels(withOcc);
     };
-    const id = window.setInterval(() => {
-      void tick();
-    }, 12_000);
-    const onFocus = () => {
-      void tick();
+
+    const start = () => {
+      pollActiveRef.current = true;
+      if (intervalId != null) return;
+      intervalId = window.setInterval(() => {
+        void tick();
+      }, OCCUPANCY_POLL_MS);
     };
-    window.addEventListener("focus", onFocus);
+
+    const stop = () => {
+      pollActiveRef.current = false;
+      if (intervalId != null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        start();
+        void tick();
+      }
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onVisibility);
+
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      window.removeEventListener("focus", onFocus);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onVisibility);
     };
-  }, [live, activeHub?.uuid, accessToken, mergeOccupancy]);
+  }, [live, isMember, resolvedHub?.uuid, accessToken, mergeOccupancy]);
 
   const refreshOccupancy = useCallback(async () => {
-    if (!live || !activeHub?.uuid) return;
-    const ch = await fetchChannels(activeHub.uuid);
+    if (!live || !resolvedHub?.uuid || !isMember) return;
+    const ch = await fetchChannels(resolvedHub.uuid);
     if (ch.error) return;
     setTextChannels(ch.text);
-    const next = await mergeOccupancy(activeHub.uuid, ch.voice);
+    const next = await mergeOccupancy(resolvedHub.uuid, ch.voice);
     setVoiceChannels(next);
-  }, [live, activeHub?.uuid, mergeOccupancy]);
+  }, [live, resolvedHub?.uuid, isMember, mergeOccupancy]);
+
+  const joinCommunity = useCallback(async () => {
+    if (!live || !resolvedHub?.uuid || !user?.id || joining) {
+      return { ok: false as const, error: "Not ready" };
+    }
+    setJoining(true);
+    setError(null);
+    try {
+      const result = await joinHub(resolvedHub.uuid, user.id);
+      if (!result.ok) {
+        setError(result.error ?? "Could not join");
+        return { ok: false as const, error: result.error };
+      }
+      setIsMember(true);
+      setLastHub(slug);
+      await loadMemberContent(resolvedHub);
+      return { ok: true as const };
+    } finally {
+      setJoining(false);
+    }
+  }, [live, resolvedHub, user?.id, joining, slug, loadMemberContent]);
 
   const channelPathSlug = useCallback((c: TextChannel) => c.slug?.trim() || c.id, []);
 
@@ -229,17 +310,22 @@ export function useCommunity(hubSlug: string) {
     loading,
     error,
     slug,
+    hubNotFound,
+    isMember,
+    joining,
+    joinCommunity,
     game,
-    hubUuid: activeHub?.uuid ?? game.hubUuid ?? null,
-    textChannels: displayText,
-    voiceChannels: displayVoice,
-    featuredText,
-    members: displayMembers,
-    announcementTopic,
-    totalUnread,
-    voiceLiveCount,
+    hubUuid: resolvedHub?.uuid ?? game?.hubUuid ?? null,
+    textChannels: isMember || !live ? displayText : [],
+    voiceChannels: isMember || !live ? displayVoice : [],
+    featuredText: isMember || !live ? featuredText : [],
+    members: isMember || !live ? displayMembers : { online: [], offline: [] },
+    announcementTopic: isMember || !live ? announcementTopic : null,
+    totalUnread: isMember || !live ? totalUnread : 0,
+    voiceLiveCount: isMember || !live ? voiceLiveCount : 0,
     occupancyConfigured,
     refreshOccupancy,
     channelPathSlug,
+    occupancyPollMs: OCCUPANCY_POLL_MS,
   };
 }

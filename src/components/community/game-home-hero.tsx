@@ -22,7 +22,7 @@ export function GameHomeHero({
     <header className="relative shrink-0 overflow-hidden">
       <div className="relative h-[min(42dvh,320px)] w-full bg-surface-left">
         {banner ? (
-          <img src={banner} alt="" className="absolute inset-0 size-full object-cover" />
+          <img src={banner} alt="" loading="eager" decoding="async" className="absolute inset-0 size-full object-cover" />
         ) : (
           <div className={`absolute inset-0 ${game.tint}`} />
         )}

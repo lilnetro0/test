@@ -15,11 +15,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export function VoiceDock({
   channelName,
   gameName,
+  communityName,
+  reconnecting: reconnectingProp,
+  micDenied,
   onDisconnect,
   onReport,
 }: {
   channelName: string;
   gameName: string;
+  /** Community / hub display name */
+  communityName?: string;
+  reconnecting?: boolean;
+  micDenied?: boolean;
   onDisconnect: () => void;
   /** AF12 — receives current LiveKit roster (may be empty in stub mode) */
   onReport?: (participants: VoiceParticipant[]) => void;
@@ -36,7 +43,10 @@ export function VoiceDock({
   const [video, setVideo] = useState(false);
   const [live, setLive] = useState(() => voice.getSession()?.live ?? false);
   const [reconnecting, setReconnecting] = useState(
-    () => voice.getSession()?.reconnecting ?? false,
+    () => reconnectingProp ?? voice.getSession()?.reconnecting ?? false,
+  );
+  const [denied, setDenied] = useState(
+    () => micDenied ?? voice.getSession()?.micPermissionDenied ?? false,
   );
   const [participantCount, setParticipantCount] = useState(
     () => voice.getSession()?.participants.length ?? 1,
@@ -50,11 +60,30 @@ export function VoiceDock({
       }
       setLive(session.live);
       setReconnecting(Boolean(session.reconnecting));
+      setDenied(Boolean(session.micPermissionDenied));
       setParticipantCount(session.participants.length);
       if (typeof session.localMuted === "boolean") setMuted(session.localMuted);
       if (typeof session.localDeafened === "boolean") setDeafened(session.localDeafened);
     });
   }, [voice]);
+
+  useEffect(() => {
+    if (typeof reconnectingProp === "boolean") setReconnecting(reconnectingProp);
+  }, [reconnectingProp]);
+
+  useEffect(() => {
+    if (typeof micDenied === "boolean") setDenied(micDenied);
+  }, [micDenied]);
+
+  const statusLine = (() => {
+    if (denied) return t("voice.status.micDenied");
+    if (reconnecting) return t("voice.reconnecting");
+    if (live) {
+      const where = communityName?.trim() || gameName;
+      return `${where} · ${t("voice.status.connected")} · ${participantCount || 1}`;
+    }
+    return `${communityName?.trim() || gameName} · ${t("voice.preview")}`;
+  })();
 
   return (
     <div
@@ -68,20 +97,24 @@ export function VoiceDock({
             className={`grid shrink-0 place-items-center rounded-lg ${
               compact ? "size-7" : "size-8"
             } ${
-              reconnecting
-                ? "bg-amber-500/15 text-amber-200"
-                : live
-                  ? "bg-online/15 text-online"
-                  : "bg-amber-500/15 text-amber-200"
+              denied
+                ? "bg-rose-500/15 text-rose-200"
+                : reconnecting
+                  ? "bg-amber-500/15 text-amber-200"
+                  : live
+                    ? "bg-online/15 text-online"
+                    : "bg-amber-500/15 text-amber-200"
             }`}
           >
             <span
               className={`size-2 animate-pulse rounded-full ${
-                reconnecting
-                  ? "bg-amber-400"
-                  : live
-                    ? "bg-online shadow-[var(--shadow-glow-online)]"
-                    : "bg-amber-400"
+                denied
+                  ? "bg-rose-400"
+                  : reconnecting
+                    ? "bg-amber-400"
+                    : live
+                      ? "bg-online shadow-[var(--shadow-glow-online)]"
+                      : "bg-amber-400"
               }`}
             />
           </div>
@@ -89,21 +122,22 @@ export function VoiceDock({
             <p className={`truncate font-semibold text-white ${compact ? "text-[11px]" : "text-xs"}`}>
               {channelName}
             </p>
+            {compact && communityName ? (
+              <p className="nx-caption truncate text-stone-400">{communityName}</p>
+            ) : null}
             {!compact && (
               <p
                 className={`nx-caption truncate ${
-                  reconnecting
-                    ? "text-amber-200/90"
-                    : live
-                      ? "text-online"
-                      : "text-amber-200/90"
+                  denied
+                    ? "text-rose-200/90"
+                    : reconnecting
+                      ? "text-amber-200/90"
+                      : live
+                        ? "text-online"
+                        : "text-amber-200/90"
                 }`}
               >
-                {reconnecting
-                  ? t("voice.reconnecting")
-                  : live
-                    ? `${gameName} · LiveKit · ${participantCount || 1}`
-                    : `${gameName} · ${t("voice.preview")}`}
+                {statusLine}
               </p>
             )}
           </div>

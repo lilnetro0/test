@@ -10,7 +10,7 @@ import { resolveBannerUrl, resolveCoverUrl, resolveIconUrl } from "@/lib/game-ar
 import { useT, type TKey, translateStatic } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
-import { fetchLiveHubs, joinHubBySlug } from "@/lib/chat/api";
+import { fetchLiveHubs } from "@/lib/chat/api";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { hubMatchesQuery } from "@/lib/hub-search";
 import {
@@ -57,11 +57,10 @@ function DiscoverPage() {
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [focusedGameId, setFocusedGameId] = useState<string | null>(null);
-  const [joining, setJoining] = useState<string | null>(null);
   const [liveHubs, setLiveHubs] = useState<HubCard[]>([]);
   const [hubsLoading, setHubsLoading] = useState(false);
   const { t, lang } = useT();
-  const { user, prefs } = useAuth();
+  const { prefs } = useAuth();
   const navigate = useNavigate();
   const isAdmin = useIsAdmin();
   const live = !shouldUseMockData();
@@ -112,27 +111,9 @@ function DiscoverPage() {
     (cat !== "All" ? 1 : 0) + (regionFilter ? 1 : 0) + (lfgOnly ? 1 : 0);
 
   const joinHub = async (slug: string, hubName: string) => {
-    if (!live) {
-      toast.success(t("toast.joinedHub", { name: hubName }));
-      void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
-      return;
-    }
-    if (!user) {
-      toast.error(t("toast.joinHubSignIn"));
-      return;
-    }
-    setJoining(slug);
-    try {
-      const result = await joinHubBySlug(slug, user.id);
-      if (!result.ok) {
-        toast.error(result.error ?? t("toast.joinHubFail"));
-        return;
-      }
-      toast.success(t("toast.joinedHub", { name: hubName }));
-      void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
-    } finally {
-      setJoining(null);
-    }
+    // Discover opens Game Home for preview — join is an explicit action there.
+    void hubName;
+    void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
   };
 
   const regionChips: { id: RegionCode | ""; label: string }[] = [
@@ -187,7 +168,6 @@ function DiscoverPage() {
                   <CommunityRow
                     key={h.id}
                     hub={h}
-                    joining={joining}
                     onOpen={() => void joinHub(h.id, h.hubName)}
                     t={t}
                     lang={lang}
@@ -284,7 +264,6 @@ function DiscoverPage() {
               <CommunityRow
                 key={h.id}
                 hub={h}
-                joining={joining}
                 onOpen={() => void joinHub(h.id, h.hubName)}
                 t={t}
                 lang={lang}
@@ -401,13 +380,11 @@ function DiscoverPage() {
 
 function CommunityRow({
   hub,
-  joining,
   onOpen,
   t,
   lang,
 }: {
   hub: HubCard;
-  joining: string | null;
   onOpen: () => void;
   t: (key: TKey, vars?: Record<string, string>) => string;
   lang: "en" | "ar";
@@ -433,7 +410,7 @@ function CommunityRow({
         />
       }
       trailing={
-        <Button type="button" variant="accent" size="sm" disabled={joining === hub.id} onClick={onOpen}>
+        <Button type="button" variant="accent" size="sm" onClick={onOpen}>
           {t("discover.open")}
         </Button>
       }

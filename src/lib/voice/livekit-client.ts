@@ -137,17 +137,18 @@ async function waitUntilConnected(next: Room, timeoutMs = 20_000): Promise<void>
   });
 }
 
-async function enableMicSafely(next: Room): Promise<void> {
+async function enableMicSafely(next: Room): Promise<boolean> {
   if (preferredMuted || deafened) {
     try {
       await next.localParticipant.setMicrophoneEnabled(false);
     } catch {
       /* stay as-is */
     }
-    return;
+    return false;
   }
   try {
     await next.localParticipant.setMicrophoneEnabled(true);
+    return false;
   } catch (first) {
     await new Promise((r) => setTimeout(r, 400));
     if (next.state !== ConnectionState.Connected) {
@@ -155,9 +156,11 @@ async function enableMicSafely(next: Room): Promise<void> {
     }
     try {
       await next.localParticipant.setMicrophoneEnabled(true);
+      return false;
     } catch {
       preferredMuted = true;
       console.warn("[voice] Microphone publish failed; joined muted", first);
+      return true;
     }
   }
 }
@@ -259,7 +262,9 @@ async function connectLiveKit(
           ? "Not allowed"
           : result.code === "RATE_LIMITED"
             ? "Slow down"
-            : "Voice error";
+            : result.code === "ROOM_FULL"
+              ? "Room full"
+              : "Voice error";
     throw new Error(`${prefix}: ${result.error}`);
   }
 
@@ -294,7 +299,7 @@ async function connectLiveKit(
       throw new Error("Voice join cancelled");
     }
 
-    await enableMicSafely(next);
+    const micDenied = await enableMicSafely(next);
     applyDeafenVolume();
 
     if (gen !== joinGeneration) {
@@ -306,12 +311,14 @@ async function connectLiveKit(
     session = {
       channelId: input.channelId,
       channelName: input.channelName,
+      hubName: input.hubName,
       roomName: result.roomName,
       connected: true,
       live: true,
       reconnecting: false,
       localMuted: preferredMuted || deafened,
       localDeafened: deafened,
+      micPermissionDenied: micDenied,
       participants: [],
     };
     void enterVoiceAudioSession();

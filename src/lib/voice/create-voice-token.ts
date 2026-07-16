@@ -11,6 +11,16 @@ function getLiveKitEnv(): { url: string; apiKey: string; apiSecret: string } | n
   return { url, apiKey, apiSecret };
 }
 
+function liveKitHttpHost(wsUrl: string): string {
+  const u = new URL(wsUrl);
+  if (u.protocol === "wss:") u.protocol = "https:";
+  else if (u.protocol === "ws:") u.protocol = "http:";
+  u.pathname = "";
+  u.search = "";
+  u.hash = "";
+  return u.toString().replace(/\/$/, "");
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -71,7 +81,7 @@ export const createVoiceToken = createServerFn({ method: "POST" })
       | {
           ok: false;
           error: string;
-          code?: "NOT_CONFIGURED" | "AUTH" | "FORBIDDEN" | "RATE_LIMITED";
+          code?: "NOT_CONFIGURED" | "AUTH" | "FORBIDDEN" | "RATE_LIMITED" | "ROOM_FULL";
         }
     > => {
       const lk = getLiveKitEnv();
@@ -121,14 +131,37 @@ export const createVoiceToken = createServerFn({ method: "POST" })
         }
         roomName = `nexus-dm-${data.threadId}`;
       } else if (data.channelId && UUID_RE.test(data.channelId)) {
-        const { data: channel, error: chErr } = await client
-          .from("voice_channels")
-          .select("id, hub_id, livekit_room_name, name")
-          .eq("id", data.channelId)
-          .maybeSingle();
+        let channel: {
+          id: string;
+          hub_id: string;
+          livekit_room_name: string | null;
+          name: string;
+          capacity?: number | null;
+        } | null = null;
 
-        if (chErr || !channel) {
-          return { ok: false, error: chErr?.message ?? "Voice channel not found", code: "FORBIDDEN" };
+        {
+          const withCap = await client
+            .from("voice_channels")
+            .select("id, hub_id, livekit_room_name, name, capacity")
+            .eq("id", data.channelId)
+            .maybeSingle();
+          if (!withCap.error && withCap.data) {
+            channel = withCap.data;
+          } else {
+            const bare = await client
+              .from("voice_channels")
+              .select("id, hub_id, livekit_room_name, name")
+              .eq("id", data.channelId)
+              .maybeSingle();
+            if (bare.error || !bare.data) {
+              return {
+                ok: false,
+                error: bare.error?.message ?? withCap.error?.message ?? "Voice channel not found",
+                code: "FORBIDDEN",
+              };
+            }
+            channel = bare.data;
+          }
         }
 
         const { data: membership } = await client
@@ -143,6 +176,28 @@ export const createVoiceToken = createServerFn({ method: "POST" })
         }
 
         roomName = channel.livekit_room_name?.trim() || `nexus-${channel.id}`;
+
+        const capacity =
+          typeof channel.capacity === "number" && channel.capacity > 0 ? channel.capacity : null;
+
+        if (capacity != null) {
+          try {
+            const { RoomServiceClient } = await import("livekit-server-sdk");
+            const httpHost = liveKitHttpHost(lk.url);
+            const svc = new RoomServiceClient(httpHost, lk.apiKey, lk.apiSecret);
+            const participants = await svc.listParticipants(roomName);
+            const alreadyIn = participants.some((p) => p.identity === uid);
+            if (!alreadyIn && participants.length >= capacity) {
+              return {
+                ok: false,
+                error: "Voice room is full",
+                code: "ROOM_FULL",
+              };
+            }
+          } catch {
+            // Room may not exist yet (first joiner) — allow mint.
+          }
+        }
       } else {
         return { ok: false, error: "Invalid voice channel or DM thread", code: "FORBIDDEN" };
       }

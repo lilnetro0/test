@@ -44,6 +44,16 @@ const CACHE_TTL_MS = 8_000;
 /**
  * Pre-join LiveKit room roster for a hub's voice channels.
  * Uses RoomServiceClient — does not require the caller to join.
+ *
+ * Optimization:
+ * 1. `listRooms()` once to learn which rooms are active (numParticipants > 0).
+ * 2. `listParticipants(room)` only for active rooms that belong to this hub.
+ * Empty / never-created rooms skip the per-room call.
+ *
+ * Limitation (LiveKit): there is no batch `listParticipants` API and no
+ * filter-by-prefix roster endpoint. Participant identities/names still require
+ * one `listParticipants` per active room. Cross-hub room listing is project-wide;
+ * we only hydrate members for this hub's room names.
  */
 export const listVoiceRoomOccupancy = createServerFn({ method: "POST" })
   .validator((data: { accessToken: string; hubId: string }) => data)
@@ -132,21 +142,44 @@ export const listVoiceRoomOccupancy = createServerFn({ method: "POST" })
       const { RoomServiceClient } = await import("livekit-server-sdk");
       const svc = new RoomServiceClient(liveKitHttpHost(lk.url), lk.apiKey, lk.apiSecret);
 
+      const hubRoomNames = (channels ?? []).map(
+        (c) => c.livekit_room_name?.trim() || `nexus-${c.id}`,
+      );
+
+      /** Rooms known active on the LiveKit project (numParticipants > 0). */
+      const activeCounts = new Map<string, number>();
+      let listRoomsOk = false;
+      try {
+        const rooms = await svc.listRooms(hubRoomNames);
+        listRoomsOk = true;
+        for (const r of rooms) {
+          if (typeof r.numParticipants === "number" && r.numParticipants > 0) {
+            activeCounts.set(r.name, r.numParticipants);
+          }
+        }
+      } catch {
+        // Fall through — probe each room with listParticipants.
+      }
+
       const result: VoiceOccupancyChannel[] = [];
       for (const c of channels ?? []) {
         const roomName = c.livekit_room_name?.trim() || `nexus-${c.id}`;
         let members: VoiceOccupancyMember[] = [];
-        try {
-          const participants = await svc.listParticipants(roomName);
-          members = participants.map((p) => ({
-            userId: p.identity,
-            name: p.name?.trim() || p.identity,
-            // AUDIO track type is typically 1; any muted published track ≈ mic off for lobby UI
-            muted: Boolean(p.tracks?.some((t) => t.muted)),
-          }));
-        } catch {
-          members = [];
+        const shouldHydrate = !listRoomsOk || (activeCounts.get(roomName) ?? 0) > 0;
+
+        if (shouldHydrate) {
+          try {
+            const participants = await svc.listParticipants(roomName);
+            members = participants.map((p) => ({
+              userId: p.identity,
+              name: p.name?.trim() || p.identity,
+              muted: Boolean(p.tracks?.some((t) => t.muted)),
+            }));
+          } catch {
+            members = [];
+          }
         }
+
         result.push({
           channelId: c.id,
           channelName: c.name,

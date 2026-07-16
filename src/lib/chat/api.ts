@@ -228,6 +228,46 @@ export async function fetchLiveHubs(): Promise<{ hubs: LiveHub[]; error?: string
   return { hubs };
 }
 
+/** Resolve a single hub by slug without joining. */
+export async function fetchHubBySlug(
+  slug: string,
+): Promise<{ hub: LiveHub | null; error?: string }> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { hub: null, error: "Supabase not configured" };
+
+  const { data, error } = await client
+    .from("hubs")
+    .select(
+      "id, slug, name, member_count, active_count, image_url, region, has_lfg, name_search_norm, game:games(*)",
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) return { hub: null, error: error.message };
+  if (!data) return { hub: null };
+  return { hub: mapHubRowToLiveHub(data as HubJoinRow) };
+}
+
+/** Membership check — does not create membership. */
+export async function checkHubMembership(
+  hubUuid: string,
+  userId: string,
+): Promise<{ isMember: boolean; role?: string; error?: string }> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { isMember: false, error: "Supabase not configured" };
+
+  const { data, error } = await client
+    .from("hub_members")
+    .select("role")
+    .eq("hub_id", hubUuid)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) return { isMember: false, error: error.message };
+  if (!data) return { isMember: false };
+  return { isMember: true, role: data.role };
+}
+
 export async function fetchUserHubs(
   userId: string,
 ): Promise<{ hubs: HubCard[]; error?: string }> {

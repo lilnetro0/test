@@ -132,7 +132,7 @@ export function HubHero({
   const h = HERO[gameId] ?? FALLBACK;
   if (imageUrl) {
     return (
-      <div className={`relative overflow-hidden bg-stone-950 ${className}`} aria-hidden>
+      <div className={`nx-ui-media relative overflow-hidden bg-stone-950 ${className}`} aria-hidden>
         <img
           src={imageUrl}
           alt=""
@@ -141,7 +141,8 @@ export function HubHero({
           sizes={large ? "100vw" : "(max-width: 640px) 40vw, 160px"}
           loading={large ? "eager" : "lazy"}
           decoding="async"
-          className="absolute inset-0 size-full object-cover"
+          draggable={false}
+          className="nx-no-drag absolute inset-0 size-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/35" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,transparent_28%)]" />

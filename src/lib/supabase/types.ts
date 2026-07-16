@@ -239,6 +239,7 @@ export type Database = {
           name: string;
           position: number;
           livekit_room_name: string | null;
+          capacity: number | null;
           created_at: string;
         };
         Insert: {
@@ -248,6 +249,7 @@ export type Database = {
           name: string;
           position?: number;
           livekit_room_name?: string | null;
+          capacity?: number | null;
         };
         Update: Partial<Database["public"]["Tables"]["voice_channels"]["Insert"]>;
         Relationships: [];

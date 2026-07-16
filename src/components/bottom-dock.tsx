@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Home,
@@ -11,6 +11,7 @@ import {
   LogOut,
   UserCircle,
 } from "lucide-react";
+import { AppNav } from "@/components/app-nav";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { useNotifications } from "@/lib/notifications-provider";
@@ -23,6 +24,8 @@ import { toast } from "sonner";
  * Tabs (source order): Home · Discover · Messages · Friends · You
  * Hub switching lives on the Home header (and `/?hubs=1`), not here.
  * See docs/NAVIGATION-SPEC.md.
+ *
+ * Uses AppNav (button + router) — not <a> — so iOS does not show link previews.
  */
 export function BottomDock() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -30,7 +33,7 @@ export function BottomDock() {
   const { t } = useT();
   const { unreadCount } = useNotifications();
   const { channelUnread, dmUnread } = useMessageUnreadTotals();
-  const isHome = pathname === "/";
+  const isHome = pathname === "/" || pathname.startsWith("/c/");
   const inYouSection =
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/settings") ||
@@ -107,9 +110,10 @@ function DockItem({
   badge?: number;
 }) {
   return (
-    <Link
+    <AppNav
       to={to}
       aria-label={badge && badge > 0 ? `${label} (${badge})` : label}
+      aria-current={active ? "page" : undefined}
       className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 nx-tab-active ${
         active ? "text-accent" : "text-stone-500 hover:text-stone-200"
       }`}
@@ -123,7 +127,7 @@ function DockItem({
         ) : null}
       </span>
       <span className="nx-label text-[10px] text-inherit">{label}</span>
-    </Link>
+    </AppNav>
   );
 }
 
@@ -171,10 +175,10 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
         className="absolute inset-0 bg-black/65"
       />
       <div className="bottom-dock-clearance absolute inset-x-2 rounded-2xl border border-border-subtle bg-surface-mid p-2 shadow-2xl motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-150 md:inset-x-auto md:end-3 md:w-80">
-        <Link
+        <AppNav
           to="/me"
           onClick={onClose}
-          className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 hover:bg-white/[0.06]"
+          className="flex w-full items-center gap-3 rounded-xl bg-white/[0.03] p-3 text-start hover:bg-white/[0.06]"
         >
           <div className="grid size-11 shrink-0 place-items-center rounded-full border border-accent/40 bg-accent/10 text-accent">
             <UserCircle className="size-6" />
@@ -189,7 +193,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
           <span className="text-[10px] font-medium tracking-wide text-stone-500">
             {t("you.viewProfile")}
           </span>
-        </Link>
+        </AppNav>
 
         <div className="my-2 h-px bg-border-subtle" />
 
@@ -198,11 +202,11 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
             const Icon = item.icon;
             const active = pathname.startsWith(item.to);
             return (
-              <Link
+              <AppNav
                 key={item.to}
                 to={item.to}
                 onClick={onClose}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start transition-colors ${
                   active ? "bg-accent/10 text-accent" : "text-stone-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
@@ -214,7 +218,7 @@ function YouMenu({ onClose, pathname }: { onClose: () => void; pathname: string 
                   </span>
                 )}
                 <span className="hidden truncate text-[10px] text-stone-500 md:inline">{item.hint}</span>
-              </Link>
+              </AppNav>
             );
           })}
         </div>

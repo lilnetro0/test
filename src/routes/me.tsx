@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { AppNav } from "@/components/app-nav";
 import { AppShell } from "@/components/app-shell";
 import { Field, FieldInput, FieldTextarea, ScreenHeader } from "@/components/ui-native";
 import { Button } from "@/components/ui/button";
@@ -364,10 +365,10 @@ function MePage() {
             ) : (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {hubs.map((g) => (
-                  <Link
+                  <AppNav
                     key={g.id}
-                    to="/"
-                    search={{ hub: g.id }}
+                    to="/c/$hubSlug"
+                    params={{ hubSlug: g.id }}
                     className="nx-press group flex flex-col items-center gap-2 rounded-2xl border border-border-subtle/70 p-4 shadow-[var(--nx-shadow-1)] transition-colors hover:border-accent/30"
                   >
                     <GameIcon
@@ -378,7 +379,7 @@ function MePage() {
                       size="lg"
                     />
                     <span className="nx-caption text-center text-stone-300">{g.name}</span>
-                  </Link>
+                  </AppNav>
                 ))}
               </div>
             )}

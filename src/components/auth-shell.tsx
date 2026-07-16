@@ -1,6 +1,6 @@
 import logo from "@/assets/nexus-logo.png";
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { AppNav } from "@/components/app-nav";
 import { LegalLinks } from "@/components/legal-page";
 import { Field } from "@/components/ui-native";
 import { useT, type Lang, LANG_LABELS } from "@/lib/i18n";
@@ -53,12 +53,24 @@ export function AuthShell({
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-8">
-        <Link to="/" search={{}} className="mb-6 flex flex-col items-center gap-2 text-center">
-          <img src={logo} alt="" width={44} height={44} className="size-11 object-contain" />
+        <AppNav
+          to="/"
+          search={{}}
+          className="mb-6 flex w-full flex-col items-center gap-2 text-center"
+          aria-label="Nexus"
+        >
+          <img
+            src={logo}
+            alt=""
+            width={44}
+            height={44}
+            draggable={false}
+            className="nx-no-drag size-11 object-contain"
+          />
           <span className="font-display text-[1.75rem] font-bold tracking-tight text-white">
             Nexus
           </span>
-        </Link>
+        </AppNav>
 
         <div className="mb-6 text-center">
           <h1 className="nx-title text-lg">{title}</h1>

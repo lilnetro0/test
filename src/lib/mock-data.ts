@@ -72,11 +72,19 @@ export const DISCOVER_HUBS: HubCard[] = [
 ];
 
 export type TextChannel = { id: string; name: string; slug?: string; topic?: string; unread?: number };
-export type VoiceMember = { name: string; muted?: boolean; deafened?: boolean; speaking?: boolean };
+export type VoiceMember = {
+  name: string;
+  userId?: string;
+  muted?: boolean;
+  deafened?: boolean;
+  speaking?: boolean;
+};
 export type VoiceChannel = {
   id: string;
   name: string;
   members: VoiceMember[];
+  /** Soft max for UI (Game Home). Null = count only. */
+  capacity?: number | null;
   /** LiveKit room name from DB (Phase 5) */
   livekitRoomName?: string;
 };
@@ -133,10 +141,10 @@ export const HUBS: Record<string, Hub> = {
       { id: "creative", name: "creative-builds" },
     ],
     voiceChannels: [
-      { id: "lobby-alpha", name: "Lobby Alpha", members: [{ name: "Ghost_Protocol", speaking: true }, { name: "RogueOne" }] },
-      { id: "competitive", name: "Competitive", members: [] },
-      { id: "creative", name: "Creative Build", members: [{ name: "SurgicalStrike", muted: true }] },
-      { id: "afk", name: "AFK", members: [] },
+      { id: "lobby-alpha", name: "Lobby Alpha", capacity: 8, members: [{ name: "Ghost_Protocol", speaking: true }, { name: "RogueOne" }] },
+      { id: "competitive", name: "Competitive", capacity: 8, members: [] },
+      { id: "creative", name: "Creative Build", capacity: 6, members: [{ name: "SurgicalStrike", muted: true }] },
+      { id: "afk", name: "AFK", capacity: 12, members: [] },
     ],
     activeChannelId: "general",
     pinnedCount: 4,
@@ -171,9 +179,9 @@ export const HUBS: Record<string, Hub> = {
       { id: "clips", name: "clips" },
     ],
     voiceChannels: [
-      { id: "squad-bravo", name: "Squad Bravo", members: [{ name: "Jett_Diff", speaking: true }, { name: "RazeX" }, { name: "KAYO_Main", muted: true }] },
-      { id: "warmup", name: "Warmup Lobby", members: [] },
-      { id: "5-stack", name: "5-Stack Ranked", members: [{ name: "Viper_Queen" }] },
+      { id: "squad-bravo", name: "Squad Bravo", capacity: 5, members: [{ name: "Jett_Diff", speaking: true }, { name: "RazeX" }, { name: "KAYO_Main", muted: true }] },
+      { id: "warmup", name: "Warmup Lobby", capacity: 8, members: [] },
+      { id: "5-stack", name: "5-Stack Ranked", capacity: 5, members: [{ name: "Viper_Queen" }] },
     ],
     activeChannelId: "general",
     pinnedCount: 2,

@@ -4,6 +4,14 @@ import { MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
 /** Custom scheme registered in Info.plist + Supabase redirect allow-list. */
 export const NATIVE_AUTH_REDIRECT = "com.lilnetro0.nexus://auth/callback";
 
+/** Default SSR / PWA viewport — user pinch-zoom remains available. */
+export const DEFAULT_VIEWPORT =
+  "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content";
+
+/** Capacitor WKWebView — disable double-tap / pinch page zoom in the native shell. */
+export const CAPACITOR_VIEWPORT =
+  "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content";
+
 export function isNativeApp(): boolean {
   try {
     return Capacitor.isNativePlatform();
@@ -32,6 +40,8 @@ export function authRedirectTo(path = "/"): string {
 export async function bootstrapNativeShell(): Promise<void> {
   if (!isNativeApp()) return;
 
+  applyCapacitorViewport();
+
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: Style.Dark });
@@ -56,5 +66,17 @@ export async function bootstrapNativeShell(): Promise<void> {
     await SplashScreen.hide();
   } catch {
     // Optional
+  }
+}
+
+/** Native shell: strict viewport + data-capacitor for CSS (idempotent). */
+export function applyCapacitorViewport(): void {
+  if (!isNativeApp()) return;
+  try {
+    document.documentElement.dataset.capacitor = "1";
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) meta.setAttribute("content", CAPACITOR_VIEWPORT);
+  } catch {
+    // SSR / no document
   }
 }

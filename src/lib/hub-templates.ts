@@ -15,6 +15,7 @@ export type HubVoiceChannelTemplate = {
   name: string;
   slug: string;
   position: number;
+  capacity?: number;
 };
 
 /** Official / regional hub starter pack — apply from admin Channels tab. */
@@ -28,7 +29,7 @@ export const MENA_HUB_TEXT_TEMPLATE: HubTextChannelTemplate[] = [
 ];
 
 export const MENA_HUB_VOICE_TEMPLATE: HubVoiceChannelTemplate[] = [
-  { name: "صوت عام", slug: "lobby", position: 0 },
-  { name: "الرانكد", slug: "ranked-vc", position: 1 },
-  { name: "فريق", slug: "squad", position: 2 },
+  { name: "صوت عام", slug: "lobby", position: 0, capacity: 8 },
+  { name: "الرانكد", slug: "ranked-vc", position: 1, capacity: 5 },
+  { name: "فريق", slug: "squad", position: 2, capacity: 5 },
 ];

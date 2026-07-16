@@ -60,6 +60,7 @@ async function seedMenaChannels(
       name: ch.name,
       slug: ch.slug,
       position: ch.position,
+      capacity: ch.capacity ?? 8,
       livekit_room_name: `nexus-hub-${hubId}-${ch.slug}`,
     });
     if (!error) created += 1;
@@ -558,6 +559,7 @@ export const adminUpsertVoiceChannel = createServerFn({ method: "POST" })
         slug?: string;
         position?: number;
         livekit_room_name?: string | null;
+        capacity?: number | null;
       };
     }) => data,
   )
@@ -579,6 +581,7 @@ export const adminUpsertVoiceChannel = createServerFn({ method: "POST" })
           slug,
           position: data.channel.position ?? 0,
           livekit_room_name: data.channel.livekit_room_name ?? undefined,
+          capacity: data.channel.capacity ?? undefined,
         })
         .eq("id", data.channel.id);
       if (error) return { ok: false as const, error: error.message };
@@ -600,6 +603,7 @@ export const adminUpsertVoiceChannel = createServerFn({ method: "POST" })
         slug,
         position: data.channel.position ?? 0,
         livekit_room_name: data.channel.livekit_room_name ?? null,
+        capacity: data.channel.capacity ?? 8,
       })
       .select("id")
       .single();

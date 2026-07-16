@@ -1,4 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AppNav } from "@/components/app-nav";
 import { AppShell } from "@/components/app-shell";
 import type { Friend } from "@/lib/mock-data";
 import { useState } from "react";
@@ -256,13 +257,13 @@ function FriendsList({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
-                    <Link
+                    <AppNav
                       to="/profile/$username"
                       params={{ username: f.name }}
-                      className="nx-label truncate hover:underline"
+                      className="nx-label truncate text-start hover:underline"
                     >
                       {f.name}
-                    </Link>
+                    </AppNav>
                     <span className="nx-caption font-mono">{f.tag}</span>
                   </div>
                   <p className="nx-caption truncate">{f.activity ?? f.status}</p>

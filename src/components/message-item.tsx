@@ -329,7 +329,7 @@ function AttachmentBlock({
     const src = url ?? attachment.url;
     if (!src) return null;
     return (
-      <a href={src} target="_blank" rel="noreferrer" className="mt-2 block max-w-sm">
+      <a href={src} target="_blank" rel="noreferrer" className="nx-external-link mt-2 block max-w-sm">
         <img
           src={src}
           alt={attachment.name}
@@ -345,7 +345,7 @@ function AttachmentBlock({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="mt-2 flex max-w-sm items-center gap-3 rounded-lg border border-border-subtle bg-background/50 p-3 hover:border-accent/40"
+      className="nx-external-link mt-2 flex max-w-sm items-center gap-3 rounded-lg border border-border-subtle bg-background/50 p-3 hover:border-accent/40"
     >
       <div className="grid size-10 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
         <FileIcon className="size-4" />

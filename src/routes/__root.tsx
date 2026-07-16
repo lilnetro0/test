@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
-  Link,
   createRootRouteWithContext,
   useRouter,
   useRouterState,
@@ -21,8 +20,9 @@ import { resolveRequestLang } from "@/lib/resolve-request-lang";
 import { AuthProvider } from "@/lib/auth-provider";
 import { NotificationsProvider } from "@/lib/notifications-provider";
 import { WhatsNew } from "@/components/whats-new";
+import { AppNav } from "@/components/app-nav";
 import { applyAppearanceClasses } from "@/lib/prefs";
-import { bootstrapNativeShell } from "@/lib/capacitor";
+import { bootstrapNativeShell, DEFAULT_VIEWPORT } from "@/lib/capacitor";
 import { registerServiceWorker } from "@/lib/pwa";
 import { assertProductionClientEnv } from "@/lib/supabase/env";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
@@ -52,13 +52,13 @@ function NotFoundComponent() {
 
 function QuickLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <Link
+    <AppNav
       to={to}
       className="flex flex-col items-center gap-1.5 rounded-xl border border-border-subtle bg-surface-mid px-3 py-4 text-stone-300 transition-all hover:border-accent/40 hover:text-white"
     >
       <span className="text-accent">{icon}</span>
       <span className="text-[11px] font-semibold uppercase tracking-wide">{label}</span>
-    </Link>
+    </AppNav>
   );
 }
 
@@ -95,17 +95,18 @@ function ErrorBody({ onRetry }: { onRetry: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
+            type="button"
             onClick={onRetry}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             {t("error.tryAgain")}
           </button>
-          <a
-            href="/"
+          <AppNav
+            to="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             {t("error.goHome")}
-          </a>
+          </AppNav>
         </div>
       </div>
     </div>
@@ -120,8 +121,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { charSet: "utf-8" },
         {
           name: "viewport",
-          content:
-            "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+          content: DEFAULT_VIEWPORT,
         },
         { title: translateStatic("meta.title", undefined, lang) },
         { name: "description", content: translateStatic("meta.description", undefined, lang) },
@@ -152,6 +152,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 const LANG_BOOTSTRAP = `(function(){try{var k='nexus.lang';var l=localStorage.getItem(k);if(!l){var m=document.cookie.match(/(?:^|; )nexus\\.lang=([^;]*)/);l=m?decodeURIComponent(m[1]):null;}if(!l){var n=(navigator.language||'').toLowerCase();if(n.indexOf('ar')===0)l='ar';}if(!l){try{var r=localStorage.getItem('nexus.region');var tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';var menaTz={};['Asia/Riyadh','Asia/Dubai','Asia/Qatar','Asia/Kuwait','Asia/Bahrain','Asia/Muscat','Asia/Amman','Asia/Beirut','Asia/Baghdad','Africa/Cairo','Africa/Casablanca','Africa/Tunis','Africa/Algiers'].forEach(function(z){menaTz[z]=1;});if(r||menaTz[tz])l='ar';}catch(e2){}}if(l==='ar'||l==='en'){document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';}}catch(e){}})();`;
 
+/** Capacitor: strict no-zoom viewport before first paint (see capacitor.ts constants). */
+const CAPACITOR_BOOTSTRAP = `(function(){try{var c=window.Capacitor;if(!c||!c.isNativePlatform||!c.isNativePlatform())return;document.documentElement.dataset.capacitor='1';var meta=document.querySelector('meta[name=viewport]');if(meta)meta.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content');}catch(e){}})();`;
+
 /** AF16/AF21 — isomorphic cookie / Accept-Language (see resolve-request-lang). */
 function resolveShellLang(): Lang {
   try {
@@ -167,6 +170,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang={lang} dir={dir} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: CAPACITOR_BOOTSTRAP }} />
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOTSTRAP }} />
         <HeadContent />
       </head>

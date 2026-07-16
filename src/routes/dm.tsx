@@ -1,11 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search, Phone, UserPlus, MessageSquare, ChevronLeft } from "lucide-react";
 import { MessageItem } from "@/components/message-item";
 import { Composer } from "@/components/composer";
 import { EmptyState } from "@/components/empty-state";
-import { VoiceDock } from "@/components/voice-dock";
 import { ScreenHeader, ListRow } from "@/components/ui-native";
 import { Button } from "@/components/ui/button";
 import { useT, translateStatic } from "@/lib/i18n";
@@ -67,6 +66,13 @@ function DMPage() {
 
   const [joiningVoice, setJoiningVoice] = useState(false);
   const [reportTarget, setReportTarget] = useState<ReportDialogTarget | null>(null);
+
+  useEffect(() => {
+    setInVoice(Boolean(getVoiceClient().getSession()?.connected));
+    return getVoiceClient().onSessionChange?.((s) => {
+      setInVoice(Boolean(s?.connected));
+    });
+  }, []);
 
   const joinDmVoice = async () => {
     if (!dms.activeId || !dms.active || joiningVoice) return;
@@ -182,8 +188,8 @@ function DMPage() {
             title={t("empty.dms.title")}
             body={t("empty.dms.body")}
             primaryAction={
-              <Button asChild variant="accent" size="touch">
-                <Link to="/friends">{t("empty.dms.cta")}</Link>
+              <Button type="button" variant="accent" size="touch" onClick={() => void navigate({ to: "/friends" })}>
+                {t("empty.dms.cta")}
               </Button>
             }
           />
@@ -207,8 +213,8 @@ function DMPage() {
             <ScreenHeader
               title={t("dm.title")}
               trailing={
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/friends">{t("dm.new")}</Link>
+                <Button type="button" variant="ghost" size="sm" onClick={() => void navigate({ to: "/friends" })}>
+                  {t("dm.new")}
                 </Button>
               }
             />
@@ -227,8 +233,13 @@ function DMPage() {
                 title={t("empty.dms.title")}
                 body={t("empty.dms.body")}
                 primaryAction={
-                  <Button asChild variant="accent" size="touch">
-                    <Link to="/friends">{t("empty.dms.cta")}</Link>
+                  <Button
+                    type="button"
+                    variant="accent"
+                    size="touch"
+                    onClick={() => void navigate({ to: "/friends" })}
+                  >
+                    {t("empty.dms.cta")}
                   </Button>
                 }
               />
@@ -298,16 +309,6 @@ function DMPage() {
                   ))}
                 </div>
 
-                {inVoice && (
-                  <VoiceDock
-                    channelName={active.with.name}
-                    gameName="DM"
-                    onDisconnect={() => {
-                      void getVoiceClient().leaveVoiceChannel();
-                      setInVoice(false);
-                    }}
-                  />
-                )}
                 <Composer
                   channelName={active.with.name}
                   onTyping={notifyTyping}

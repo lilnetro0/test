@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { AtSign, UserPlus, Volume2, Info, CheckCheck, Bell, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -73,13 +73,23 @@ function NotificationsPage() {
               title={t("empty.notifications.title")}
               body={t("empty.notifications.body")}
               primaryAction={
-                <Button asChild variant="accent" size="touch">
-                  <Link to="/friends">{t("nav.friends")}</Link>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="touch"
+                  onClick={() => void router.navigate({ to: "/friends" })}
+                >
+                  {t("nav.friends")}
                 </Button>
               }
               secondaryAction={
-                <Button asChild variant="ghost" size="touch">
-                  <Link to="/discover">{t("nav.discover")}</Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="touch"
+                  onClick={() => void router.navigate({ to: "/discover" })}
+                >
+                  {t("nav.discover")}
                 </Button>
               }
             />

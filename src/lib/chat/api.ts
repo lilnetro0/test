@@ -312,13 +312,23 @@ export async function fetchChannels(hubUuid: string): Promise<{
       .order("position"),
     client
       .from("voice_channels")
-      .select("id, name, position, livekit_room_name")
+      .select("id, name, position, livekit_room_name, capacity")
       .eq("hub_id", hubUuid)
       .order("position"),
   ]);
 
   if (textRes.error) return { text: [], voice: [], error: textRes.error.message };
-  if (voiceRes.error) return { text: [], voice: [], error: voiceRes.error.message };
+  let voiceData = voiceRes.data;
+  if (voiceRes.error) {
+    // capacity column may not be migrated yet — retry without it
+    const fallback = await client
+      .from("voice_channels")
+      .select("id, name, position, livekit_room_name")
+      .eq("hub_id", hubUuid)
+      .order("position");
+    if (fallback.error) return { text: [], voice: [], error: fallback.error.message };
+    voiceData = fallback.data as typeof voiceRes.data;
+  }
 
   const { data: unreadRows } = await client.rpc("hub_channel_unreads", { p_hub_id: hubUuid });
   const unreadMap = new Map<string, number>();
@@ -337,10 +347,14 @@ export async function fetchChannels(hubUuid: string): Promise<{
         unread: n > 0 ? Math.min(n, 99) : undefined,
       };
     }),
-    voice: (voiceRes.data ?? []).map((c) => ({
+    voice: (voiceData ?? []).map((c) => ({
       id: c.id,
       name: c.name,
       members: [],
+      capacity:
+        "capacity" in c && typeof (c as { capacity?: number | null }).capacity === "number"
+          ? (c as { capacity: number }).capacity
+          : null,
       livekitRoomName: c.livekit_room_name ?? undefined,
     })),
   };

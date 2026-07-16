@@ -126,6 +126,37 @@
     overscroll-behavior: none;
   }
 
+  /*
+   * Mobile shell — disable double-tap zoom via touch-action (pinch zoom preserved on web/PWA).
+   * Capacitor adds user-scalable=no via viewport bootstrap; this CSS applies to both.
+   */
+  @media (pointer: coarse) {
+    html,
+    body,
+    #root {
+      touch-action: manipulation;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    button,
+    a,
+    input,
+    textarea,
+    select,
+    [role="button"] {
+      touch-action: manipulation;
+    }
+
+    /* iOS focus zoom when font-size < 16px — auth, search, chat composer, etc. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not(
+        [type="button"]
+      ):not([type="submit"]):not([type="reset"]):not([type="file"]),
+    textarea,
+    select {
+      font-size: max(1rem, 16px);
+    }
+  }
+
   /* Arabic: avoid Latin-style uppercase tracking on display text */
   html[lang="ar"] .uppercase,
   html[lang="ar"] .nx-title,
@@ -319,3 +350,19 @@ html[data-keyboard-open] .bottom-dock {
     color var(--nx-motion-fast) var(--nx-motion-ease),
     transform var(--nx-motion-fast) var(--nx-motion-ease);
 }
+
+/*
+ * Capacitor / iOS WKWebView: suppress native link callouts on in-app navigation.
+ * Opt out with .nx-external-link (attachments, mailto, true shareable URLs).
+ * Does not set user-select:none — message long-press and text selection stay intact.
+ */
+html[data-capacitor="1"] a:not(.nx-external-link):not([href^="mailto:"]):not([href^="tel:"]),
+html[data-capacitor="1"] [role="link"]:not(.nx-external-link) {
+  -webkit-touch-callout: none;
+}
+
+html[data-capacitor="1"] .nx-ui-media img,
+html[data-capacitor="1"] img.nx-no-drag {
+  -webkit-user-drag: none;
+}
+

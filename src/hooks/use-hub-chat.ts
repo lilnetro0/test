@@ -40,16 +40,34 @@ function isChannelUuid(id: string): boolean {
 
 const EMPTY_CHANNEL: TextChannel = { id: "", name: "…" };
 
-export function useHubChat(opts?: { initialSlug?: string }) {
+export function useHubChat(opts?: {
+  initialSlug?: string;
+  /** Text channel id or slug from the route — required for chat screens. */
+  channelKey?: string;
+  /** When false, do not auto-pick the first text channel (Game Home). Default true for chat. */
+  autoSelectChannel?: boolean;
+}) {
   const live = !shouldUseMockData();
   const { user, profile } = useAuth();
   const initialSlug = opts?.initialSlug?.trim() || undefined;
+  const channelKey = opts?.channelKey?.trim() || undefined;
+  const autoSelectChannel = opts?.autoSelectChannel !== false;
 
   const [liveHubs, setLiveHubs] = useState<LiveHub[]>([]);
   const [activeSlug, setActiveSlug] = useState(initialSlug || "fortnite");
-  const [activeChannelId, setActiveChannelId] = useState(() =>
-    shouldUseMockData() ? "general" : "",
-  );
+  const [activeChannelId, setActiveChannelId] = useState(() => {
+    if (shouldUseMockData()) {
+      const hub = HUBS[initialSlug || "fortnite"] ?? HUBS.fortnite;
+      if (channelKey) {
+        const match = hub.textChannels.find(
+          (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
+        );
+        return match?.id ?? hub.textChannels[0]?.id ?? "general";
+      }
+      return hub.textChannels[0]?.id ?? "general";
+    }
+    return "";
+  });
   const [textChannels, setTextChannels] = useState<TextChannel[]>([]);
   const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
@@ -144,6 +162,23 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     setActiveSlug(initialSlug);
   }, [initialSlug]);
 
+  // Keep active channel aligned with route channel key
+  useEffect(() => {
+    if (!channelKey) return;
+    if (live) {
+      const match = textChannels.find(
+        (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
+      );
+      if (match) setActiveChannelId(match.id);
+      return;
+    }
+    const hub = HUBS[activeSlug] ?? HUBS.fortnite;
+    const match = hub.textChannels.find(
+      (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
+    );
+    if (match) setActiveChannelId(match.id);
+  }, [channelKey, live, textChannels, activeSlug]);
+
   // Join hub + load channels/members when hub changes
   useEffect(() => {
     if (!live || !activeHub || !user) return;
@@ -182,7 +217,14 @@ export function useHubChat(opts?: { initialSlug?: string }) {
 
       const first = ch.text[0]?.id;
       setActiveChannelId((prev) => {
+        if (channelKey) {
+          const match = ch.text.find(
+            (c) => c.id === channelKey || c.slug === channelKey || c.name === channelKey,
+          );
+          if (match) return match.id;
+        }
         if (prev && ch.text.some((c) => c.id === prev)) return prev;
+        if (!autoSelectChannel) return prev || "";
         return first ?? "";
       });
     })();
@@ -190,7 +232,7 @@ export function useHubChat(opts?: { initialSlug?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [live, activeHub?.uuid, user?.id]);
+  }, [live, activeHub?.uuid, user?.id, channelKey, autoSelectChannel]);
 
   // Load messages + realtime for active channel
   useEffect(() => {

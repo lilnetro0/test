@@ -7,6 +7,7 @@ const MOTION_KEY = "nexus.pref.reduceMotion";
 const CONTRAST_KEY = "nexus.pref.highContrast";
 const HUB_ORDER_KEY = "nexus.pref.hubOrder";
 const HUB_NOTIF_KEY = "nexus.pref.hubNotifs";
+const LAST_HUB_KEY = "nexus.pref.lastHub";
 const PROFILE_KEY = "nexus.pref.profile";
 
 export type HubNotifMode = "all" | "mentions" | "mute";
@@ -107,6 +108,25 @@ export function setHubNotif(hubSlug: string, mode: HubNotifMode) {
   all[hubSlug] = mode;
   try {
     window.localStorage.setItem(HUB_NOTIF_KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Last opened community slug (Game Home IA). */
+export function getLastHub(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(LAST_HUB_KEY);
+    return v?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setLastHub(slug: string) {
+  try {
+    window.localStorage.setItem(LAST_HUB_KEY, slug.trim());
   } catch {
     /* ignore */
   }

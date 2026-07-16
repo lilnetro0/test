@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { BottomDock } from "@/components/bottom-dock";
+import { GlobalVoiceBar } from "@/components/global-voice-bar";
 import { CapOfflineBanner } from "@/components/cap-offline-banner";
 import { DemoBanner } from "@/components/demo-banner";
 import { RequireAuth } from "@/components/require-auth";
@@ -20,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div id="main-content" className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>
+        <GlobalVoiceBar />
         <BottomDock />
       </div>
     </RequireAuth>

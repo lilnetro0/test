@@ -26,7 +26,13 @@ export function GameIcon({
 
   if (src) {
     return (
-      <div className={cn("relative shrink-0 overflow-hidden rounded-lg bg-stone-900", box, className)}>
+      <div
+        className={cn(
+          "nx-ui-media relative shrink-0 overflow-hidden rounded-lg bg-stone-900",
+          box,
+          className,
+        )}
+      >
         <img
           src={src}
           alt=""
@@ -35,7 +41,8 @@ export function GameIcon({
           sizes={GAME_ART_SIZES.icon}
           loading="lazy"
           decoding="async"
-          className={cn("size-full object-cover", imgClassName)}
+          draggable={false}
+          className={cn("nx-no-drag size-full object-cover", imgClassName)}
         />
       </div>
     );

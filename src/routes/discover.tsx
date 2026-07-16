@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { DISCOVER_HUBS, FRIENDS, catalogGameId, type HubCard } from "@/lib/mock-data";
 import { useEffect, useMemo, useState } from "react";
@@ -114,7 +114,7 @@ function DiscoverPage() {
   const joinHub = async (slug: string, hubName: string) => {
     if (!live) {
       toast.success(t("toast.joinedHub", { name: hubName }));
-      void navigate({ to: "/", search: { hub: slug, hubs: undefined } });
+      void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
       return;
     }
     if (!user) {
@@ -129,7 +129,7 @@ function DiscoverPage() {
         return;
       }
       toast.success(t("toast.joinedHub", { name: hubName }));
-      void navigate({ to: "/", search: { hub: slug, hubs: undefined } });
+      void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
     } finally {
       setJoining(null);
     }
@@ -318,10 +318,15 @@ function DiscoverPage() {
                   </div>
                 }
                 trailing={
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/profile/$username" params={{ username: p.name }}>
-                      {t("discover.view")}
-                    </Link>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      void navigate({ to: "/profile/$username", params: { username: p.name } })
+                    }
+                  >
+                    {t("discover.view")}
                   </Button>
                 }
               />

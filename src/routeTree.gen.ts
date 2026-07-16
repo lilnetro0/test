@@ -28,8 +28,11 @@ import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+import { Route as CHubSlugRouteImport } from './routes/c.$hubSlug'
 import { Route as ApiPushDispatchRouteImport } from './routes/api/push-dispatch'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as CHubSlugIndexRouteImport } from './routes/c.$hubSlug.index'
+import { Route as CHubSlugTChannelSlugRouteImport } from './routes/c.$hubSlug.t.$channelSlug'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -126,6 +129,11 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CHubSlugRoute = CHubSlugRouteImport.update({
+  id: '/c/$hubSlug',
+  path: '/c/$hubSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushDispatchRoute = ApiPushDispatchRouteImport.update({
   id: '/api/push-dispatch',
   path: '/api/push-dispatch',
@@ -135,6 +143,16 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CHubSlugIndexRoute = CHubSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CHubSlugRoute,
+} as any)
+const CHubSlugTChannelSlugRoute = CHubSlugTChannelSlugRouteImport.update({
+  id: '/t/$channelSlug',
+  path: '/t/$channelSlug',
+  getParentRoute: () => CHubSlugRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -158,7 +176,10 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
+  '/c/$hubSlug': typeof CHubSlugRouteWithChildren
   '/profile/$username': typeof ProfileUsernameRoute
+  '/c/$hubSlug/': typeof CHubSlugIndexRoute
+  '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,6 +203,8 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/profile/$username': typeof ProfileUsernameRoute
+  '/c/$hubSlug': typeof CHubSlugIndexRoute
+  '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,7 +228,10 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
+  '/c/$hubSlug': typeof CHubSlugRouteWithChildren
   '/profile/$username': typeof ProfileUsernameRoute
+  '/c/$hubSlug/': typeof CHubSlugIndexRoute
+  '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,7 +256,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/health'
     | '/api/push-dispatch'
+    | '/c/$hubSlug'
     | '/profile/$username'
+    | '/c/$hubSlug/'
+    | '/c/$hubSlug/t/$channelSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -254,6 +283,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/push-dispatch'
     | '/profile/$username'
+    | '/c/$hubSlug'
+    | '/c/$hubSlug/t/$channelSlug'
   id:
     | '__root__'
     | '/'
@@ -276,7 +307,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/health'
     | '/api/push-dispatch'
+    | '/c/$hubSlug'
     | '/profile/$username'
+    | '/c/$hubSlug/'
+    | '/c/$hubSlug/t/$channelSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -300,6 +334,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPushDispatchRoute: typeof ApiPushDispatchRoute
+  CHubSlugRoute: typeof CHubSlugRouteWithChildren
   ProfileUsernameRoute: typeof ProfileUsernameRoute
 }
 
@@ -438,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$hubSlug': {
+      id: '/c/$hubSlug'
+      path: '/c/$hubSlug'
+      fullPath: '/c/$hubSlug'
+      preLoaderRoute: typeof CHubSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push-dispatch': {
       id: '/api/push-dispatch'
       path: '/api/push-dispatch'
@@ -452,8 +494,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$hubSlug/': {
+      id: '/c/$hubSlug/'
+      path: '/'
+      fullPath: '/c/$hubSlug/'
+      preLoaderRoute: typeof CHubSlugIndexRouteImport
+      parentRoute: typeof CHubSlugRoute
+    }
+    '/c/$hubSlug/t/$channelSlug': {
+      id: '/c/$hubSlug/t/$channelSlug'
+      path: '/t/$channelSlug'
+      fullPath: '/c/$hubSlug/t/$channelSlug'
+      preLoaderRoute: typeof CHubSlugTChannelSlugRouteImport
+      parentRoute: typeof CHubSlugRoute
+    }
   }
 }
+
+interface CHubSlugRouteChildren {
+  CHubSlugIndexRoute: typeof CHubSlugIndexRoute
+  CHubSlugTChannelSlugRoute: typeof CHubSlugTChannelSlugRoute
+}
+
+const CHubSlugRouteChildren: CHubSlugRouteChildren = {
+  CHubSlugIndexRoute: CHubSlugIndexRoute,
+  CHubSlugTChannelSlugRoute: CHubSlugTChannelSlugRoute,
+}
+
+const CHubSlugRouteWithChildren = CHubSlugRoute._addFileChildren(
+  CHubSlugRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -476,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPushDispatchRoute: ApiPushDispatchRoute,
+  CHubSlugRoute: CHubSlugRouteWithChildren,
   ProfileUsernameRoute: ProfileUsernameRoute,
 }
 export const routeTree = rootRouteImport

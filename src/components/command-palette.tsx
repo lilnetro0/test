@@ -97,7 +97,7 @@ export function CommandPalette() {
 
   const goHub = (slug: string) => {
     setOpen(false);
-    void navigate({ to: "/", search: { hub: slug } });
+    void navigate({ to: "/c/$hubSlug", params: { hubSlug: slug } });
   };
 
   const goDm = (threadId: string) => {

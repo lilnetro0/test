@@ -37,7 +37,14 @@ export type VoiceChannelDto = {
   id: string;
   name: string;
   livekitRoomName?: string | null;
-  members: { name: string; muted?: boolean; deafened?: boolean; speaking?: boolean }[];
+  capacity?: number | null;
+  members: {
+    name: string;
+    userId?: string;
+    muted?: boolean;
+    deafened?: boolean;
+    speaking?: boolean;
+  }[];
 };
 
 export type MessageDto = {

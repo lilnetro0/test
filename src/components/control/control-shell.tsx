@@ -27,7 +27,6 @@ import {
   KeyRound,
   Gauge,
   Settings,
-  Shield,
   Inbox,
   Megaphone,
   Compass,

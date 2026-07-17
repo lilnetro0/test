@@ -26,6 +26,7 @@
 - `/control` disables consumer-global hotkeys, onboarding, What's New, and the consumer command palette so Control owns ⌘K and does not stack player overlays.
 - Control shell provides its own `#main-content` target for the global skip link.
 - Control search clears stale loading state when the dialog closes or the query is shortened.
+- Topbar uses `pt-safe` (`env(safe-area-inset-top)`) so the search control sits below the status bar / Dynamic Island; shell uses `pb-safe` for the home indicator. Applied once in `ControlShell` for every `/control/*` page. No left inset (preserves iOS edge-swipe back).
 
 ## Authz (P0)
 
@@ -44,6 +45,7 @@ P1+ work queues, entity pages, flags/health UI, roles UI. Sidebar links deep-lin
 3. ⌘K — search users/hubs/games; jump to Audit.
 4. `/control/audit` — list events; open a row for meta JSON.
 5. Settings → Open Control; `/admin` shows legacy banner.
+6. iPhone (Dynamic Island + notch): topbar search sits fully below the status bar; edge-swipe back still works.
 
 ## Arabic-first impact
 
@@ -51,4 +53,4 @@ P1+ work queues, entity pages, flags/health UI, roles UI. Sidebar links deep-lin
 - Shell uses logical CSS (`ms-auto`, `border-e`, `text-start`).
 - Search uses `normalizeArabicForSearch` + `*_search_norm` columns.
 - Document title: `meta.page.control`.
-- Unresolved: physical RTL device QA of Control sidebar/topbar.
+- Unresolved: physical RTL device QA of Control sidebar/topbar (safe-area top/bottom shipped via `pt-safe` / `pb-safe`).

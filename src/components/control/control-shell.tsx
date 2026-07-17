@@ -102,7 +102,7 @@ export function ControlShell({ children }: { children?: ReactNode }) {
   if (access.status === "loading") {
     return (
       <RequireAuth>
-        <div className="grid h-dvh place-items-center bg-background text-stone-400">
+        <div className="grid h-dvh place-items-center bg-background pt-safe pb-safe text-stone-400">
           <p className="text-xs font-semibold uppercase tracking-widest">{t("control.checking")}</p>
         </div>
       </RequireAuth>
@@ -112,7 +112,7 @@ export function ControlShell({ children }: { children?: ReactNode }) {
   if (access.status === "denied") {
     return (
       <RequireAuth>
-        <div className="grid h-dvh place-items-center bg-background px-6 text-center">
+        <div className="grid h-dvh place-items-center bg-background px-6 pt-safe pb-safe text-center">
           <div className="max-w-md space-y-3">
             <Shield className="mx-auto size-8 text-stone-500" />
             <h1 className="font-display text-lg font-bold text-white">
@@ -189,43 +189,51 @@ export function ControlShell({ children }: { children?: ReactNode }) {
 
   return (
     <RequireAuth>
-      <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border-subtle px-3 md:px-4">
-          <button
-            type="button"
-            className="grid size-9 place-items-center rounded-lg text-stone-300 hover:bg-white/5 md:hidden"
-            aria-label={t("control.toggleNav")}
-            onClick={() => setNavOpen((v) => !v)}
-          >
-            {navOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
-          <span
-            className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-              import.meta.env.DEV
-                ? "bg-amber-500/20 text-amber-300"
-                : "bg-emerald-500/15 text-emerald-300",
-            )}
-          >
-            {envLabel}
-          </span>
-          <span className="hidden font-display text-sm font-bold text-white sm:inline">
-            {t("control.brand")}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className="ms-auto flex max-w-xs flex-1 items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-1.5 text-start text-xs text-stone-400 hover:border-stone-500"
-          >
-            <Search className="size-3.5 shrink-0" />
-            <span className="truncate">{t("control.search.placeholder")}</span>
-            <kbd className="ms-auto hidden rounded border border-border-subtle px-1 text-[10px] text-stone-500 sm:inline">
-              ⌘K
-            </kbd>
-          </button>
-          <span className="hidden max-w-[10rem] truncate text-xs text-stone-400 sm:inline">
-            {user?.email ?? access.userId.slice(0, 8)}
-          </span>
+      {/*
+        Safe areas via env(safe-area-inset-*) utilities (styles.css pt-safe / pb-safe).
+        Topbar chrome extends under the status bar / Dynamic Island; interactive controls
+        sit in the h-12 row below the inset. No left inset on the shell so iOS edge-swipe
+        back remains available. All /control/* pages inherit this via ControlShell.
+      */}
+      <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background pb-safe text-foreground">
+        <header className="shrink-0 border-b border-border-subtle bg-background pt-safe">
+          <div className="flex h-12 items-center gap-3 px-3 md:px-4">
+            <button
+              type="button"
+              className="grid size-9 place-items-center rounded-lg text-stone-300 hover:bg-white/5 md:hidden"
+              aria-label={t("control.toggleNav")}
+              onClick={() => setNavOpen((v) => !v)}
+            >
+              {navOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+            <span
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                import.meta.env.DEV
+                  ? "bg-amber-500/20 text-amber-300"
+                  : "bg-emerald-500/15 text-emerald-300",
+              )}
+            >
+              {envLabel}
+            </span>
+            <span className="hidden font-display text-sm font-bold text-white sm:inline">
+              {t("control.brand")}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="ms-auto flex max-w-xs flex-1 items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-1.5 text-start text-xs text-stone-400 hover:border-stone-500"
+            >
+              <Search className="size-3.5 shrink-0" />
+              <span className="truncate">{t("control.search.placeholder")}</span>
+              <kbd className="ms-auto hidden rounded border border-border-subtle px-1 text-[10px] text-stone-500 sm:inline">
+                ⌘K
+              </kbd>
+            </button>
+            <span className="hidden max-w-[10rem] truncate text-xs text-stone-400 sm:inline">
+              {user?.email ?? access.userId.slice(0, 8)}
+            </span>
+          </div>
         </header>
 
         <div className="relative flex min-h-0 flex-1">

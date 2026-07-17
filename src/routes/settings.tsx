@@ -362,7 +362,7 @@ function AccountSection() {
             action={
               <button
                 type="button"
-                onClick={() => navigate({ to: "/admin" })}
+                onClick={() => navigate({ to: "/control" })}
                 className="text-xs font-semibold text-accent"
               >
                 {t("settings.adminOpen")}

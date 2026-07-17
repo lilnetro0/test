@@ -202,6 +202,7 @@ function RootComponent() {
 function LocalizedShell() {
   const { t, lang } = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isControlRoute = pathname === "/control" || pathname.startsWith("/control/");
   useKeyboardInset();
   useEffect(() => {
     assertProductionClientEnv();
@@ -237,10 +238,14 @@ function LocalizedShell() {
       </a>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <GlobalHotkeys />
-      <CommandPalette />
-      <Onboarding />
-      <WhatsNew />
+      {!isControlRoute && (
+        <>
+          <GlobalHotkeys />
+          <CommandPalette />
+          <Onboarding />
+          <WhatsNew />
+        </>
+      )}
       <Toaster
         theme="dark"
         position="top-center"

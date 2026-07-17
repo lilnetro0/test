@@ -25,13 +25,81 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DmRouteImport } from './routes/dm'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as ControlRouteImport } from './routes/control'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ControlIndexRouteImport } from './routes/control.index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+import { Route as ControlVoiceRouteImport } from './routes/control.voice'
+import { Route as ControlUsersRouteImport } from './routes/control.users'
+import { Route as ControlTemplatesRouteImport } from './routes/control.templates'
+import { Route as ControlTasksRouteImport } from './routes/control.tasks'
+import { Route as ControlSystemRouteImport } from './routes/control.system'
+import { Route as ControlSettingsRouteImport } from './routes/control.settings'
+import { Route as ControlSecurityRouteImport } from './routes/control.security'
+import { Route as ControlSearchRouteImport } from './routes/control.search'
+import { Route as ControlRolesRouteImport } from './routes/control.roles'
+import { Route as ControlRateLimitsRouteImport } from './routes/control.rate-limits'
+import { Route as ControlModerationRouteImport } from './routes/control.moderation'
+import { Route as ControlMediaRouteImport } from './routes/control.media'
+import { Route as ControlLivekitRouteImport } from './routes/control.livekit'
+import { Route as ControlLiveRouteImport } from './routes/control.live'
+import { Route as ControlKeysRouteImport } from './routes/control.keys'
+import { Route as ControlJobsRouteImport } from './routes/control.jobs'
+import { Route as ControlInboxRouteImport } from './routes/control.inbox'
+import { Route as ControlGrowthRouteImport } from './routes/control.growth'
+import { Route as ControlGamesRouteImport } from './routes/control.games'
+import { Route as ControlFlagsRouteImport } from './routes/control.flags'
+import { Route as ControlEnforcementRouteImport } from './routes/control.enforcement'
+import { Route as ControlDiscoveryRouteImport } from './routes/control.discovery'
+import { Route as ControlContentRouteImport } from './routes/control.content'
+import { Route as ControlCommunityHealthRouteImport } from './routes/control.community-health'
+import { Route as ControlCommunitiesRouteImport } from './routes/control.communities'
+import { Route as ControlChannelsRouteImport } from './routes/control.channels'
+import { Route as ControlAuditRouteImport } from './routes/control.audit'
+import { Route as ControlAppealsRouteImport } from './routes/control.appeals'
+import { Route as ControlAnnouncementsRouteImport } from './routes/control.announcements'
+import { Route as ControlAnalyticsRouteImport } from './routes/control.analytics'
 import { Route as CHubSlugRouteImport } from './routes/c.$hubSlug'
 import { Route as ApiPushDispatchRouteImport } from './routes/api/push-dispatch'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ControlVoiceIndexRouteImport } from './routes/control.voice.index'
+import { Route as ControlUsersIndexRouteImport } from './routes/control.users.index'
+import { Route as ControlModerationIndexRouteImport } from './routes/control.moderation.index'
+import { Route as ControlGamesIndexRouteImport } from './routes/control.games.index'
+import { Route as ControlCommunitiesIndexRouteImport } from './routes/control.communities.index'
+import { Route as ControlAuditIndexRouteImport } from './routes/control.audit.index'
+import { Route as ControlAnnouncementsIndexRouteImport } from './routes/control.announcements.index'
+import { Route as ControlAnalyticsIndexRouteImport } from './routes/control.analytics.index'
 import { Route as CHubSlugIndexRouteImport } from './routes/c.$hubSlug.index'
+import { Route as ControlVoiceRoomsRouteImport } from './routes/control.voice.rooms'
+import { Route as ControlVoicePoliciesRouteImport } from './routes/control.voice.policies'
+import { Route as ControlUsersUserIdRouteImport } from './routes/control.users.$userId'
+import { Route as ControlPhaseCodeRouteImport } from './routes/control.phase.$code'
+import { Route as ControlModerationReportIdRouteImport } from './routes/control.moderation.$reportId'
+import { Route as ControlGamesNewRouteImport } from './routes/control.games.new'
+import { Route as ControlGamesGameIdRouteImport } from './routes/control.games.$gameId'
+import { Route as ControlCommunitiesNewRouteImport } from './routes/control.communities.new'
+import { Route as ControlCommunitiesCommunityIdRouteImport } from './routes/control.communities.$communityId'
+import { Route as ControlAuditEventIdRouteImport } from './routes/control.audit.$eventId'
+import { Route as ControlAnnouncementsNewRouteImport } from './routes/control.announcements.new'
+import { Route as ControlAnalyticsVoiceRouteImport } from './routes/control.analytics.voice'
+import { Route as ControlAnalyticsEngagementRouteImport } from './routes/control.analytics.engagement'
+import { Route as ControlVoiceRoomsIndexRouteImport } from './routes/control.voice.rooms.index'
+import { Route as ControlUsersUserIdIndexRouteImport } from './routes/control.users.$userId.index'
+import { Route as ControlGamesGameIdIndexRouteImport } from './routes/control.games.$gameId.index'
+import { Route as ControlCommunitiesCommunityIdIndexRouteImport } from './routes/control.communities.$communityId.index'
+import { Route as ControlVoiceRoomsRoomIdRouteImport } from './routes/control.voice.rooms.$roomId'
+import { Route as ControlUsersUserIdVoiceRouteImport } from './routes/control.users.$userId.voice'
+import { Route as ControlUsersUserIdNotesRouteImport } from './routes/control.users.$userId.notes'
+import { Route as ControlUsersUserIdModerationRouteImport } from './routes/control.users.$userId.moderation'
+import { Route as ControlUsersUserIdMembershipsRouteImport } from './routes/control.users.$userId.memberships'
+import { Route as ControlGamesGameIdCommunitiesRouteImport } from './routes/control.games.$gameId.communities'
+import { Route as ControlGamesGameIdArtworkRouteImport } from './routes/control.games.$gameId.artwork'
+import { Route as ControlCommunitiesCommunityIdVoiceRouteImport } from './routes/control.communities.$communityId.voice'
+import { Route as ControlCommunitiesCommunityIdSettingsRouteImport } from './routes/control.communities.$communityId.settings'
+import { Route as ControlCommunitiesCommunityIdMembersRouteImport } from './routes/control.communities.$communityId.members'
+import { Route as ControlCommunitiesCommunityIdChannelsRouteImport } from './routes/control.communities.$communityId.channels'
 import { Route as CHubSlugTChannelSlugRouteImport } from './routes/c.$hubSlug.t.$channelSlug'
 
 const TermsRoute = TermsRouteImport.update({
@@ -114,6 +182,11 @@ const CookiesRoute = CookiesRouteImport.update({
   path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ControlRoute = ControlRouteImport.update({
+  id: '/control',
+  path: '/control',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -124,10 +197,165 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ControlIndexRoute = ControlIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlRoute,
+} as any)
 const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   id: '/profile/$username',
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ControlVoiceRoute = ControlVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlUsersRoute = ControlUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlTemplatesRoute = ControlTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlTasksRoute = ControlTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlSystemRoute = ControlSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlSettingsRoute = ControlSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlSecurityRoute = ControlSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlSearchRoute = ControlSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlRolesRoute = ControlRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlRateLimitsRoute = ControlRateLimitsRouteImport.update({
+  id: '/rate-limits',
+  path: '/rate-limits',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlModerationRoute = ControlModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlMediaRoute = ControlMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlLivekitRoute = ControlLivekitRouteImport.update({
+  id: '/livekit',
+  path: '/livekit',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlLiveRoute = ControlLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlKeysRoute = ControlKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlJobsRoute = ControlJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlInboxRoute = ControlInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlGrowthRoute = ControlGrowthRouteImport.update({
+  id: '/growth',
+  path: '/growth',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlGamesRoute = ControlGamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlFlagsRoute = ControlFlagsRouteImport.update({
+  id: '/flags',
+  path: '/flags',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlEnforcementRoute = ControlEnforcementRouteImport.update({
+  id: '/enforcement',
+  path: '/enforcement',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlDiscoveryRoute = ControlDiscoveryRouteImport.update({
+  id: '/discovery',
+  path: '/discovery',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlContentRoute = ControlContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlCommunityHealthRoute = ControlCommunityHealthRouteImport.update({
+  id: '/community-health',
+  path: '/community-health',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlCommunitiesRoute = ControlCommunitiesRouteImport.update({
+  id: '/communities',
+  path: '/communities',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlChannelsRoute = ControlChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlAuditRoute = ControlAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlAppealsRoute = ControlAppealsRouteImport.update({
+  id: '/appeals',
+  path: '/appeals',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlAnnouncementsRoute = ControlAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlAnalyticsRoute = ControlAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => ControlRoute,
 } as any)
 const CHubSlugRoute = CHubSlugRouteImport.update({
   id: '/c/$hubSlug',
@@ -144,11 +372,204 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ControlVoiceIndexRoute = ControlVoiceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlVoiceRoute,
+} as any)
+const ControlUsersIndexRoute = ControlUsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlUsersRoute,
+} as any)
+const ControlModerationIndexRoute = ControlModerationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlModerationRoute,
+} as any)
+const ControlGamesIndexRoute = ControlGamesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlGamesRoute,
+} as any)
+const ControlCommunitiesIndexRoute = ControlCommunitiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlCommunitiesRoute,
+} as any)
+const ControlAuditIndexRoute = ControlAuditIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlAuditRoute,
+} as any)
+const ControlAnnouncementsIndexRoute =
+  ControlAnnouncementsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ControlAnnouncementsRoute,
+  } as any)
+const ControlAnalyticsIndexRoute = ControlAnalyticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlAnalyticsRoute,
+} as any)
 const CHubSlugIndexRoute = CHubSlugIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => CHubSlugRoute,
 } as any)
+const ControlVoiceRoomsRoute = ControlVoiceRoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => ControlVoiceRoute,
+} as any)
+const ControlVoicePoliciesRoute = ControlVoicePoliciesRouteImport.update({
+  id: '/policies',
+  path: '/policies',
+  getParentRoute: () => ControlVoiceRoute,
+} as any)
+const ControlUsersUserIdRoute = ControlUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => ControlUsersRoute,
+} as any)
+const ControlPhaseCodeRoute = ControlPhaseCodeRouteImport.update({
+  id: '/phase/$code',
+  path: '/phase/$code',
+  getParentRoute: () => ControlRoute,
+} as any)
+const ControlModerationReportIdRoute =
+  ControlModerationReportIdRouteImport.update({
+    id: '/$reportId',
+    path: '/$reportId',
+    getParentRoute: () => ControlModerationRoute,
+  } as any)
+const ControlGamesNewRoute = ControlGamesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ControlGamesRoute,
+} as any)
+const ControlGamesGameIdRoute = ControlGamesGameIdRouteImport.update({
+  id: '/$gameId',
+  path: '/$gameId',
+  getParentRoute: () => ControlGamesRoute,
+} as any)
+const ControlCommunitiesNewRoute = ControlCommunitiesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ControlCommunitiesRoute,
+} as any)
+const ControlCommunitiesCommunityIdRoute =
+  ControlCommunitiesCommunityIdRouteImport.update({
+    id: '/$communityId',
+    path: '/$communityId',
+    getParentRoute: () => ControlCommunitiesRoute,
+  } as any)
+const ControlAuditEventIdRoute = ControlAuditEventIdRouteImport.update({
+  id: '/$eventId',
+  path: '/$eventId',
+  getParentRoute: () => ControlAuditRoute,
+} as any)
+const ControlAnnouncementsNewRoute = ControlAnnouncementsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ControlAnnouncementsRoute,
+} as any)
+const ControlAnalyticsVoiceRoute = ControlAnalyticsVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => ControlAnalyticsRoute,
+} as any)
+const ControlAnalyticsEngagementRoute =
+  ControlAnalyticsEngagementRouteImport.update({
+    id: '/engagement',
+    path: '/engagement',
+    getParentRoute: () => ControlAnalyticsRoute,
+  } as any)
+const ControlVoiceRoomsIndexRoute = ControlVoiceRoomsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlVoiceRoomsRoute,
+} as any)
+const ControlUsersUserIdIndexRoute = ControlUsersUserIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlUsersUserIdRoute,
+} as any)
+const ControlGamesGameIdIndexRoute = ControlGamesGameIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ControlGamesGameIdRoute,
+} as any)
+const ControlCommunitiesCommunityIdIndexRoute =
+  ControlCommunitiesCommunityIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ControlCommunitiesCommunityIdRoute,
+  } as any)
+const ControlVoiceRoomsRoomIdRoute = ControlVoiceRoomsRoomIdRouteImport.update({
+  id: '/$roomId',
+  path: '/$roomId',
+  getParentRoute: () => ControlVoiceRoomsRoute,
+} as any)
+const ControlUsersUserIdVoiceRoute = ControlUsersUserIdVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => ControlUsersUserIdRoute,
+} as any)
+const ControlUsersUserIdNotesRoute = ControlUsersUserIdNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => ControlUsersUserIdRoute,
+} as any)
+const ControlUsersUserIdModerationRoute =
+  ControlUsersUserIdModerationRouteImport.update({
+    id: '/moderation',
+    path: '/moderation',
+    getParentRoute: () => ControlUsersUserIdRoute,
+  } as any)
+const ControlUsersUserIdMembershipsRoute =
+  ControlUsersUserIdMembershipsRouteImport.update({
+    id: '/memberships',
+    path: '/memberships',
+    getParentRoute: () => ControlUsersUserIdRoute,
+  } as any)
+const ControlGamesGameIdCommunitiesRoute =
+  ControlGamesGameIdCommunitiesRouteImport.update({
+    id: '/communities',
+    path: '/communities',
+    getParentRoute: () => ControlGamesGameIdRoute,
+  } as any)
+const ControlGamesGameIdArtworkRoute =
+  ControlGamesGameIdArtworkRouteImport.update({
+    id: '/artwork',
+    path: '/artwork',
+    getParentRoute: () => ControlGamesGameIdRoute,
+  } as any)
+const ControlCommunitiesCommunityIdVoiceRoute =
+  ControlCommunitiesCommunityIdVoiceRouteImport.update({
+    id: '/voice',
+    path: '/voice',
+    getParentRoute: () => ControlCommunitiesCommunityIdRoute,
+  } as any)
+const ControlCommunitiesCommunityIdSettingsRoute =
+  ControlCommunitiesCommunityIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => ControlCommunitiesCommunityIdRoute,
+  } as any)
+const ControlCommunitiesCommunityIdMembersRoute =
+  ControlCommunitiesCommunityIdMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => ControlCommunitiesCommunityIdRoute,
+  } as any)
+const ControlCommunitiesCommunityIdChannelsRoute =
+  ControlCommunitiesCommunityIdChannelsRouteImport.update({
+    id: '/channels',
+    path: '/channels',
+    getParentRoute: () => ControlCommunitiesCommunityIdRoute,
+  } as any)
 const CHubSlugTChannelSlugRoute = CHubSlugTChannelSlugRouteImport.update({
   id: '/t/$channelSlug',
   path: '/t/$channelSlug',
@@ -158,6 +579,7 @@ const CHubSlugTChannelSlugRoute = CHubSlugTChannelSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/control': typeof ControlRouteWithChildren
   '/cookies': typeof CookiesRoute
   '/discover': typeof DiscoverRoute
   '/dm': typeof DmRoute
@@ -177,9 +599,76 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/c/$hubSlug': typeof CHubSlugRouteWithChildren
+  '/control/analytics': typeof ControlAnalyticsRouteWithChildren
+  '/control/announcements': typeof ControlAnnouncementsRouteWithChildren
+  '/control/appeals': typeof ControlAppealsRoute
+  '/control/audit': typeof ControlAuditRouteWithChildren
+  '/control/channels': typeof ControlChannelsRoute
+  '/control/communities': typeof ControlCommunitiesRouteWithChildren
+  '/control/community-health': typeof ControlCommunityHealthRoute
+  '/control/content': typeof ControlContentRoute
+  '/control/discovery': typeof ControlDiscoveryRoute
+  '/control/enforcement': typeof ControlEnforcementRoute
+  '/control/flags': typeof ControlFlagsRoute
+  '/control/games': typeof ControlGamesRouteWithChildren
+  '/control/growth': typeof ControlGrowthRoute
+  '/control/inbox': typeof ControlInboxRoute
+  '/control/jobs': typeof ControlJobsRoute
+  '/control/keys': typeof ControlKeysRoute
+  '/control/live': typeof ControlLiveRoute
+  '/control/livekit': typeof ControlLivekitRoute
+  '/control/media': typeof ControlMediaRoute
+  '/control/moderation': typeof ControlModerationRouteWithChildren
+  '/control/rate-limits': typeof ControlRateLimitsRoute
+  '/control/roles': typeof ControlRolesRoute
+  '/control/search': typeof ControlSearchRoute
+  '/control/security': typeof ControlSecurityRoute
+  '/control/settings': typeof ControlSettingsRoute
+  '/control/system': typeof ControlSystemRoute
+  '/control/tasks': typeof ControlTasksRoute
+  '/control/templates': typeof ControlTemplatesRoute
+  '/control/users': typeof ControlUsersRouteWithChildren
+  '/control/voice': typeof ControlVoiceRouteWithChildren
   '/profile/$username': typeof ProfileUsernameRoute
+  '/control/': typeof ControlIndexRoute
+  '/control/analytics/engagement': typeof ControlAnalyticsEngagementRoute
+  '/control/analytics/voice': typeof ControlAnalyticsVoiceRoute
+  '/control/announcements/new': typeof ControlAnnouncementsNewRoute
+  '/control/audit/$eventId': typeof ControlAuditEventIdRoute
+  '/control/communities/$communityId': typeof ControlCommunitiesCommunityIdRouteWithChildren
+  '/control/communities/new': typeof ControlCommunitiesNewRoute
+  '/control/games/$gameId': typeof ControlGamesGameIdRouteWithChildren
+  '/control/games/new': typeof ControlGamesNewRoute
+  '/control/moderation/$reportId': typeof ControlModerationReportIdRoute
+  '/control/phase/$code': typeof ControlPhaseCodeRoute
+  '/control/users/$userId': typeof ControlUsersUserIdRouteWithChildren
+  '/control/voice/policies': typeof ControlVoicePoliciesRoute
+  '/control/voice/rooms': typeof ControlVoiceRoomsRouteWithChildren
   '/c/$hubSlug/': typeof CHubSlugIndexRoute
+  '/control/analytics/': typeof ControlAnalyticsIndexRoute
+  '/control/announcements/': typeof ControlAnnouncementsIndexRoute
+  '/control/audit/': typeof ControlAuditIndexRoute
+  '/control/communities/': typeof ControlCommunitiesIndexRoute
+  '/control/games/': typeof ControlGamesIndexRoute
+  '/control/moderation/': typeof ControlModerationIndexRoute
+  '/control/users/': typeof ControlUsersIndexRoute
+  '/control/voice/': typeof ControlVoiceIndexRoute
   '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
+  '/control/communities/$communityId/channels': typeof ControlCommunitiesCommunityIdChannelsRoute
+  '/control/communities/$communityId/members': typeof ControlCommunitiesCommunityIdMembersRoute
+  '/control/communities/$communityId/settings': typeof ControlCommunitiesCommunityIdSettingsRoute
+  '/control/communities/$communityId/voice': typeof ControlCommunitiesCommunityIdVoiceRoute
+  '/control/games/$gameId/artwork': typeof ControlGamesGameIdArtworkRoute
+  '/control/games/$gameId/communities': typeof ControlGamesGameIdCommunitiesRoute
+  '/control/users/$userId/memberships': typeof ControlUsersUserIdMembershipsRoute
+  '/control/users/$userId/moderation': typeof ControlUsersUserIdModerationRoute
+  '/control/users/$userId/notes': typeof ControlUsersUserIdNotesRoute
+  '/control/users/$userId/voice': typeof ControlUsersUserIdVoiceRoute
+  '/control/voice/rooms/$roomId': typeof ControlVoiceRoomsRoomIdRoute
+  '/control/communities/$communityId/': typeof ControlCommunitiesCommunityIdIndexRoute
+  '/control/games/$gameId/': typeof ControlGamesGameIdIndexRoute
+  '/control/users/$userId/': typeof ControlUsersUserIdIndexRoute
+  '/control/voice/rooms/': typeof ControlVoiceRoomsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -202,14 +691,70 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
+  '/control/appeals': typeof ControlAppealsRoute
+  '/control/channels': typeof ControlChannelsRoute
+  '/control/community-health': typeof ControlCommunityHealthRoute
+  '/control/content': typeof ControlContentRoute
+  '/control/discovery': typeof ControlDiscoveryRoute
+  '/control/enforcement': typeof ControlEnforcementRoute
+  '/control/flags': typeof ControlFlagsRoute
+  '/control/growth': typeof ControlGrowthRoute
+  '/control/inbox': typeof ControlInboxRoute
+  '/control/jobs': typeof ControlJobsRoute
+  '/control/keys': typeof ControlKeysRoute
+  '/control/live': typeof ControlLiveRoute
+  '/control/livekit': typeof ControlLivekitRoute
+  '/control/media': typeof ControlMediaRoute
+  '/control/rate-limits': typeof ControlRateLimitsRoute
+  '/control/roles': typeof ControlRolesRoute
+  '/control/search': typeof ControlSearchRoute
+  '/control/security': typeof ControlSecurityRoute
+  '/control/settings': typeof ControlSettingsRoute
+  '/control/system': typeof ControlSystemRoute
+  '/control/tasks': typeof ControlTasksRoute
+  '/control/templates': typeof ControlTemplatesRoute
   '/profile/$username': typeof ProfileUsernameRoute
+  '/control': typeof ControlIndexRoute
+  '/control/analytics/engagement': typeof ControlAnalyticsEngagementRoute
+  '/control/analytics/voice': typeof ControlAnalyticsVoiceRoute
+  '/control/announcements/new': typeof ControlAnnouncementsNewRoute
+  '/control/audit/$eventId': typeof ControlAuditEventIdRoute
+  '/control/communities/new': typeof ControlCommunitiesNewRoute
+  '/control/games/new': typeof ControlGamesNewRoute
+  '/control/moderation/$reportId': typeof ControlModerationReportIdRoute
+  '/control/phase/$code': typeof ControlPhaseCodeRoute
+  '/control/voice/policies': typeof ControlVoicePoliciesRoute
   '/c/$hubSlug': typeof CHubSlugIndexRoute
+  '/control/analytics': typeof ControlAnalyticsIndexRoute
+  '/control/announcements': typeof ControlAnnouncementsIndexRoute
+  '/control/audit': typeof ControlAuditIndexRoute
+  '/control/communities': typeof ControlCommunitiesIndexRoute
+  '/control/games': typeof ControlGamesIndexRoute
+  '/control/moderation': typeof ControlModerationIndexRoute
+  '/control/users': typeof ControlUsersIndexRoute
+  '/control/voice': typeof ControlVoiceIndexRoute
   '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
+  '/control/communities/$communityId/channels': typeof ControlCommunitiesCommunityIdChannelsRoute
+  '/control/communities/$communityId/members': typeof ControlCommunitiesCommunityIdMembersRoute
+  '/control/communities/$communityId/settings': typeof ControlCommunitiesCommunityIdSettingsRoute
+  '/control/communities/$communityId/voice': typeof ControlCommunitiesCommunityIdVoiceRoute
+  '/control/games/$gameId/artwork': typeof ControlGamesGameIdArtworkRoute
+  '/control/games/$gameId/communities': typeof ControlGamesGameIdCommunitiesRoute
+  '/control/users/$userId/memberships': typeof ControlUsersUserIdMembershipsRoute
+  '/control/users/$userId/moderation': typeof ControlUsersUserIdModerationRoute
+  '/control/users/$userId/notes': typeof ControlUsersUserIdNotesRoute
+  '/control/users/$userId/voice': typeof ControlUsersUserIdVoiceRoute
+  '/control/voice/rooms/$roomId': typeof ControlVoiceRoomsRoomIdRoute
+  '/control/communities/$communityId': typeof ControlCommunitiesCommunityIdIndexRoute
+  '/control/games/$gameId': typeof ControlGamesGameIdIndexRoute
+  '/control/users/$userId': typeof ControlUsersUserIdIndexRoute
+  '/control/voice/rooms': typeof ControlVoiceRoomsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/control': typeof ControlRouteWithChildren
   '/cookies': typeof CookiesRoute
   '/discover': typeof DiscoverRoute
   '/dm': typeof DmRoute
@@ -229,15 +774,83 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/push-dispatch': typeof ApiPushDispatchRoute
   '/c/$hubSlug': typeof CHubSlugRouteWithChildren
+  '/control/analytics': typeof ControlAnalyticsRouteWithChildren
+  '/control/announcements': typeof ControlAnnouncementsRouteWithChildren
+  '/control/appeals': typeof ControlAppealsRoute
+  '/control/audit': typeof ControlAuditRouteWithChildren
+  '/control/channels': typeof ControlChannelsRoute
+  '/control/communities': typeof ControlCommunitiesRouteWithChildren
+  '/control/community-health': typeof ControlCommunityHealthRoute
+  '/control/content': typeof ControlContentRoute
+  '/control/discovery': typeof ControlDiscoveryRoute
+  '/control/enforcement': typeof ControlEnforcementRoute
+  '/control/flags': typeof ControlFlagsRoute
+  '/control/games': typeof ControlGamesRouteWithChildren
+  '/control/growth': typeof ControlGrowthRoute
+  '/control/inbox': typeof ControlInboxRoute
+  '/control/jobs': typeof ControlJobsRoute
+  '/control/keys': typeof ControlKeysRoute
+  '/control/live': typeof ControlLiveRoute
+  '/control/livekit': typeof ControlLivekitRoute
+  '/control/media': typeof ControlMediaRoute
+  '/control/moderation': typeof ControlModerationRouteWithChildren
+  '/control/rate-limits': typeof ControlRateLimitsRoute
+  '/control/roles': typeof ControlRolesRoute
+  '/control/search': typeof ControlSearchRoute
+  '/control/security': typeof ControlSecurityRoute
+  '/control/settings': typeof ControlSettingsRoute
+  '/control/system': typeof ControlSystemRoute
+  '/control/tasks': typeof ControlTasksRoute
+  '/control/templates': typeof ControlTemplatesRoute
+  '/control/users': typeof ControlUsersRouteWithChildren
+  '/control/voice': typeof ControlVoiceRouteWithChildren
   '/profile/$username': typeof ProfileUsernameRoute
+  '/control/': typeof ControlIndexRoute
+  '/control/analytics/engagement': typeof ControlAnalyticsEngagementRoute
+  '/control/analytics/voice': typeof ControlAnalyticsVoiceRoute
+  '/control/announcements/new': typeof ControlAnnouncementsNewRoute
+  '/control/audit/$eventId': typeof ControlAuditEventIdRoute
+  '/control/communities/$communityId': typeof ControlCommunitiesCommunityIdRouteWithChildren
+  '/control/communities/new': typeof ControlCommunitiesNewRoute
+  '/control/games/$gameId': typeof ControlGamesGameIdRouteWithChildren
+  '/control/games/new': typeof ControlGamesNewRoute
+  '/control/moderation/$reportId': typeof ControlModerationReportIdRoute
+  '/control/phase/$code': typeof ControlPhaseCodeRoute
+  '/control/users/$userId': typeof ControlUsersUserIdRouteWithChildren
+  '/control/voice/policies': typeof ControlVoicePoliciesRoute
+  '/control/voice/rooms': typeof ControlVoiceRoomsRouteWithChildren
   '/c/$hubSlug/': typeof CHubSlugIndexRoute
+  '/control/analytics/': typeof ControlAnalyticsIndexRoute
+  '/control/announcements/': typeof ControlAnnouncementsIndexRoute
+  '/control/audit/': typeof ControlAuditIndexRoute
+  '/control/communities/': typeof ControlCommunitiesIndexRoute
+  '/control/games/': typeof ControlGamesIndexRoute
+  '/control/moderation/': typeof ControlModerationIndexRoute
+  '/control/users/': typeof ControlUsersIndexRoute
+  '/control/voice/': typeof ControlVoiceIndexRoute
   '/c/$hubSlug/t/$channelSlug': typeof CHubSlugTChannelSlugRoute
+  '/control/communities/$communityId/channels': typeof ControlCommunitiesCommunityIdChannelsRoute
+  '/control/communities/$communityId/members': typeof ControlCommunitiesCommunityIdMembersRoute
+  '/control/communities/$communityId/settings': typeof ControlCommunitiesCommunityIdSettingsRoute
+  '/control/communities/$communityId/voice': typeof ControlCommunitiesCommunityIdVoiceRoute
+  '/control/games/$gameId/artwork': typeof ControlGamesGameIdArtworkRoute
+  '/control/games/$gameId/communities': typeof ControlGamesGameIdCommunitiesRoute
+  '/control/users/$userId/memberships': typeof ControlUsersUserIdMembershipsRoute
+  '/control/users/$userId/moderation': typeof ControlUsersUserIdModerationRoute
+  '/control/users/$userId/notes': typeof ControlUsersUserIdNotesRoute
+  '/control/users/$userId/voice': typeof ControlUsersUserIdVoiceRoute
+  '/control/voice/rooms/$roomId': typeof ControlVoiceRoomsRoomIdRoute
+  '/control/communities/$communityId/': typeof ControlCommunitiesCommunityIdIndexRoute
+  '/control/games/$gameId/': typeof ControlGamesGameIdIndexRoute
+  '/control/users/$userId/': typeof ControlUsersUserIdIndexRoute
+  '/control/voice/rooms/': typeof ControlVoiceRoomsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/control'
     | '/cookies'
     | '/discover'
     | '/dm'
@@ -257,9 +870,76 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/push-dispatch'
     | '/c/$hubSlug'
+    | '/control/analytics'
+    | '/control/announcements'
+    | '/control/appeals'
+    | '/control/audit'
+    | '/control/channels'
+    | '/control/communities'
+    | '/control/community-health'
+    | '/control/content'
+    | '/control/discovery'
+    | '/control/enforcement'
+    | '/control/flags'
+    | '/control/games'
+    | '/control/growth'
+    | '/control/inbox'
+    | '/control/jobs'
+    | '/control/keys'
+    | '/control/live'
+    | '/control/livekit'
+    | '/control/media'
+    | '/control/moderation'
+    | '/control/rate-limits'
+    | '/control/roles'
+    | '/control/search'
+    | '/control/security'
+    | '/control/settings'
+    | '/control/system'
+    | '/control/tasks'
+    | '/control/templates'
+    | '/control/users'
+    | '/control/voice'
     | '/profile/$username'
+    | '/control/'
+    | '/control/analytics/engagement'
+    | '/control/analytics/voice'
+    | '/control/announcements/new'
+    | '/control/audit/$eventId'
+    | '/control/communities/$communityId'
+    | '/control/communities/new'
+    | '/control/games/$gameId'
+    | '/control/games/new'
+    | '/control/moderation/$reportId'
+    | '/control/phase/$code'
+    | '/control/users/$userId'
+    | '/control/voice/policies'
+    | '/control/voice/rooms'
     | '/c/$hubSlug/'
+    | '/control/analytics/'
+    | '/control/announcements/'
+    | '/control/audit/'
+    | '/control/communities/'
+    | '/control/games/'
+    | '/control/moderation/'
+    | '/control/users/'
+    | '/control/voice/'
     | '/c/$hubSlug/t/$channelSlug'
+    | '/control/communities/$communityId/channels'
+    | '/control/communities/$communityId/members'
+    | '/control/communities/$communityId/settings'
+    | '/control/communities/$communityId/voice'
+    | '/control/games/$gameId/artwork'
+    | '/control/games/$gameId/communities'
+    | '/control/users/$userId/memberships'
+    | '/control/users/$userId/moderation'
+    | '/control/users/$userId/notes'
+    | '/control/users/$userId/voice'
+    | '/control/voice/rooms/$roomId'
+    | '/control/communities/$communityId/'
+    | '/control/games/$gameId/'
+    | '/control/users/$userId/'
+    | '/control/voice/rooms/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -282,13 +962,69 @@ export interface FileRouteTypes {
     | '/terms'
     | '/api/health'
     | '/api/push-dispatch'
+    | '/control/appeals'
+    | '/control/channels'
+    | '/control/community-health'
+    | '/control/content'
+    | '/control/discovery'
+    | '/control/enforcement'
+    | '/control/flags'
+    | '/control/growth'
+    | '/control/inbox'
+    | '/control/jobs'
+    | '/control/keys'
+    | '/control/live'
+    | '/control/livekit'
+    | '/control/media'
+    | '/control/rate-limits'
+    | '/control/roles'
+    | '/control/search'
+    | '/control/security'
+    | '/control/settings'
+    | '/control/system'
+    | '/control/tasks'
+    | '/control/templates'
     | '/profile/$username'
+    | '/control'
+    | '/control/analytics/engagement'
+    | '/control/analytics/voice'
+    | '/control/announcements/new'
+    | '/control/audit/$eventId'
+    | '/control/communities/new'
+    | '/control/games/new'
+    | '/control/moderation/$reportId'
+    | '/control/phase/$code'
+    | '/control/voice/policies'
     | '/c/$hubSlug'
+    | '/control/analytics'
+    | '/control/announcements'
+    | '/control/audit'
+    | '/control/communities'
+    | '/control/games'
+    | '/control/moderation'
+    | '/control/users'
+    | '/control/voice'
     | '/c/$hubSlug/t/$channelSlug'
+    | '/control/communities/$communityId/channels'
+    | '/control/communities/$communityId/members'
+    | '/control/communities/$communityId/settings'
+    | '/control/communities/$communityId/voice'
+    | '/control/games/$gameId/artwork'
+    | '/control/games/$gameId/communities'
+    | '/control/users/$userId/memberships'
+    | '/control/users/$userId/moderation'
+    | '/control/users/$userId/notes'
+    | '/control/users/$userId/voice'
+    | '/control/voice/rooms/$roomId'
+    | '/control/communities/$communityId'
+    | '/control/games/$gameId'
+    | '/control/users/$userId'
+    | '/control/voice/rooms'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/control'
     | '/cookies'
     | '/discover'
     | '/dm'
@@ -308,14 +1044,82 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/push-dispatch'
     | '/c/$hubSlug'
+    | '/control/analytics'
+    | '/control/announcements'
+    | '/control/appeals'
+    | '/control/audit'
+    | '/control/channels'
+    | '/control/communities'
+    | '/control/community-health'
+    | '/control/content'
+    | '/control/discovery'
+    | '/control/enforcement'
+    | '/control/flags'
+    | '/control/games'
+    | '/control/growth'
+    | '/control/inbox'
+    | '/control/jobs'
+    | '/control/keys'
+    | '/control/live'
+    | '/control/livekit'
+    | '/control/media'
+    | '/control/moderation'
+    | '/control/rate-limits'
+    | '/control/roles'
+    | '/control/search'
+    | '/control/security'
+    | '/control/settings'
+    | '/control/system'
+    | '/control/tasks'
+    | '/control/templates'
+    | '/control/users'
+    | '/control/voice'
     | '/profile/$username'
+    | '/control/'
+    | '/control/analytics/engagement'
+    | '/control/analytics/voice'
+    | '/control/announcements/new'
+    | '/control/audit/$eventId'
+    | '/control/communities/$communityId'
+    | '/control/communities/new'
+    | '/control/games/$gameId'
+    | '/control/games/new'
+    | '/control/moderation/$reportId'
+    | '/control/phase/$code'
+    | '/control/users/$userId'
+    | '/control/voice/policies'
+    | '/control/voice/rooms'
     | '/c/$hubSlug/'
+    | '/control/analytics/'
+    | '/control/announcements/'
+    | '/control/audit/'
+    | '/control/communities/'
+    | '/control/games/'
+    | '/control/moderation/'
+    | '/control/users/'
+    | '/control/voice/'
     | '/c/$hubSlug/t/$channelSlug'
+    | '/control/communities/$communityId/channels'
+    | '/control/communities/$communityId/members'
+    | '/control/communities/$communityId/settings'
+    | '/control/communities/$communityId/voice'
+    | '/control/games/$gameId/artwork'
+    | '/control/games/$gameId/communities'
+    | '/control/users/$userId/memberships'
+    | '/control/users/$userId/moderation'
+    | '/control/users/$userId/notes'
+    | '/control/users/$userId/voice'
+    | '/control/voice/rooms/$roomId'
+    | '/control/communities/$communityId/'
+    | '/control/games/$gameId/'
+    | '/control/users/$userId/'
+    | '/control/voice/rooms/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ControlRoute: typeof ControlRouteWithChildren
   CookiesRoute: typeof CookiesRoute
   DiscoverRoute: typeof DiscoverRoute
   DmRoute: typeof DmRoute
@@ -452,6 +1256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/control': {
+      id: '/control'
+      path: '/control'
+      fullPath: '/control'
+      preLoaderRoute: typeof ControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -466,12 +1277,229 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/control/': {
+      id: '/control/'
+      path: '/'
+      fullPath: '/control/'
+      preLoaderRoute: typeof ControlIndexRouteImport
+      parentRoute: typeof ControlRoute
+    }
     '/profile/$username': {
       id: '/profile/$username'
       path: '/profile/$username'
       fullPath: '/profile/$username'
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/control/voice': {
+      id: '/control/voice'
+      path: '/voice'
+      fullPath: '/control/voice'
+      preLoaderRoute: typeof ControlVoiceRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/users': {
+      id: '/control/users'
+      path: '/users'
+      fullPath: '/control/users'
+      preLoaderRoute: typeof ControlUsersRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/templates': {
+      id: '/control/templates'
+      path: '/templates'
+      fullPath: '/control/templates'
+      preLoaderRoute: typeof ControlTemplatesRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/tasks': {
+      id: '/control/tasks'
+      path: '/tasks'
+      fullPath: '/control/tasks'
+      preLoaderRoute: typeof ControlTasksRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/system': {
+      id: '/control/system'
+      path: '/system'
+      fullPath: '/control/system'
+      preLoaderRoute: typeof ControlSystemRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/settings': {
+      id: '/control/settings'
+      path: '/settings'
+      fullPath: '/control/settings'
+      preLoaderRoute: typeof ControlSettingsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/security': {
+      id: '/control/security'
+      path: '/security'
+      fullPath: '/control/security'
+      preLoaderRoute: typeof ControlSecurityRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/search': {
+      id: '/control/search'
+      path: '/search'
+      fullPath: '/control/search'
+      preLoaderRoute: typeof ControlSearchRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/roles': {
+      id: '/control/roles'
+      path: '/roles'
+      fullPath: '/control/roles'
+      preLoaderRoute: typeof ControlRolesRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/rate-limits': {
+      id: '/control/rate-limits'
+      path: '/rate-limits'
+      fullPath: '/control/rate-limits'
+      preLoaderRoute: typeof ControlRateLimitsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/moderation': {
+      id: '/control/moderation'
+      path: '/moderation'
+      fullPath: '/control/moderation'
+      preLoaderRoute: typeof ControlModerationRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/media': {
+      id: '/control/media'
+      path: '/media'
+      fullPath: '/control/media'
+      preLoaderRoute: typeof ControlMediaRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/livekit': {
+      id: '/control/livekit'
+      path: '/livekit'
+      fullPath: '/control/livekit'
+      preLoaderRoute: typeof ControlLivekitRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/live': {
+      id: '/control/live'
+      path: '/live'
+      fullPath: '/control/live'
+      preLoaderRoute: typeof ControlLiveRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/keys': {
+      id: '/control/keys'
+      path: '/keys'
+      fullPath: '/control/keys'
+      preLoaderRoute: typeof ControlKeysRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/jobs': {
+      id: '/control/jobs'
+      path: '/jobs'
+      fullPath: '/control/jobs'
+      preLoaderRoute: typeof ControlJobsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/inbox': {
+      id: '/control/inbox'
+      path: '/inbox'
+      fullPath: '/control/inbox'
+      preLoaderRoute: typeof ControlInboxRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/growth': {
+      id: '/control/growth'
+      path: '/growth'
+      fullPath: '/control/growth'
+      preLoaderRoute: typeof ControlGrowthRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/games': {
+      id: '/control/games'
+      path: '/games'
+      fullPath: '/control/games'
+      preLoaderRoute: typeof ControlGamesRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/flags': {
+      id: '/control/flags'
+      path: '/flags'
+      fullPath: '/control/flags'
+      preLoaderRoute: typeof ControlFlagsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/enforcement': {
+      id: '/control/enforcement'
+      path: '/enforcement'
+      fullPath: '/control/enforcement'
+      preLoaderRoute: typeof ControlEnforcementRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/discovery': {
+      id: '/control/discovery'
+      path: '/discovery'
+      fullPath: '/control/discovery'
+      preLoaderRoute: typeof ControlDiscoveryRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/content': {
+      id: '/control/content'
+      path: '/content'
+      fullPath: '/control/content'
+      preLoaderRoute: typeof ControlContentRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/community-health': {
+      id: '/control/community-health'
+      path: '/community-health'
+      fullPath: '/control/community-health'
+      preLoaderRoute: typeof ControlCommunityHealthRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/communities': {
+      id: '/control/communities'
+      path: '/communities'
+      fullPath: '/control/communities'
+      preLoaderRoute: typeof ControlCommunitiesRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/channels': {
+      id: '/control/channels'
+      path: '/channels'
+      fullPath: '/control/channels'
+      preLoaderRoute: typeof ControlChannelsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/audit': {
+      id: '/control/audit'
+      path: '/audit'
+      fullPath: '/control/audit'
+      preLoaderRoute: typeof ControlAuditRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/appeals': {
+      id: '/control/appeals'
+      path: '/appeals'
+      fullPath: '/control/appeals'
+      preLoaderRoute: typeof ControlAppealsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/announcements': {
+      id: '/control/announcements'
+      path: '/announcements'
+      fullPath: '/control/announcements'
+      preLoaderRoute: typeof ControlAnnouncementsRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/analytics': {
+      id: '/control/analytics'
+      path: '/analytics'
+      fullPath: '/control/analytics'
+      preLoaderRoute: typeof ControlAnalyticsRouteImport
+      parentRoute: typeof ControlRoute
     }
     '/c/$hubSlug': {
       id: '/c/$hubSlug'
@@ -494,12 +1522,264 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/control/voice/': {
+      id: '/control/voice/'
+      path: '/'
+      fullPath: '/control/voice/'
+      preLoaderRoute: typeof ControlVoiceIndexRouteImport
+      parentRoute: typeof ControlVoiceRoute
+    }
+    '/control/users/': {
+      id: '/control/users/'
+      path: '/'
+      fullPath: '/control/users/'
+      preLoaderRoute: typeof ControlUsersIndexRouteImport
+      parentRoute: typeof ControlUsersRoute
+    }
+    '/control/moderation/': {
+      id: '/control/moderation/'
+      path: '/'
+      fullPath: '/control/moderation/'
+      preLoaderRoute: typeof ControlModerationIndexRouteImport
+      parentRoute: typeof ControlModerationRoute
+    }
+    '/control/games/': {
+      id: '/control/games/'
+      path: '/'
+      fullPath: '/control/games/'
+      preLoaderRoute: typeof ControlGamesIndexRouteImport
+      parentRoute: typeof ControlGamesRoute
+    }
+    '/control/communities/': {
+      id: '/control/communities/'
+      path: '/'
+      fullPath: '/control/communities/'
+      preLoaderRoute: typeof ControlCommunitiesIndexRouteImport
+      parentRoute: typeof ControlCommunitiesRoute
+    }
+    '/control/audit/': {
+      id: '/control/audit/'
+      path: '/'
+      fullPath: '/control/audit/'
+      preLoaderRoute: typeof ControlAuditIndexRouteImport
+      parentRoute: typeof ControlAuditRoute
+    }
+    '/control/announcements/': {
+      id: '/control/announcements/'
+      path: '/'
+      fullPath: '/control/announcements/'
+      preLoaderRoute: typeof ControlAnnouncementsIndexRouteImport
+      parentRoute: typeof ControlAnnouncementsRoute
+    }
+    '/control/analytics/': {
+      id: '/control/analytics/'
+      path: '/'
+      fullPath: '/control/analytics/'
+      preLoaderRoute: typeof ControlAnalyticsIndexRouteImport
+      parentRoute: typeof ControlAnalyticsRoute
+    }
     '/c/$hubSlug/': {
       id: '/c/$hubSlug/'
       path: '/'
       fullPath: '/c/$hubSlug/'
       preLoaderRoute: typeof CHubSlugIndexRouteImport
       parentRoute: typeof CHubSlugRoute
+    }
+    '/control/voice/rooms': {
+      id: '/control/voice/rooms'
+      path: '/rooms'
+      fullPath: '/control/voice/rooms'
+      preLoaderRoute: typeof ControlVoiceRoomsRouteImport
+      parentRoute: typeof ControlVoiceRoute
+    }
+    '/control/voice/policies': {
+      id: '/control/voice/policies'
+      path: '/policies'
+      fullPath: '/control/voice/policies'
+      preLoaderRoute: typeof ControlVoicePoliciesRouteImport
+      parentRoute: typeof ControlVoiceRoute
+    }
+    '/control/users/$userId': {
+      id: '/control/users/$userId'
+      path: '/$userId'
+      fullPath: '/control/users/$userId'
+      preLoaderRoute: typeof ControlUsersUserIdRouteImport
+      parentRoute: typeof ControlUsersRoute
+    }
+    '/control/phase/$code': {
+      id: '/control/phase/$code'
+      path: '/phase/$code'
+      fullPath: '/control/phase/$code'
+      preLoaderRoute: typeof ControlPhaseCodeRouteImport
+      parentRoute: typeof ControlRoute
+    }
+    '/control/moderation/$reportId': {
+      id: '/control/moderation/$reportId'
+      path: '/$reportId'
+      fullPath: '/control/moderation/$reportId'
+      preLoaderRoute: typeof ControlModerationReportIdRouteImport
+      parentRoute: typeof ControlModerationRoute
+    }
+    '/control/games/new': {
+      id: '/control/games/new'
+      path: '/new'
+      fullPath: '/control/games/new'
+      preLoaderRoute: typeof ControlGamesNewRouteImport
+      parentRoute: typeof ControlGamesRoute
+    }
+    '/control/games/$gameId': {
+      id: '/control/games/$gameId'
+      path: '/$gameId'
+      fullPath: '/control/games/$gameId'
+      preLoaderRoute: typeof ControlGamesGameIdRouteImport
+      parentRoute: typeof ControlGamesRoute
+    }
+    '/control/communities/new': {
+      id: '/control/communities/new'
+      path: '/new'
+      fullPath: '/control/communities/new'
+      preLoaderRoute: typeof ControlCommunitiesNewRouteImport
+      parentRoute: typeof ControlCommunitiesRoute
+    }
+    '/control/communities/$communityId': {
+      id: '/control/communities/$communityId'
+      path: '/$communityId'
+      fullPath: '/control/communities/$communityId'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdRouteImport
+      parentRoute: typeof ControlCommunitiesRoute
+    }
+    '/control/audit/$eventId': {
+      id: '/control/audit/$eventId'
+      path: '/$eventId'
+      fullPath: '/control/audit/$eventId'
+      preLoaderRoute: typeof ControlAuditEventIdRouteImport
+      parentRoute: typeof ControlAuditRoute
+    }
+    '/control/announcements/new': {
+      id: '/control/announcements/new'
+      path: '/new'
+      fullPath: '/control/announcements/new'
+      preLoaderRoute: typeof ControlAnnouncementsNewRouteImport
+      parentRoute: typeof ControlAnnouncementsRoute
+    }
+    '/control/analytics/voice': {
+      id: '/control/analytics/voice'
+      path: '/voice'
+      fullPath: '/control/analytics/voice'
+      preLoaderRoute: typeof ControlAnalyticsVoiceRouteImport
+      parentRoute: typeof ControlAnalyticsRoute
+    }
+    '/control/analytics/engagement': {
+      id: '/control/analytics/engagement'
+      path: '/engagement'
+      fullPath: '/control/analytics/engagement'
+      preLoaderRoute: typeof ControlAnalyticsEngagementRouteImport
+      parentRoute: typeof ControlAnalyticsRoute
+    }
+    '/control/voice/rooms/': {
+      id: '/control/voice/rooms/'
+      path: '/'
+      fullPath: '/control/voice/rooms/'
+      preLoaderRoute: typeof ControlVoiceRoomsIndexRouteImport
+      parentRoute: typeof ControlVoiceRoomsRoute
+    }
+    '/control/users/$userId/': {
+      id: '/control/users/$userId/'
+      path: '/'
+      fullPath: '/control/users/$userId/'
+      preLoaderRoute: typeof ControlUsersUserIdIndexRouteImport
+      parentRoute: typeof ControlUsersUserIdRoute
+    }
+    '/control/games/$gameId/': {
+      id: '/control/games/$gameId/'
+      path: '/'
+      fullPath: '/control/games/$gameId/'
+      preLoaderRoute: typeof ControlGamesGameIdIndexRouteImport
+      parentRoute: typeof ControlGamesGameIdRoute
+    }
+    '/control/communities/$communityId/': {
+      id: '/control/communities/$communityId/'
+      path: '/'
+      fullPath: '/control/communities/$communityId/'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdIndexRouteImport
+      parentRoute: typeof ControlCommunitiesCommunityIdRoute
+    }
+    '/control/voice/rooms/$roomId': {
+      id: '/control/voice/rooms/$roomId'
+      path: '/$roomId'
+      fullPath: '/control/voice/rooms/$roomId'
+      preLoaderRoute: typeof ControlVoiceRoomsRoomIdRouteImport
+      parentRoute: typeof ControlVoiceRoomsRoute
+    }
+    '/control/users/$userId/voice': {
+      id: '/control/users/$userId/voice'
+      path: '/voice'
+      fullPath: '/control/users/$userId/voice'
+      preLoaderRoute: typeof ControlUsersUserIdVoiceRouteImport
+      parentRoute: typeof ControlUsersUserIdRoute
+    }
+    '/control/users/$userId/notes': {
+      id: '/control/users/$userId/notes'
+      path: '/notes'
+      fullPath: '/control/users/$userId/notes'
+      preLoaderRoute: typeof ControlUsersUserIdNotesRouteImport
+      parentRoute: typeof ControlUsersUserIdRoute
+    }
+    '/control/users/$userId/moderation': {
+      id: '/control/users/$userId/moderation'
+      path: '/moderation'
+      fullPath: '/control/users/$userId/moderation'
+      preLoaderRoute: typeof ControlUsersUserIdModerationRouteImport
+      parentRoute: typeof ControlUsersUserIdRoute
+    }
+    '/control/users/$userId/memberships': {
+      id: '/control/users/$userId/memberships'
+      path: '/memberships'
+      fullPath: '/control/users/$userId/memberships'
+      preLoaderRoute: typeof ControlUsersUserIdMembershipsRouteImport
+      parentRoute: typeof ControlUsersUserIdRoute
+    }
+    '/control/games/$gameId/communities': {
+      id: '/control/games/$gameId/communities'
+      path: '/communities'
+      fullPath: '/control/games/$gameId/communities'
+      preLoaderRoute: typeof ControlGamesGameIdCommunitiesRouteImport
+      parentRoute: typeof ControlGamesGameIdRoute
+    }
+    '/control/games/$gameId/artwork': {
+      id: '/control/games/$gameId/artwork'
+      path: '/artwork'
+      fullPath: '/control/games/$gameId/artwork'
+      preLoaderRoute: typeof ControlGamesGameIdArtworkRouteImport
+      parentRoute: typeof ControlGamesGameIdRoute
+    }
+    '/control/communities/$communityId/voice': {
+      id: '/control/communities/$communityId/voice'
+      path: '/voice'
+      fullPath: '/control/communities/$communityId/voice'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdVoiceRouteImport
+      parentRoute: typeof ControlCommunitiesCommunityIdRoute
+    }
+    '/control/communities/$communityId/settings': {
+      id: '/control/communities/$communityId/settings'
+      path: '/settings'
+      fullPath: '/control/communities/$communityId/settings'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdSettingsRouteImport
+      parentRoute: typeof ControlCommunitiesCommunityIdRoute
+    }
+    '/control/communities/$communityId/members': {
+      id: '/control/communities/$communityId/members'
+      path: '/members'
+      fullPath: '/control/communities/$communityId/members'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdMembersRouteImport
+      parentRoute: typeof ControlCommunitiesCommunityIdRoute
+    }
+    '/control/communities/$communityId/channels': {
+      id: '/control/communities/$communityId/channels'
+      path: '/channels'
+      fullPath: '/control/communities/$communityId/channels'
+      preLoaderRoute: typeof ControlCommunitiesCommunityIdChannelsRouteImport
+      parentRoute: typeof ControlCommunitiesCommunityIdRoute
     }
     '/c/$hubSlug/t/$channelSlug': {
       id: '/c/$hubSlug/t/$channelSlug'
@@ -510,6 +1790,270 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ControlAnalyticsRouteChildren {
+  ControlAnalyticsEngagementRoute: typeof ControlAnalyticsEngagementRoute
+  ControlAnalyticsVoiceRoute: typeof ControlAnalyticsVoiceRoute
+  ControlAnalyticsIndexRoute: typeof ControlAnalyticsIndexRoute
+}
+
+const ControlAnalyticsRouteChildren: ControlAnalyticsRouteChildren = {
+  ControlAnalyticsEngagementRoute: ControlAnalyticsEngagementRoute,
+  ControlAnalyticsVoiceRoute: ControlAnalyticsVoiceRoute,
+  ControlAnalyticsIndexRoute: ControlAnalyticsIndexRoute,
+}
+
+const ControlAnalyticsRouteWithChildren =
+  ControlAnalyticsRoute._addFileChildren(ControlAnalyticsRouteChildren)
+
+interface ControlAnnouncementsRouteChildren {
+  ControlAnnouncementsNewRoute: typeof ControlAnnouncementsNewRoute
+  ControlAnnouncementsIndexRoute: typeof ControlAnnouncementsIndexRoute
+}
+
+const ControlAnnouncementsRouteChildren: ControlAnnouncementsRouteChildren = {
+  ControlAnnouncementsNewRoute: ControlAnnouncementsNewRoute,
+  ControlAnnouncementsIndexRoute: ControlAnnouncementsIndexRoute,
+}
+
+const ControlAnnouncementsRouteWithChildren =
+  ControlAnnouncementsRoute._addFileChildren(ControlAnnouncementsRouteChildren)
+
+interface ControlAuditRouteChildren {
+  ControlAuditEventIdRoute: typeof ControlAuditEventIdRoute
+  ControlAuditIndexRoute: typeof ControlAuditIndexRoute
+}
+
+const ControlAuditRouteChildren: ControlAuditRouteChildren = {
+  ControlAuditEventIdRoute: ControlAuditEventIdRoute,
+  ControlAuditIndexRoute: ControlAuditIndexRoute,
+}
+
+const ControlAuditRouteWithChildren = ControlAuditRoute._addFileChildren(
+  ControlAuditRouteChildren,
+)
+
+interface ControlCommunitiesCommunityIdRouteChildren {
+  ControlCommunitiesCommunityIdChannelsRoute: typeof ControlCommunitiesCommunityIdChannelsRoute
+  ControlCommunitiesCommunityIdMembersRoute: typeof ControlCommunitiesCommunityIdMembersRoute
+  ControlCommunitiesCommunityIdSettingsRoute: typeof ControlCommunitiesCommunityIdSettingsRoute
+  ControlCommunitiesCommunityIdVoiceRoute: typeof ControlCommunitiesCommunityIdVoiceRoute
+  ControlCommunitiesCommunityIdIndexRoute: typeof ControlCommunitiesCommunityIdIndexRoute
+}
+
+const ControlCommunitiesCommunityIdRouteChildren: ControlCommunitiesCommunityIdRouteChildren =
+  {
+    ControlCommunitiesCommunityIdChannelsRoute:
+      ControlCommunitiesCommunityIdChannelsRoute,
+    ControlCommunitiesCommunityIdMembersRoute:
+      ControlCommunitiesCommunityIdMembersRoute,
+    ControlCommunitiesCommunityIdSettingsRoute:
+      ControlCommunitiesCommunityIdSettingsRoute,
+    ControlCommunitiesCommunityIdVoiceRoute:
+      ControlCommunitiesCommunityIdVoiceRoute,
+    ControlCommunitiesCommunityIdIndexRoute:
+      ControlCommunitiesCommunityIdIndexRoute,
+  }
+
+const ControlCommunitiesCommunityIdRouteWithChildren =
+  ControlCommunitiesCommunityIdRoute._addFileChildren(
+    ControlCommunitiesCommunityIdRouteChildren,
+  )
+
+interface ControlCommunitiesRouteChildren {
+  ControlCommunitiesCommunityIdRoute: typeof ControlCommunitiesCommunityIdRouteWithChildren
+  ControlCommunitiesNewRoute: typeof ControlCommunitiesNewRoute
+  ControlCommunitiesIndexRoute: typeof ControlCommunitiesIndexRoute
+}
+
+const ControlCommunitiesRouteChildren: ControlCommunitiesRouteChildren = {
+  ControlCommunitiesCommunityIdRoute:
+    ControlCommunitiesCommunityIdRouteWithChildren,
+  ControlCommunitiesNewRoute: ControlCommunitiesNewRoute,
+  ControlCommunitiesIndexRoute: ControlCommunitiesIndexRoute,
+}
+
+const ControlCommunitiesRouteWithChildren =
+  ControlCommunitiesRoute._addFileChildren(ControlCommunitiesRouteChildren)
+
+interface ControlGamesGameIdRouteChildren {
+  ControlGamesGameIdArtworkRoute: typeof ControlGamesGameIdArtworkRoute
+  ControlGamesGameIdCommunitiesRoute: typeof ControlGamesGameIdCommunitiesRoute
+  ControlGamesGameIdIndexRoute: typeof ControlGamesGameIdIndexRoute
+}
+
+const ControlGamesGameIdRouteChildren: ControlGamesGameIdRouteChildren = {
+  ControlGamesGameIdArtworkRoute: ControlGamesGameIdArtworkRoute,
+  ControlGamesGameIdCommunitiesRoute: ControlGamesGameIdCommunitiesRoute,
+  ControlGamesGameIdIndexRoute: ControlGamesGameIdIndexRoute,
+}
+
+const ControlGamesGameIdRouteWithChildren =
+  ControlGamesGameIdRoute._addFileChildren(ControlGamesGameIdRouteChildren)
+
+interface ControlGamesRouteChildren {
+  ControlGamesGameIdRoute: typeof ControlGamesGameIdRouteWithChildren
+  ControlGamesNewRoute: typeof ControlGamesNewRoute
+  ControlGamesIndexRoute: typeof ControlGamesIndexRoute
+}
+
+const ControlGamesRouteChildren: ControlGamesRouteChildren = {
+  ControlGamesGameIdRoute: ControlGamesGameIdRouteWithChildren,
+  ControlGamesNewRoute: ControlGamesNewRoute,
+  ControlGamesIndexRoute: ControlGamesIndexRoute,
+}
+
+const ControlGamesRouteWithChildren = ControlGamesRoute._addFileChildren(
+  ControlGamesRouteChildren,
+)
+
+interface ControlModerationRouteChildren {
+  ControlModerationReportIdRoute: typeof ControlModerationReportIdRoute
+  ControlModerationIndexRoute: typeof ControlModerationIndexRoute
+}
+
+const ControlModerationRouteChildren: ControlModerationRouteChildren = {
+  ControlModerationReportIdRoute: ControlModerationReportIdRoute,
+  ControlModerationIndexRoute: ControlModerationIndexRoute,
+}
+
+const ControlModerationRouteWithChildren =
+  ControlModerationRoute._addFileChildren(ControlModerationRouteChildren)
+
+interface ControlUsersUserIdRouteChildren {
+  ControlUsersUserIdMembershipsRoute: typeof ControlUsersUserIdMembershipsRoute
+  ControlUsersUserIdModerationRoute: typeof ControlUsersUserIdModerationRoute
+  ControlUsersUserIdNotesRoute: typeof ControlUsersUserIdNotesRoute
+  ControlUsersUserIdVoiceRoute: typeof ControlUsersUserIdVoiceRoute
+  ControlUsersUserIdIndexRoute: typeof ControlUsersUserIdIndexRoute
+}
+
+const ControlUsersUserIdRouteChildren: ControlUsersUserIdRouteChildren = {
+  ControlUsersUserIdMembershipsRoute: ControlUsersUserIdMembershipsRoute,
+  ControlUsersUserIdModerationRoute: ControlUsersUserIdModerationRoute,
+  ControlUsersUserIdNotesRoute: ControlUsersUserIdNotesRoute,
+  ControlUsersUserIdVoiceRoute: ControlUsersUserIdVoiceRoute,
+  ControlUsersUserIdIndexRoute: ControlUsersUserIdIndexRoute,
+}
+
+const ControlUsersUserIdRouteWithChildren =
+  ControlUsersUserIdRoute._addFileChildren(ControlUsersUserIdRouteChildren)
+
+interface ControlUsersRouteChildren {
+  ControlUsersUserIdRoute: typeof ControlUsersUserIdRouteWithChildren
+  ControlUsersIndexRoute: typeof ControlUsersIndexRoute
+}
+
+const ControlUsersRouteChildren: ControlUsersRouteChildren = {
+  ControlUsersUserIdRoute: ControlUsersUserIdRouteWithChildren,
+  ControlUsersIndexRoute: ControlUsersIndexRoute,
+}
+
+const ControlUsersRouteWithChildren = ControlUsersRoute._addFileChildren(
+  ControlUsersRouteChildren,
+)
+
+interface ControlVoiceRoomsRouteChildren {
+  ControlVoiceRoomsRoomIdRoute: typeof ControlVoiceRoomsRoomIdRoute
+  ControlVoiceRoomsIndexRoute: typeof ControlVoiceRoomsIndexRoute
+}
+
+const ControlVoiceRoomsRouteChildren: ControlVoiceRoomsRouteChildren = {
+  ControlVoiceRoomsRoomIdRoute: ControlVoiceRoomsRoomIdRoute,
+  ControlVoiceRoomsIndexRoute: ControlVoiceRoomsIndexRoute,
+}
+
+const ControlVoiceRoomsRouteWithChildren =
+  ControlVoiceRoomsRoute._addFileChildren(ControlVoiceRoomsRouteChildren)
+
+interface ControlVoiceRouteChildren {
+  ControlVoicePoliciesRoute: typeof ControlVoicePoliciesRoute
+  ControlVoiceRoomsRoute: typeof ControlVoiceRoomsRouteWithChildren
+  ControlVoiceIndexRoute: typeof ControlVoiceIndexRoute
+}
+
+const ControlVoiceRouteChildren: ControlVoiceRouteChildren = {
+  ControlVoicePoliciesRoute: ControlVoicePoliciesRoute,
+  ControlVoiceRoomsRoute: ControlVoiceRoomsRouteWithChildren,
+  ControlVoiceIndexRoute: ControlVoiceIndexRoute,
+}
+
+const ControlVoiceRouteWithChildren = ControlVoiceRoute._addFileChildren(
+  ControlVoiceRouteChildren,
+)
+
+interface ControlRouteChildren {
+  ControlAnalyticsRoute: typeof ControlAnalyticsRouteWithChildren
+  ControlAnnouncementsRoute: typeof ControlAnnouncementsRouteWithChildren
+  ControlAppealsRoute: typeof ControlAppealsRoute
+  ControlAuditRoute: typeof ControlAuditRouteWithChildren
+  ControlChannelsRoute: typeof ControlChannelsRoute
+  ControlCommunitiesRoute: typeof ControlCommunitiesRouteWithChildren
+  ControlCommunityHealthRoute: typeof ControlCommunityHealthRoute
+  ControlContentRoute: typeof ControlContentRoute
+  ControlDiscoveryRoute: typeof ControlDiscoveryRoute
+  ControlEnforcementRoute: typeof ControlEnforcementRoute
+  ControlFlagsRoute: typeof ControlFlagsRoute
+  ControlGamesRoute: typeof ControlGamesRouteWithChildren
+  ControlGrowthRoute: typeof ControlGrowthRoute
+  ControlInboxRoute: typeof ControlInboxRoute
+  ControlJobsRoute: typeof ControlJobsRoute
+  ControlKeysRoute: typeof ControlKeysRoute
+  ControlLiveRoute: typeof ControlLiveRoute
+  ControlLivekitRoute: typeof ControlLivekitRoute
+  ControlMediaRoute: typeof ControlMediaRoute
+  ControlModerationRoute: typeof ControlModerationRouteWithChildren
+  ControlRateLimitsRoute: typeof ControlRateLimitsRoute
+  ControlRolesRoute: typeof ControlRolesRoute
+  ControlSearchRoute: typeof ControlSearchRoute
+  ControlSecurityRoute: typeof ControlSecurityRoute
+  ControlSettingsRoute: typeof ControlSettingsRoute
+  ControlSystemRoute: typeof ControlSystemRoute
+  ControlTasksRoute: typeof ControlTasksRoute
+  ControlTemplatesRoute: typeof ControlTemplatesRoute
+  ControlUsersRoute: typeof ControlUsersRouteWithChildren
+  ControlVoiceRoute: typeof ControlVoiceRouteWithChildren
+  ControlIndexRoute: typeof ControlIndexRoute
+  ControlPhaseCodeRoute: typeof ControlPhaseCodeRoute
+}
+
+const ControlRouteChildren: ControlRouteChildren = {
+  ControlAnalyticsRoute: ControlAnalyticsRouteWithChildren,
+  ControlAnnouncementsRoute: ControlAnnouncementsRouteWithChildren,
+  ControlAppealsRoute: ControlAppealsRoute,
+  ControlAuditRoute: ControlAuditRouteWithChildren,
+  ControlChannelsRoute: ControlChannelsRoute,
+  ControlCommunitiesRoute: ControlCommunitiesRouteWithChildren,
+  ControlCommunityHealthRoute: ControlCommunityHealthRoute,
+  ControlContentRoute: ControlContentRoute,
+  ControlDiscoveryRoute: ControlDiscoveryRoute,
+  ControlEnforcementRoute: ControlEnforcementRoute,
+  ControlFlagsRoute: ControlFlagsRoute,
+  ControlGamesRoute: ControlGamesRouteWithChildren,
+  ControlGrowthRoute: ControlGrowthRoute,
+  ControlInboxRoute: ControlInboxRoute,
+  ControlJobsRoute: ControlJobsRoute,
+  ControlKeysRoute: ControlKeysRoute,
+  ControlLiveRoute: ControlLiveRoute,
+  ControlLivekitRoute: ControlLivekitRoute,
+  ControlMediaRoute: ControlMediaRoute,
+  ControlModerationRoute: ControlModerationRouteWithChildren,
+  ControlRateLimitsRoute: ControlRateLimitsRoute,
+  ControlRolesRoute: ControlRolesRoute,
+  ControlSearchRoute: ControlSearchRoute,
+  ControlSecurityRoute: ControlSecurityRoute,
+  ControlSettingsRoute: ControlSettingsRoute,
+  ControlSystemRoute: ControlSystemRoute,
+  ControlTasksRoute: ControlTasksRoute,
+  ControlTemplatesRoute: ControlTemplatesRoute,
+  ControlUsersRoute: ControlUsersRouteWithChildren,
+  ControlVoiceRoute: ControlVoiceRouteWithChildren,
+  ControlIndexRoute: ControlIndexRoute,
+  ControlPhaseCodeRoute: ControlPhaseCodeRoute,
+}
+
+const ControlRouteWithChildren =
+  ControlRoute._addFileChildren(ControlRouteChildren)
 
 interface CHubSlugRouteChildren {
   CHubSlugIndexRoute: typeof CHubSlugIndexRoute
@@ -528,6 +2072,7 @@ const CHubSlugRouteWithChildren = CHubSlugRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ControlRoute: ControlRouteWithChildren,
   CookiesRoute: CookiesRoute,
   DiscoverRoute: DiscoverRoute,
   DmRoute: DmRoute,

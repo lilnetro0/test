@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useT, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
+import { usePlatformFlags } from "@/hooks/use-platform-flags";
 import { uploadAttachment, ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES } from "@/lib/supabase/storage";
 import {
   assertFileSize,
@@ -66,6 +67,8 @@ export const Composer = forwardRef<
   const { t } = useT();
   const { user } = useAuth();
   const live = !shouldUseMockData();
+  const flags = usePlatformFlags();
+  const attachmentsEnabled = flags["attachments.upload"];
 
   useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
@@ -100,6 +103,10 @@ export const Composer = forwardRef<
 
   const pickFile = () => {
     setExtrasOpen(false);
+    if (!attachmentsEnabled) {
+      toast.error(t("notice.flag.attachmentsOff"));
+      return;
+    }
     if (!live) {
       toast(t("composer.attachDemo"));
       return;
@@ -124,6 +131,10 @@ export const Composer = forwardRef<
     try {
       let attachment: ComposerAttachment | undefined;
       if (pendingFile && live && user) {
+        if (!attachmentsEnabled) {
+          toast.error(t("notice.flag.attachmentsOff"));
+          return;
+        }
         setUploading(true);
         const up = await uploadAttachment(user.id, pendingFile);
         setUploading(false);
@@ -260,14 +271,16 @@ export const Composer = forwardRef<
 
       {extrasOpen ? (
         <div className="mb-2 flex flex-wrap gap-2 rounded-xl border border-border-subtle bg-surface-mid p-2">
-          <button
-            type="button"
-            onClick={pickFile}
-            className="nx-touch inline-flex items-center gap-2 rounded-lg px-3 text-sm font-semibold text-stone-300 hover:bg-white/5 hover:text-white"
-          >
-            <Paperclip className="size-4" />
-            {t("composer.attach")}
-          </button>
+          {attachmentsEnabled ? (
+            <button
+              type="button"
+              onClick={pickFile}
+              className="nx-touch inline-flex items-center gap-2 rounded-lg px-3 text-sm font-semibold text-stone-300 hover:bg-white/5 hover:text-white"
+            >
+              <Paperclip className="size-4" />
+              {t("composer.attach")}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {

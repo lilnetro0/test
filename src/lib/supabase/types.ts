@@ -254,6 +254,78 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["voice_channels"]["Insert"]>;
         Relationships: [];
       };
+      control_feature_flags: {
+        Row: {
+          key: string;
+          enabled: boolean;
+          description: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          enabled?: boolean;
+          description?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["control_feature_flags"]["Insert"]>;
+        Relationships: [];
+      };
+      control_announcements: {
+        Row: {
+          id: string;
+          title: string;
+          body: string;
+          locale: string;
+          status: string;
+          published_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          body: string;
+          locale?: string;
+          status?: string;
+          published_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["control_announcements"]["Insert"]>;
+        Relationships: [];
+      };
+      control_discovery_placements: {
+        Row: {
+          id: string;
+          kind: string;
+          target_id: string;
+          region: string | null;
+          position: number;
+          active: boolean;
+          note: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: string;
+          target_id: string;
+          region?: string | null;
+          position?: number;
+          active?: boolean;
+          note?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["control_discovery_placements"]["Insert"]>;
+        Relationships: [];
+      };
       messages: {
         Row: {
           id: string;

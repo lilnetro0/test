@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { DISCOVER_HUBS, FRIENDS, catalogGameId, type HubCard } from "@/lib/mock-data";
-import { useEffect, useMemo, useState } from "react";
-import { Search, Plus, SlidersHorizontal, ChevronLeft, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search, Plus, SlidersHorizontal, ChevronLeft, Users, Star } from "lucide-react";
 import { toast } from "sonner";
 import { HubHero } from "@/components/hub-hero";
 import { GameIcon } from "@/components/game-icon";
@@ -11,7 +11,9 @@ import { useT, type TKey, translateStatic } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-provider";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { fetchLiveHubs } from "@/lib/chat/api";
+import { fetchPlatformNoticesCached } from "@/lib/control/public";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { usePlatformFlags } from "@/hooks/use-platform-flags";
 import { hubMatchesQuery } from "@/lib/hub-search";
 import {
   hubMatchesRegionFilter,
@@ -59,13 +61,26 @@ function DiscoverPage() {
   const [focusedGameId, setFocusedGameId] = useState<string | null>(null);
   const [liveHubs, setLiveHubs] = useState<HubCard[]>([]);
   const [hubsLoading, setHubsLoading] = useState(false);
+  const [featuredHubs, setFeaturedHubs] = useState<ReadonlySet<string>>(new Set());
+  const [featuredGames, setFeaturedGames] = useState<ReadonlySet<string>>(new Set());
   const { t, lang } = useT();
   const { prefs } = useAuth();
   const navigate = useNavigate();
   const isAdmin = useIsAdmin();
   const live = !shouldUseMockData();
+  const flags = usePlatformFlags();
+  const regionalEnabled = flags["discover.regional"];
+  const lfgEnabled = flags["lfg.enabled"];
 
   const myRegion = normalizeRegionCode(prefs?.region ?? readStoredRegion());
+
+  // Kill-switch: clear regional / LFG filters when flags are off.
+  useEffect(() => {
+    if (!regionalEnabled && regionFilter) setRegionFilter("");
+  }, [regionalEnabled, regionFilter]);
+  useEffect(() => {
+    if (!lfgEnabled && lfgOnly) setLfgOnly(false);
+  }, [lfgEnabled, lfgOnly]);
 
   useEffect(() => {
     if (!live) return;
@@ -82,7 +97,26 @@ function DiscoverPage() {
     };
   }, [live]);
 
+  // Control-curated "Featured" placements (Discovery module).
+  useEffect(() => {
+    if (!live) return;
+    let cancelled = false;
+    void fetchPlatformNoticesCached().then((n) => {
+      if (cancelled) return;
+      setFeaturedHubs(new Set(n.featuredHubIds));
+      setFeaturedGames(new Set(n.featuredGameIds));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [live]);
+
   const catalog = live ? liveHubs : DISCOVER_HUBS;
+
+  const isFeaturedHub = useCallback(
+    (h: HubCard) => Boolean(h.hubUuid && featuredHubs.has(h.hubUuid)),
+    [featuredHubs],
+  );
 
   const games = useMemo(() => {
     const seen = new Map<string, HubCard>();
@@ -90,25 +124,40 @@ function DiscoverPage() {
       const gid = catalogGameId(h);
       if (!seen.has(gid)) seen.set(gid, h);
     }
-    return [...seen.values()];
-  }, [catalog]);
+    const list = [...seen.values()];
+    if (featuredGames.size) {
+      // Stable sort: featured games surface first, catalog order otherwise.
+      list.sort(
+        (a, b) =>
+          Number(featuredGames.has(catalogGameId(b))) -
+          Number(featuredGames.has(catalogGameId(a))),
+      );
+    }
+    return list;
+  }, [catalog, featuredGames]);
 
   const filtered = useMemo(() => {
-    return catalog.filter((h) => {
+    const list = catalog.filter((h) => {
       const catMatch = cat === "All" || h.category === cat.toLowerCase().replace(" ", "-");
       const regionMatch = hubMatchesRegionFilter(h.region, regionFilter);
       const lfgMatch = !lfgOnly || Boolean(h.hasLfg);
       const gameMatch = !focusedGameId || catalogGameId(h) === focusedGameId;
       return catMatch && regionMatch && lfgMatch && gameMatch && hubMatchesQuery(h, query);
     });
-  }, [catalog, cat, query, regionFilter, lfgOnly, focusedGameId]);
+    if (featuredHubs.size) {
+      list.sort((a, b) => Number(isFeaturedHub(b)) - Number(isFeaturedHub(a)));
+    }
+    return list;
+  }, [catalog, cat, query, regionFilter, lfgOnly, focusedGameId, featuredHubs, isFeaturedHub]);
 
   const focusedGame = focusedGameId
     ? games.find((g) => catalogGameId(g) === focusedGameId) ?? null
     : null;
 
   const filterCount =
-    (cat !== "All" ? 1 : 0) + (regionFilter ? 1 : 0) + (lfgOnly ? 1 : 0);
+    (cat !== "All" ? 1 : 0) +
+    (regionalEnabled && regionFilter ? 1 : 0) +
+    (lfgEnabled && lfgOnly ? 1 : 0);
 
   const joinHub = async (slug: string, hubName: string) => {
     // Discover opens Game Home for preview — join is an explicit action there.
@@ -168,6 +217,7 @@ function DiscoverPage() {
                   <CommunityRow
                     key={h.id}
                     hub={h}
+                    featured={isFeaturedHub(h)}
                     onOpen={() => void joinHub(h.id, h.hubName)}
                     t={t}
                     lang={lang}
@@ -234,13 +284,22 @@ function DiscoverPage() {
             <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
               {games.map((g) => {
                 const gid = catalogGameId(g);
+                const featured = featuredGames.has(gid);
                 return (
                   <button
                     key={gid}
                     type="button"
                     onClick={() => setFocusedGameId(gid)}
-                    className="nx-press w-28 shrink-0 overflow-hidden rounded-2xl border border-border-subtle/70 text-start shadow-[var(--nx-shadow-1)] transition-[border-color,box-shadow] hover:border-accent/35 hover:shadow-[var(--nx-shadow-2)]"
+                    className={`nx-press relative w-28 shrink-0 overflow-hidden rounded-2xl border text-start shadow-[var(--nx-shadow-1)] transition-[border-color,box-shadow] hover:border-accent/35 hover:shadow-[var(--nx-shadow-2)] ${
+                      featured ? "border-accent/40" : "border-border-subtle/70"
+                    }`}
                   >
+                    {featured ? (
+                      <span className="absolute start-1.5 top-1.5 z-10 inline-flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-accent">
+                        <Star className="size-2.5 fill-current" />
+                        {t("discover.featured")}
+                      </span>
+                    ) : null}
                     <HubHero
                       gameId={gid}
                       short={g.short}
@@ -264,6 +323,7 @@ function DiscoverPage() {
               <CommunityRow
                 key={h.id}
                 hub={h}
+                featured={isFeaturedHub(h)}
                 onOpen={() => void joinHub(h.id, h.hubName)}
                 t={t}
                 lang={lang}
@@ -273,7 +333,7 @@ function DiscoverPage() {
               type="button"
               onClick={() => {
                 if (isAdmin) {
-                  void navigate({ to: "/admin" });
+                  void navigate({ to: "/control" });
                   return;
                 }
                 toast(t("discover.startOwnDenied"));
@@ -325,25 +385,27 @@ function DiscoverPage() {
         }
       >
         <div className="space-y-5">
-          <div>
-            <p className="nx-section mb-2">{t("discover.region.label")}</p>
-            <div className="flex flex-wrap gap-2">
-              {regionChips.map((c) => (
-                <button
-                  key={`r-${c.id || "all"}`}
-                  type="button"
-                  onClick={() => setRegionFilter(c.id)}
-                  className={`min-h-11 rounded-lg border px-3 text-xs font-semibold ${
-                    regionFilter === c.id
-                      ? "border-accent bg-accent/15 text-accent"
-                      : "border-border-subtle text-stone-400"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
+          {regionalEnabled ? (
+            <div>
+              <p className="nx-section mb-2">{t("discover.region.label")}</p>
+              <div className="flex flex-wrap gap-2">
+                {regionChips.map((c) => (
+                  <button
+                    key={`r-${c.id || "all"}`}
+                    type="button"
+                    onClick={() => setRegionFilter(c.id)}
+                    className={`min-h-11 rounded-lg border px-3 text-xs font-semibold ${
+                      regionFilter === c.id
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-border-subtle text-stone-400"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
           <div>
             <p className="nx-section mb-2">{t("discover.genre")}</p>
             <div className="flex flex-wrap gap-2">
@@ -363,15 +425,17 @@ function DiscoverPage() {
               ))}
             </div>
           </div>
-          <label className="flex min-h-11 items-center gap-3 text-sm text-stone-300">
-            <input
-              type="checkbox"
-              checked={lfgOnly}
-              onChange={(e) => setLfgOnly(e.target.checked)}
-              className="size-4 accent-[color:var(--accent)]"
-            />
-            {t("discover.lfg")}
-          </label>
+          {lfgEnabled ? (
+            <label className="flex min-h-11 items-center gap-3 text-sm text-stone-300">
+              <input
+                type="checkbox"
+                checked={lfgOnly}
+                onChange={(e) => setLfgOnly(e.target.checked)}
+                className="size-4 accent-[color:var(--accent)]"
+              />
+              {t("discover.lfg")}
+            </label>
+          ) : null}
         </div>
       </FilterSheet>
     </AppShell>
@@ -380,18 +444,32 @@ function DiscoverPage() {
 
 function CommunityRow({
   hub,
+  featured,
   onOpen,
   t,
   lang,
 }: {
   hub: HubCard;
+  featured?: boolean;
   onOpen: () => void;
   t: (key: TKey, vars?: Record<string, string>) => string;
   lang: "en" | "ar";
 }) {
   return (
     <ListRow
-      title={hub.hubName}
+      title={
+        featured ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="truncate">{hub.hubName}</span>
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+              <Star className="size-2.5 fill-current" />
+              {t("discover.featured")}
+            </span>
+          </span>
+        ) : (
+          hub.hubName
+        )
+      }
       subtitle={`${hub.members.toLocaleString()} ${t("discover.members")} · ${
         hub.region
           ? regionLabel(normalizeRegionCode(hub.region), lang)

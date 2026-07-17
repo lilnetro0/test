@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth-provider";
 import { getVoiceClient } from "@/lib/voice";
 import { isLfgChannel } from "@/lib/lfg";
 import { useT, translateStatic } from "@/lib/i18n";
+import { usePlatformFlags } from "@/hooks/use-platform-flags";
 import { resolveBackgroundUrl } from "@/lib/game-artwork";
 import { COMMUNITY_FEED_SECTION_ID } from "@/lib/community/feed-ext";
 import { toast } from "sonner";
@@ -35,6 +36,9 @@ function CommunityGameHomePage() {
   const community = useCommunity(hubSlug);
   const { accessToken, profile, user } = useAuth();
   const { t } = useT();
+  const flags = usePlatformFlags();
+  const voiceEnabled = flags["voice.enabled"];
+  const lfgEnabled = flags["lfg.enabled"];
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [activeVoiceId, setActiveVoiceId] = useState<string | null>(
     () => getVoiceClient().getSession()?.channelId ?? null,
@@ -58,6 +62,10 @@ function CommunityGameHomePage() {
     livekitRoomName?: string | null;
   }) => {
     if (joiningId || !community.isMember) return;
+    if (!voiceEnabled) {
+      toast.error(t("notice.flag.voiceOff"));
+      return;
+    }
     void (async () => {
       setJoiningId(v.id);
       try {
@@ -102,7 +110,7 @@ function CommunityGameHomePage() {
     if (community.error) toast.error(community.error);
   }, [community.error]);
 
-  const hasLfg = community.featuredText.some((c) => isLfgChannel(c));
+  const hasLfg = lfgEnabled && community.featuredText.some((c) => isLfgChannel(c));
 
   return (
     <AppShell>

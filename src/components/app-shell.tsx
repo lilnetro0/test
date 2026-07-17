@@ -3,6 +3,7 @@ import { BottomDock } from "@/components/bottom-dock";
 import { GlobalVoiceBar } from "@/components/global-voice-bar";
 import { CapOfflineBanner } from "@/components/cap-offline-banner";
 import { DemoBanner } from "@/components/demo-banner";
+import { PlatformNotices } from "@/components/platform-notices";
 import { RequireAuth } from "@/components/require-auth";
 import { useT } from "@/lib/i18n";
 import { trapFocus } from "@/lib/focus-trap";
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-background pt-safe text-foreground">
         <DemoBanner />
         <CapOfflineBanner />
+        <PlatformNotices />
         <div id="main-content" className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {children}
         </div>

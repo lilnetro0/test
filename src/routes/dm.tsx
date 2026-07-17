@@ -13,6 +13,7 @@ import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import { bumpMessageUnreadRefresh } from "@/hooks/use-message-unread-totals";
 import { useAuth } from "@/lib/auth-provider";
 import { getVoiceClient } from "@/lib/voice";
+import { usePlatformFlags } from "@/hooks/use-platform-flags";
 import { toast } from "sonner";
 import { submitReport } from "@/lib/social/api";
 import { ReportDialog, type ReportDialogTarget } from "@/components/report-dialog";
@@ -36,6 +37,8 @@ function DMPage() {
   const { t } = useT();
   const navigate = useNavigate();
   const { accessToken, profile, user } = useAuth();
+  const flags = usePlatformFlags();
+  const voiceEnabled = flags["voice.enabled"];
   const { thread: threadFromSearch } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [inVoice, setInVoice] = useState(false);
@@ -76,6 +79,10 @@ function DMPage() {
 
   const joinDmVoice = async () => {
     if (!dms.activeId || !dms.active || joiningVoice) return;
+    if (!voiceEnabled) {
+      toast.error(t("notice.flag.voiceOff"));
+      return;
+    }
     setJoiningVoice(true);
     try {
       await getVoiceClient().joinVoiceChannel({
@@ -264,15 +271,17 @@ function DMPage() {
                       <p className="nx-caption truncate">{active.with.activity ?? t("you.online")}</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void joinDmVoice()}
-                    disabled={joiningVoice || inVoice}
-                    className="nx-touch grid place-items-center rounded-lg text-stone-400 hover:bg-white/5 hover:text-white disabled:opacity-50"
-                    aria-label={t("dm.voice")}
-                  >
-                    <Phone className="size-4" />
-                  </button>
+                  {voiceEnabled ? (
+                    <button
+                      type="button"
+                      onClick={() => void joinDmVoice()}
+                      disabled={joiningVoice || inVoice}
+                      className="nx-touch grid place-items-center rounded-lg text-stone-400 hover:bg-white/5 hover:text-white disabled:opacity-50"
+                      aria-label={t("dm.voice")}
+                    >
+                      <Phone className="size-4" />
+                    </button>
+                  ) : null}
                 </header>
 
                 <div className="flex-1 space-y-3 overflow-y-auto p-3 md:space-y-4 md:p-6">

@@ -21,6 +21,7 @@ import {
   Hash,
   User,
   Gamepad2,
+  Shield,
 } from "lucide-react";
 import {
   GAMES,
@@ -33,6 +34,7 @@ import {
   type DMConversation,
 } from "@/lib/mock-data";
 import { useHotkey } from "@/hooks/use-hotkey";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useT } from "@/lib/i18n";
 import { shouldUseMockData } from "@/lib/supabase/env";
 import { useAuth } from "@/lib/auth-provider";
@@ -49,6 +51,7 @@ export function CommandPalette() {
   const { t } = useT();
   const live = !shouldUseMockData();
   const { user } = useAuth();
+  const isAdmin = useIsAdmin();
 
   const [hubs, setHubs] = useState<HubCard[]>(GAMES);
   const [friends, setFriends] = useState<Friend[]>(FRIENDS);
@@ -140,6 +143,11 @@ export function CommandPalette() {
             <CommandItem onSelect={() => go("/help")}>
               <HelpCircle className="me-2 size-4" /> {t("nav.help")}
             </CommandItem>
+            {isAdmin && (
+              <CommandItem onSelect={() => go("/control")} value="control admin nexus">
+                <Shield className="me-2 size-4" /> {t("cmd.control")}
+              </CommandItem>
+            )}
           </CommandGroup>
 
           <CommandSeparator />
